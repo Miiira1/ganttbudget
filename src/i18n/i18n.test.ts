@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { LANGUAGES } from './languages'
-import { formatIsoDate, formatNumber } from './format'
+import { formatIsoDate, formatMonth, formatNumber } from './format'
 import { createSampleProject } from '../samples/automatizace'
 import { ProjectSchema } from '../model/schema'
 import { schedule } from '../engine/schedule'
@@ -33,6 +33,13 @@ describe('formát data a čísel', () => {
   it('datum podle jazyka, bez posunu časovým pásmem', () => {
     expect(formatIsoDate('2026-11-14', 'cs')).toBe('14. 11. 2026')
     expect(formatIsoDate('2026-11-14', 'en')).toBe('14/11/2026')
+  })
+
+  it('názvy měsíců podle jazyka', () => {
+    expect(formatMonth(2026, 11, 'cs', 'withYear')).toBe('listopad 2026')
+    expect(formatMonth(2026, 11, 'cs', 'long')).toBe('listopad')
+    expect(formatMonth(2026, 11, 'en', 'withYear')).toBe('November 2026')
+    expect(formatMonth(2027, 1, 'en', 'short')).toBe('Jan')
   })
 
   it('čísla podle jazyka', () => {

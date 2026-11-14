@@ -8,12 +8,14 @@ import { formatIsoDate } from '../i18n/format'
 import { formatPredecessors, parsePredecessors, resolvePredecessors, rowOrder, type PredecessorError } from '../model/predecessors'
 import { TASK_KINDS, type Task, type TaskKind } from '../model/schema'
 import type { ScheduledTask } from '../engine/schedule'
+import { HEADER_HEIGHT, ROW_HEIGHT } from '../gantt/geometry'
 import { projectStore, useProject, useSchedule } from '../store/useProject'
 import { NumberCell, TextCell } from './EditableCells'
 import { showNotice } from './notice'
 
-const th = 'sticky top-0 z-10 border-b border-slate-300 bg-slate-100 px-2 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
-const td = 'border-b border-slate-200 px-1 py-0.5 align-middle dark:border-slate-700/70'
+// Výška hlavičky a řádků je pevná a stejná jako v grafu (gantt/geometry.ts), aby řádky lícovaly.
+const th = 'sticky top-0 z-10 whitespace-nowrap border-b border-slate-300 bg-slate-100 px-2 py-0 text-left text-xs font-semibold uppercase tracking-wide text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+const td = 'border-b border-slate-200 px-1 py-0 align-middle whitespace-nowrap dark:border-slate-700/70'
 
 const kindRowClass: Record<TaskKind, string> = {
   task: '',
@@ -48,7 +50,11 @@ function TaskRow({ task, number, dates, inCycle }: { task: Task; number: number;
   const datesHint = isPhase ? t('table.phaseDatesHint') : t('table.datesHint')
 
   return (
-    <tr data-task-id={task.id} className={`hover:bg-blue-50/60 dark:hover:bg-slate-800 ${kindRowClass[task.kind]}`}>
+    <tr
+      data-task-id={task.id}
+      style={{ height: ROW_HEIGHT }}
+      className={`hover:bg-blue-50/60 dark:hover:bg-slate-800 ${kindRowClass[task.kind]}`}
+    >
       <td className={`${td} px-2 text-right tabular-nums text-slate-500`}>{number}</td>
       <td className={`${td} min-w-64`}>
         <div className="flex items-center gap-1">
@@ -78,7 +84,7 @@ function TaskRow({ task, number, dates, inCycle }: { task: Task; number: number;
           title={t(`kind.${task.kind}Hint`)}
           value={task.kind}
           onChange={(e) => updateTask(task.id, { kind: e.target.value as TaskKind })}
-          className="w-full rounded border border-transparent bg-transparent px-1 py-1 font-normal hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 dark:hover:border-slate-600 dark:[&>option]:bg-slate-800"
+          className="w-full rounded border border-transparent bg-transparent px-1 py-0.5 font-normal hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 dark:hover:border-slate-600 dark:[&>option]:bg-slate-800"
         >
           {TASK_KINDS.map((kind) => (
             <option key={kind} value={kind}>
@@ -203,7 +209,7 @@ export function TaskTable({ onAddTask, onLoadSample }: { onAddTask: () => void; 
     <table className="w-full border-collapse text-sm">
       <caption className="sr-only">{t('table.caption')}</caption>
       <thead>
-        <tr>
+        <tr style={{ height: HEADER_HEIGHT }}>
           <th scope="col" className={`${th} w-10 text-right`}>
             {t('table.rowNumber')}
           </th>

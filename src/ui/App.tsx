@@ -9,6 +9,9 @@ import { applyTheme, loadThemePreference, saveThemePreference, THEME_PREFERENCES
 import { CalendarDialog } from './CalendarDialog'
 import { useNotice } from './notice'
 import { TaskTable } from './TaskTable'
+import { SplitView } from './SplitView'
+import { GanttChart } from './gantt/GanttChart'
+import { ZoomSwitch } from './gantt/ZoomSwitch'
 
 /** Je kurzor v textovém poli? Tam necháme Ctrl+Z prohlížeči (vrací psaní v poli). */
 function isEditingField(target: EventTarget | null): boolean {
@@ -130,6 +133,11 @@ export default function App() {
           <button type="button" className="btn-secondary" onClick={() => setCalendarOpen(true)} title={t('toolbar.calendarHint')}>
             <span aria-hidden="true">📅</span> {t('toolbar.calendar')}
           </button>
+          {project.tasks.length > 0 && (
+            <div className="ml-auto">
+              <ZoomSwitch />
+            </div>
+          )}
         </div>
       </header>
 
@@ -156,9 +164,16 @@ export default function App() {
       </div>
       <CalendarDialog open={calendarOpen} onClose={() => setCalendarOpen(false)} />
 
-      <main className="flex-1 overflow-auto">
-        <TaskTable onAddTask={handleAddTask} onLoadSample={handleLoadSample} />
-      </main>
+      {project.tasks.length === 0 ? (
+        // Prázdný projekt: jen uvítání přes celou šířku, graf by byl prázdný.
+        <main className="flex-1 overflow-auto">
+          <TaskTable onAddTask={handleAddTask} onLoadSample={handleLoadSample} />
+        </main>
+      ) : (
+        <main className="min-h-0 flex-1">
+          <SplitView left={<TaskTable onAddTask={handleAddTask} onLoadSample={handleLoadSample} />} right={<GanttChart />} />
+        </main>
+      )}
 
       <footer className="border-t border-slate-200 px-4 py-1.5 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
         <span aria-hidden="true">🔒 </span>

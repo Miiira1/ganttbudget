@@ -117,8 +117,20 @@ export class NoWorkingDaysError extends Error {
 /** Kolik dní nejvýš hledáme pracovní den, než to vzdáme (cca 10 let). */
 const MAX_SEARCH_DAYS = 3700
 
+/**
+ * Proč je (nebo není) den pracovní – podle toho graf den obarví a ukáže název.
+ * Přednost: vlastní odstávka > státní svátek > víkend.
+ */
+export type DayInfo =
+  | { kind: 'working' }
+  | { kind: 'weekend' }
+  | { kind: 'holiday'; key: HolidayKey }
+  | { kind: 'custom'; name: string }
+
 export interface WorkCalendar {
   isWorkingDay(day: number): boolean
+  /** Druh dne: pracovní, víkend, svátek (s klíčem názvu), nebo vlastní odstávka (s názvem). */
+  describeDay(day: number): DayInfo
   /** Daný den, pokud je pracovní, jinak nejbližší další pracovní den. */
   nextWorkingDay(day: number): number
   /** Daný den, pokud je pracovní, jinak nejbližší předchozí pracovní den. */
@@ -134,24 +146,35 @@ export interface WorkCalendar {
 export function createWorkCalendar(calendar: Calendar): WorkCalendar {
   const workingWeekdays = new Set(calendar.workingWeekdays)
   const removed = new Set(calendar.removedHolidays.map(isoToDay))
-  const customRanges = calendar.customHolidays.map((r) => [isoToDay(r.start), isoToDay(r.end)] as const)
+  const customRanges = calendar.customHolidays.map((r) => ({ start: isoToDay(r.start), end: isoToDay(r.end), name: r.name }))
 
-  // Svátky počítáme pro každý rok jen jednou a pamatujeme si je.
-  const holidaysByYear = new Map<number, Set<number>>()
-  function isCzechHoliday(day: number): boolean {
+  // Svátky počítáme pro každý rok jen jednou a pamatujeme si je (číslo dne → klíč názvu).
+  const holidaysByYear = new Map<number, Map<number, HolidayKey>>()
+  /** Klíč státního svátku, který se v tomto kalendáři počítá, jinak undefined. */
+  function czechHolidayKey(day: number): HolidayKey | undefined {
+    if (!calendar.useCzechHolidays || removed.has(day)) return undefined
     const year = yearOf(day)
     let days = holidaysByYear.get(year)
     if (!days) {
-      days = new Set(czechHolidays(year).map((h) => isoToDay(h.date)))
+      days = new Map(czechHolidays(year).map((h) => [isoToDay(h.date), h.key]))
       holidaysByYear.set(year, days)
     }
-    return days.has(day)
+    return days.get(day)
+  }
+
+  function describeDay(day: number): DayInfo {
+    const custom = customRanges.find((r) => day >= r.start && day <= r.end)
+    if (custom) return { kind: 'custom', name: custom.name }
+    const holiday = czechHolidayKey(day)
+    if (holiday) return { kind: 'holiday', key: holiday }
+    if (!workingWeekdays.has(isoWeekday(day))) return { kind: 'weekend' }
+    return { kind: 'working' }
   }
 
   function isWorkingDay(day: number): boolean {
     if (!workingWeekdays.has(isoWeekday(day))) return false
-    if (calendar.useCzechHolidays && isCzechHoliday(day) && !removed.has(day)) return false
-    return !customRanges.some(([start, end]) => day >= start && day <= end)
+    if (czechHolidayKey(day)) return false
+    return !customRanges.some((r) => day >= r.start && day <= r.end)
   }
 
   function step(day: number, direction: 1 | -1): number {
@@ -165,6 +188,7 @@ export function createWorkCalendar(calendar: Calendar): WorkCalendar {
 
   return {
     isWorkingDay,
+    describeDay,
     nextWorkingDay: (day) => step(day, 1),
     previousWorkingDay: (day) => step(day, -1),
     addWorkingDays(day, count) {

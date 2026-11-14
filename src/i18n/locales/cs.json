@@ -77,6 +77,44 @@
   "task": {
     "defaultName": "Nová činnost"
   },
+  "gantt": {
+    "chartLabel": "Ganttův diagram – časový průběh činností. Stejné údaje jsou v tabulce vlevo.",
+    "splitter": "Oddělovač tabulky a grafu",
+    "splitterHint": "Táhněte myší, nebo použijte šipky vlevo/vpravo",
+    "zoom": "Měřítko časové osy",
+    "zoomHint": "Jak podrobně ukázat čas v grafu",
+    "zoomLevel": {
+      "day": "Dny",
+      "week": "Týdny",
+      "month": "Měsíce",
+      "quarter": "Čtvrtletí"
+    },
+    "week": "{{n}}. týden",
+    "weekShort": "{{n}}.",
+    "quarter": "{{n}}. čtvrtletí",
+    "quarterShort": "Q{{n}}",
+    "range": "{{from}} – {{to}}",
+    "today": "Dnes: {{date}}",
+    "weekend": "Volno (víkend): {{range}}",
+    "holiday": "Státní svátek: {{name}}, {{range}}",
+    "custom": "Odstávka / volno: {{name}}, {{range}}",
+    "barTask": "{{name}}: {{range}} ({{duration}})",
+    "barPhase": "Fáze {{name}}: {{range}}",
+    "barMilestone": "Milník {{name}}: {{date}}",
+    "dependency": "Vazba: „{{from}}“ → „{{to}}“ ({{type}}{{lag}})",
+    "dependencyType": {
+      "FS": "začne po konci",
+      "SS": "začne se začátkem",
+      "FF": "skončí s koncem",
+      "SF": "skončí se začátkem"
+    },
+    "lag": ", prodleva {{days}}",
+    "lead": ", předstih {{days}}",
+    "workingDays_one": "{{count}} pracovní den",
+    "workingDays_few": "{{count}} pracovní dny",
+    "workingDays_many": "{{count}} pracovního dne",
+    "workingDays_other": "{{count}} pracovních dní"
+  },
   "notice": {
     "close": "Zavřít upozornění"
   },

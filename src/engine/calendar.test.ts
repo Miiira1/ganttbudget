@@ -131,3 +131,42 @@ describe('pracovní dny', () => {
     expect(() => cal.nextWorkingDay(day('2026-11-16'))).toThrow(NoWorkingDaysError)
   })
 })
+
+describe('druh dne (pro obarvení grafu)', () => {
+  const shutdown = { start: '2026-12-21', end: '2026-12-31', name: 'Odstávka' }
+
+  it('pracovní den, víkend, svátek s klíčem názvu', () => {
+    const cal = calendar()
+    expect(cal.describeDay(day('2026-11-16'))).toEqual({ kind: 'working' })
+    expect(cal.describeDay(day('2026-11-14'))).toEqual({ kind: 'weekend' })
+    expect(cal.describeDay(day('2026-11-17'))).toEqual({ kind: 'holiday', key: 'freedomDay' })
+    expect(cal.describeDay(day('2026-04-06'))).toEqual({ kind: 'holiday', key: 'easterMonday' })
+  })
+
+  it('svátek o víkendu se ukáže jako svátek (víc informace)', () => {
+    // 28. 10. 2028 je sobota
+    expect(calendar().describeDay(day('2028-10-28'))).toEqual({ kind: 'holiday', key: 'independenceDay' })
+  })
+
+  it('vypnuté nebo odebrané svátky se neukazují', () => {
+    expect(calendar({ useCzechHolidays: false }).describeDay(day('2026-11-17'))).toEqual({ kind: 'working' })
+    expect(calendar({ removedHolidays: ['2026-11-17'] }).describeDay(day('2026-11-17'))).toEqual({ kind: 'working' })
+    // odebraný svátek o víkendu je pořád víkend
+    expect(calendar({ removedHolidays: ['2028-10-28'] }).describeDay(day('2028-10-28'))).toEqual({ kind: 'weekend' })
+  })
+
+  it('vlastní odstávka má přednost a nese svůj název', () => {
+    const cal = calendar({ customHolidays: [shutdown] })
+    expect(cal.describeDay(day('2026-12-21'))).toEqual({ kind: 'custom', name: 'Odstávka' }) // pondělí
+    expect(cal.describeDay(day('2026-12-24'))).toEqual({ kind: 'custom', name: 'Odstávka' }) // i přes svátek
+    expect(cal.describeDay(day('2026-12-27'))).toEqual({ kind: 'custom', name: 'Odstávka' }) // i přes neděli
+    expect(cal.describeDay(day('2027-01-04'))).toEqual({ kind: 'working' })
+  })
+
+  it('druh dne odpovídá isWorkingDay pro celý rok', () => {
+    const cal = calendar({ customHolidays: [shutdown], removedHolidays: ['2026-09-28'] })
+    for (let d = day('2026-01-01'); d <= day('2026-12-31'); d++) {
+      expect(cal.describeDay(d).kind === 'working').toBe(cal.isWorkingDay(d))
+    }
+  })
+})

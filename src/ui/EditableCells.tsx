@@ -6,7 +6,7 @@
 import { useState, type KeyboardEvent } from 'react'
 
 const inputClass =
-  'w-full rounded border border-transparent bg-transparent px-1.5 py-1 hover:border-slate-300 ' +
+  'w-full rounded border border-transparent bg-transparent px-1.5 py-0.5 hover:border-slate-300 ' +
   'focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 ' +
   'disabled:cursor-not-allowed disabled:opacity-60 dark:hover:border-slate-600'
 

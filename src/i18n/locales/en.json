@@ -75,6 +75,42 @@
   "task": {
     "defaultName": "New task"
   },
+  "gantt": {
+    "chartLabel": "Gantt chart – timeline of the tasks. The same data is in the table on the left.",
+    "splitter": "Divider between table and chart",
+    "splitterHint": "Drag with the mouse, or use the left/right arrow keys",
+    "zoom": "Timeline scale",
+    "zoomHint": "How much detail of time to show in the chart",
+    "zoomLevel": {
+      "day": "Days",
+      "week": "Weeks",
+      "month": "Months",
+      "quarter": "Quarters"
+    },
+    "week": "Week {{n}}",
+    "weekShort": "W{{n}}",
+    "quarter": "Quarter {{n}}",
+    "quarterShort": "Q{{n}}",
+    "range": "{{from}} – {{to}}",
+    "today": "Today: {{date}}",
+    "weekend": "Day off (weekend): {{range}}",
+    "holiday": "Public holiday: {{name}}, {{range}}",
+    "custom": "Shutdown / day off: {{name}}, {{range}}",
+    "barTask": "{{name}}: {{range}} ({{duration}})",
+    "barPhase": "Phase {{name}}: {{range}}",
+    "barMilestone": "Milestone {{name}}: {{date}}",
+    "dependency": "Dependency: “{{from}}” → “{{to}}” ({{type}}{{lag}})",
+    "dependencyType": {
+      "FS": "starts after finish",
+      "SS": "starts with start",
+      "FF": "finishes with finish",
+      "SF": "finishes with start"
+    },
+    "lag": ", lag {{days}}",
+    "lead": ", lead {{days}}",
+    "workingDays_one": "{{count}} working day",
+    "workingDays_other": "{{count}} working days"
+  },
   "notice": {
     "close": "Close notice"
   },
