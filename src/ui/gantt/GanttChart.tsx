@@ -29,7 +29,7 @@ import { LinkDragLayer } from './LinkDragLayer'
 import { DependencyArrows } from './DependencyArrows'
 import { TaskBars } from './TaskBars'
 import { TimelineHeader } from './TimelineHeader'
-import { useSelectedId, useVisibleRows } from '../viewState'
+import { useSelectedIds, useVisibleRows } from '../viewState'
 import { useZoom } from './zoom'
 
 /** Text bubliny pro pruh volných dnů. */
@@ -130,8 +130,11 @@ export function GanttChart() {
   const zoom = useZoom((s) => s.zoom)
   // Jen viditelné řádky (bez položek sbalených fází) – stejné jako v tabulce.
   const rows = useVisibleRows(project)
-  const selectedId = useSelectedId(project)
-  const selectedIndex = rows.findIndex((task) => task.id === selectedId)
+  const selectedIds = useSelectedIds(project)
+  const selectedIndexes = useMemo(() => {
+    const index = new Map(rows.map((task, i) => [task.id, i]))
+    return selectedIds.map((id) => index.get(id) ?? -1).filter((i) => i >= 0)
+  }, [rows, selectedIds])
   const patternId = useId()
   const wrapperRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
@@ -200,15 +203,16 @@ export function GanttChart() {
         {background}
 
         {/* Vybraný řádek – stejně zvýrazněný jako v tabulce. */}
-        {selectedIndex >= 0 && (
+        {selectedIndexes.map((index) => (
           <rect
+            key={index}
             x={0}
-            y={selectedIndex * ROW_HEIGHT}
+            y={index * ROW_HEIGHT}
             width={tl.width}
             height={ROW_HEIGHT}
             className="fill-blue-100/80 dark:fill-blue-900/40"
           />
-        )}
+        ))}
 
         {/* Svislá mřížka po úsecích dolního řádku hlavičky (dny, týdny, měsíce, čtvrtletí). */}
         {gridLines.map((x) => (

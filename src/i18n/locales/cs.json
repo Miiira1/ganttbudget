@@ -190,7 +190,11 @@
     "emptyTitle": "Projekt je zatím prázdný",
     "emptyText": "Začněte přidáním první činnosti, nebo si prohlédněte vzorový projekt.",
     "fieldLabel": "{{field}}, řádek {{number}}",
-    "invalidName": "Název nesmí být prázdný – vrátila se původní hodnota."
+    "invalidName": "Název nesmí být prázdný – vrátila se původní hodnota.",
+    "confirmDeleteMany_one": "Opravdu smazat {{count}} položku (vybrané řádky včetně položek ve vybraných fázích)? Změnu lze vrátit tlačítkem Zpět (Ctrl+Z).",
+    "confirmDeleteMany_few": "Opravdu smazat {{count}} položky (vybrané řádky včetně položek ve vybraných fázích)? Změnu lze vrátit tlačítkem Zpět (Ctrl+Z).",
+    "confirmDeleteMany_many": "Opravdu smazat {{count}} položek (vybrané řádky včetně položek ve vybraných fázích)? Změnu lze vrátit tlačítkem Zpět (Ctrl+Z).",
+    "confirmDeleteMany_other": "Opravdu smazat {{count}} položek (vybrané řádky včetně položek ve vybraných fázích)? Změnu lze vrátit tlačítkem Zpět (Ctrl+Z)."
   },
   "kind": {
     "task": "Činnost",
@@ -215,8 +219,8 @@
       "saveAs": "Uložit projekt do nového souboru",
       "open": "Otevřít projekt ze souboru",
       "addTask": "Nová činnost pod vybraný řádek",
-      "duplicate": "Duplikovat vybraný řádek (fázi i s činnostmi)",
-      "delete": "Smazat vybraný řádek (mimo textové pole – v poli Ctrl+Delete maže slovo)",
+      "duplicate": "Duplikovat vybrané řádky (fáze i s činnostmi)",
+      "delete": "Smazat vybrané řádky (mimo textové pole – v poli Ctrl+Delete maže slovo)",
       "indent": "Odsadit – zařadit pod řádek nad sebou (do fáze)",
       "outdent": "Předsadit – vytáhnout o úroveň výš, za konec fáze",
       "moveUp": "Posunout řádek nahoru",
@@ -224,7 +228,7 @@
       "undo": "Zpět – vrátit poslední změnu (mimo textové pole; v poli vrací psaní)",
       "redo": "Znovu – obnovit vrácenou změnu",
       "confirm": "Potvrdit úpravu pole",
-      "cancel": "Zrušit rozepsanou úpravu pole nebo tažení",
+      "cancel": "Zrušit rozepsanou úpravu pole nebo tažení; mimo pole zrušit hromadný výběr",
       "nextField": "Přejít na další pole (Shift+Tab na předchozí)",
       "help": "Tento přehled"
     },
@@ -236,19 +240,21 @@
       "drawLink": "Táhnout z kolečka u začátku / konce úsečky na jinou činnost = nakreslit vazbu (typ FS, SS, FF, SF podle toho, odkud a kam).",
       "pin": "Kliknout na 📌 = zrušit omezení „začít nejdříve“.",
       "collapse": "Kliknout na ▾ / ▸ = sbalit nebo rozbalit fázi.",
-      "zoom": "Ctrl + kolečko nebo roztažení / sevření dvou prstů na touchpadu nad grafem = podrobnější / hrubší časová osa (den pod kurzorem zůstane na místě)."
+      "zoom": "Ctrl + kolečko nebo roztažení / sevření dvou prstů na touchpadu nad grafem = podrobnější / hrubší časová osa (den pod kurzorem zůstane na místě).",
+      "multiSelect": "Ctrl + klik na řádek nebo úsečku = přidat ho do výběru / odebrat; Shift + klik = vybrat souvislý rozsah. Tlačítka, zkratky i tažení pak pracují se všemi vybranými.",
+      "dragGroup": "Táhnout jednu z vybraných úseček = posunout všechny vybrané o stejný počet pracovních dnů; táhnout ⠿ u vybraného řádku = přesunout celý výběr."
     }
   },
   "structure": {
     "toolbarLabel": "Struktura plánu",
     "indent": "Odsadit",
-    "indentHint": "Zařadit vybraný řádek pod řádek nad ním (do fáze) – Alt+Shift+→",
+    "indentHint": "Zařadit vybrané řádky pod řádek nad nimi (do fáze) – Alt+Shift+→",
     "outdent": "Předsadit",
-    "outdentHint": "Vytáhnout vybraný řádek o úroveň výš, za konec jeho fáze – Alt+Shift+←",
+    "outdentHint": "Vytáhnout vybrané řádky o úroveň výš, za konec jejich fáze – Alt+Shift+←",
     "moveUp": "Nahoru",
-    "moveUpHint": "Posunout vybraný řádek (i s jeho činnostmi) nahoru – Alt+Shift+↑",
+    "moveUpHint": "Posunout vybrané řádky (i s jejich činnostmi) nahoru – Alt+Shift+↑",
     "moveDown": "Dolů",
-    "moveDownHint": "Posunout vybraný řádek (i s jeho činnostmi) dolů – Alt+Shift+↓",
+    "moveDownHint": "Posunout vybrané řádky (i s jejich činnostmi) dolů – Alt+Shift+↓",
     "noSelection": "Nejdřív klikněte do řádku, se kterým chcete pracovat.",
     "confirmConvert_one": "Řádek „{{name}}“ se změní na fázi, aby mohl obsahovat činnosti. Fáze zatím nemůže mít vazby, proto se odebere {{count}} vazba. Pokračovat? (Lze vrátit Ctrl+Z.)",
     "confirmConvert_few": "Řádek „{{name}}“ se změní na fázi, aby mohl obsahovat činnosti. Fáze zatím nemůže mít vazby, proto se odeberou {{count}} vazby. Pokračovat? (Lze vrátit Ctrl+Z.)",
@@ -262,7 +268,16 @@
       "maxDepth": "Plán může mít nejvýš {{max}} úrovní. Hlouběji už řádek zařadit nejde.",
       "targetNotPhase": "Dovnitř lze řádek vložit jen do fáze.",
       "intoOwnSubtree": "Fázi nejde přesunout do ní samé ani do jejích vlastních činností."
-    }
+    },
+    "selectedCount_one": "Vybrán {{count}} řádek",
+    "selectedCount_few": "Vybrány {{count}} řádky",
+    "selectedCount_many": "Vybráno {{count}} řádků",
+    "selectedCount_other": "Vybráno {{count}} řádků",
+    "selectedHint": "Ctrl+klik přidá nebo odebere řádek, Shift+klik vybere rozsah, Esc výběr zruší",
+    "confirmConvertMany_one": "Řádek nad vybranými se změní na fázi, aby mohl obsahovat činnosti. Fáze zatím nemůže mít vazby, proto se odebere {{count}} vazba. Pokračovat? (Lze vrátit Ctrl+Z.)",
+    "confirmConvertMany_few": "Řádky nad vybranými se změní na fáze, aby mohly obsahovat činnosti. Fáze zatím nemohou mít vazby, proto se odeberou {{count}} vazby. Pokračovat? (Lze vrátit Ctrl+Z.)",
+    "confirmConvertMany_many": "Řádky nad vybranými se změní na fáze, aby mohly obsahovat činnosti. Fáze zatím nemohou mít vazby, proto se odebere {{count}} vazeb. Pokračovat? (Lze vrátit Ctrl+Z.)",
+    "confirmConvertMany_other": "Řádky nad vybranými se změní na fáze, aby mohly obsahovat činnosti. Fáze zatím nemohou mít vazby, proto se odebere {{count}} vazeb. Pokračovat? (Lze vrátit Ctrl+Z.)"
   },
   "gantt": {
     "chartLabel": "Ganttův diagram – časový průběh činností. Stejné údaje jsou v tabulce vlevo.",
@@ -317,7 +332,11 @@
     "workingDays_one": "{{count}} pracovní den",
     "workingDays_few": "{{count}} pracovní dny",
     "workingDays_many": "{{count}} pracovního dne",
-    "workingDays_other": "{{count}} pracovních dní"
+    "workingDays_other": "{{count}} pracovních dní",
+    "constraintOverriddenMany_one": "U {{count}} posunuté činnosti platí vazba, takže začne později, než kam jste ji posunuli. Omezení se uložilo (📌).",
+    "constraintOverriddenMany_few": "U {{count}} posunutých činností platí vazba, takže začnou později, než kam jste je posunuli. Omezení se uložilo (📌).",
+    "constraintOverriddenMany_many": "U {{count}} posunutých činností platí vazba, takže začnou později, než kam jste je posunuli. Omezení se uložilo (📌).",
+    "constraintOverriddenMany_other": "U {{count}} posunutých činností platí vazba, takže začnou později, než kam jste je posunuli. Omezení se uložilo (📌)."
   },
   "notice": {
     "close": "Zavřít upozornění"

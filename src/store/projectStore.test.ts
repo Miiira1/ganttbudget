@@ -340,6 +340,73 @@ describe('historie změn (Zpět / Znovu)', () => {
   })
 })
 
+describe('hromadné akce s více vybranými řádky', () => {
+  function threeTasks() {
+    const store = newStore()
+    const ids = ['A', 'B', 'C', 'D'].map((name) => store.getState().addTask(name))
+    return { store, ids, past: () => store.getState().past.length }
+  }
+  const names = (store: ReturnType<typeof newStore>) => treeOrder(store.getState().project).map((t) => t.name)
+
+  it('každá hromadná akce = jeden krok Zpět', () => {
+    const { store, ids, past } = threeTasks()
+    const [a, b, c, d] = ids as [string, string, string, string]
+    const start = past()
+    expect(store.getState().moveTasksDown([a, b])).toBeNull()
+    expect(names(store)).toEqual(['C', 'A', 'B', 'D'])
+    expect(store.getState().moveTasksUp([a, b])).toBeNull()
+    expect(store.getState().indentTasks([b, c])).toBeNull()
+    expect(depthMap(store.getState().project).get(c)).toBe(1)
+    expect(store.getState().outdentTasks([b, c])).toBeNull()
+    expect(store.getState().moveTasks([a, b], d, 'after')).toBeNull()
+    expect(names(store)).toEqual(['C', 'D', 'A', 'B'])
+    expect(past() - start).toBe(5)
+    store.getState().undo()
+    expect(names(store)).toEqual(['A', 'B', 'C', 'D'])
+  })
+
+  it('když nejde u jednoho, vrátí důvod a nic se nezmění', () => {
+    const { store, ids, past } = threeTasks()
+    const before = store.getState().project
+    expect(store.getState().moveTasksUp([ids[0]!, ids[2]!])).toBe('noPreviousSibling')
+    expect(store.getState().project).toBe(before)
+    expect(past()).toBe(4)
+  })
+
+  it('duplikovat a smazat více řádků', () => {
+    const { store, ids, past } = threeTasks()
+    const copies = store.getState().duplicateTasks([ids[0]!, ids[1]!], ' (kopie)')
+    expect(copies).toHaveLength(2)
+    expect(names(store)).toEqual(['A', 'B', 'A (kopie)', 'B (kopie)', 'C', 'D'])
+    store.getState().deleteTasks([...copies!, ids[3]!])
+    expect(names(store)).toEqual(['A', 'B', 'C'])
+    expect(past()).toBe(6)
+    expect(ProjectSchema.safeParse(store.getState().project).success).toBe(true)
+  })
+})
+
+describe('termíny více činností najednou (posun skupiny úseček)', () => {
+  it('jeden krok Zpět; fáze a beze změny se přeskočí', () => {
+    const store = newStore()
+    const a = store.getState().addTask('A')
+    const b = store.getState().addTask('B')
+    const f = store.getState().addTask('F', 'phase')
+    const before = store.getState().past.length
+    store.getState().setTasksTiming([
+      { id: a, constraintStart: '2026-11-18' },
+      { id: b, constraintStart: '2026-11-20', durationDays: 3 },
+      { id: f, constraintStart: '2026-11-20' },
+    ])
+    const byId = new Map(store.getState().project.tasks.map((t) => [t.id, t]))
+    expect(byId.get(a)!.constraintStart).toBe('2026-11-18')
+    expect(byId.get(b)).toMatchObject({ constraintStart: '2026-11-20', durationDays: 3 })
+    expect(byId.get(f)!.constraintStart).toBeUndefined()
+    expect(store.getState().past.length - before).toBe(1)
+    store.getState().setTasksTiming([{ id: a, constraintStart: '2026-11-18' }]) // nic nového
+    expect(store.getState().past.length - before).toBe(1)
+  })
+})
+
 describe('název projektu (kritérium 12.1)', () => {
   it('přejmenuje projekt jedním krokem Zpět; mezery ořízne, prázdný a stejný název ignoruje', () => {
     const store = newStore()

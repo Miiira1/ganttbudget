@@ -18,7 +18,8 @@ import {
   depthMap,
   dropPositionAt,
   MAX_DEPTH,
-  moveTo,
+  moveManyTo,
+  selectionRoots,
   wbsNumbers,
   type DropPosition,
 } from '../model/hierarchy'
@@ -33,7 +34,7 @@ import { isValidIsoDate } from '../model/dates'
 import { showNotice } from './notice'
 import { confirmAndDelete } from './structureCommands'
 import { TableColumns, TableHeader, useTableWidth } from './TableHeader'
-import { useSelectedId, useViewState, useVisibleRows } from './viewState'
+import { currentSelection, finishPlainClick, selectWithModifiers, useSelectedIds, useViewState, useVisibleRows } from './viewState'
 
 // Výška řádků je pevná a stejná jako v grafu (gantt/geometry.ts), aby řádky lícovaly.
 // Šířky sloupců nastavuje uživatel (TableHeader.tsx); co se do buňky nevejde, ořízne se.
@@ -211,8 +212,14 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
       data-task-id={task.id}
       style={{ height: ROW_HEIGHT, boxShadow: indicator ? INDICATOR_SHADOW[indicator] : undefined }}
       // Kliknutí do řádku nebo do jeho pole řádek vybere (s ním pracují Odsadit, Nahoru…).
-      onFocus={() => select(task.id)}
-      onMouseDown={() => select(task.id)}
+      // Ctrl+klik přidá / odebere řádek z výběru, Shift+klik vybere rozsah – a nezačne psaní do pole.
+      onFocus={() => {
+        if (!useViewState.getState().selectedIds.has(task.id)) select(task.id)
+      }}
+      onMouseDown={(e) => {
+        if (e.button === 0 && selectWithModifiers(e, task.id)) e.preventDefault()
+      }}
+      onClick={(e) => finishPlainClick(e, task.id)}
       onDragOver={(e) => drag.onDragOver(task, e)}
       onDrop={drag.onDrop}
       className={`${selected ? selectedRowClass : `hover:bg-blue-50/60 dark:hover:bg-slate-800 ${kindRowClass[task.kind]}`} ${
@@ -380,9 +387,10 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
 
 const NO_DATES: ScheduledTask = { start: null, finish: null, durationDays: null }
 
-/** Právě přetahovaný řádek a kam by dopadl. */
+/** Právě přetahované řádky (jeden, nebo celý výběr) a kam by dopadly. */
 interface DragState {
-  draggingId: string
+  /** Tažené řádky v pořadí řádků (s vybranou fází jdou i její položky). */
+  ids: string[]
   targetId: string | null
   position: DropPosition | null
   /** Jde řádek na toto místo pustit (např. ne do vlastní fáze)? */
@@ -391,7 +399,7 @@ interface DragState {
 
 /**
  * Přetahování řádků myší (vestavěné HTML5 Drag and Drop, bez knihovny).
- * Platnost místa ověří stejná funkce, která přesun provede (model/hierarchy.ts → moveTo),
+ * Platnost místa ověří stejná funkce, která přesun provede (model/hierarchy.ts → moveManyTo),
  * jen „naprázdno“. Esc tažení zruší (prohlížeč pak pošle dragend bez drop).
  */
 function useRowDrag(): { drag: DragState | null; handlers: RowDragHandlers } {
@@ -424,8 +432,14 @@ function createDragHandlers(
       event.dataTransfer.setData('text/plain', taskId) // Firefox bez dat tažení nespustí
       const row = event.currentTarget.closest('tr')
       if (row) event.dataTransfer.setDragImage(row, 16, ROW_HEIGHT / 2)
-      setDrag({ draggingId: taskId, targetId: null, position: null, valid: false })
-      select(taskId)
+      // Řádek z hromadného výběru táhne celý výběr; jinak jen sám sebe.
+      const { selectedIds } = useViewState.getState()
+      let ids = [taskId]
+      if (selectedIds.has(taskId) && selectedIds.size > 1) {
+        const project = projectStore.getState().project
+        ids = selectionRoots(project, currentSelection(project))
+      } else select(taskId)
+      setDrag({ ids, targetId: null, position: null, valid: false })
     },
     onDragOver(task, event) {
       const drag = dragRef.current
@@ -434,7 +448,7 @@ function createDragHandlers(
       const position = dropPositionAt(event.clientY - box.top, box.height, task.kind === 'phase')
       let { valid } = drag
       if (drag.targetId !== task.id || drag.position !== position) {
-        valid = moveTo(projectStore.getState().project, drag.draggingId, task.id, position).ok
+        valid = moveManyTo(projectStore.getState().project, drag.ids, task.id, position).ok
         setDrag({ ...drag, targetId: task.id, position, valid })
       }
       if (valid) {
@@ -446,7 +460,7 @@ function createDragHandlers(
       event.preventDefault()
       const drag = dragRef.current
       if (drag?.valid && drag.targetId && drag.position) {
-        const error = projectStore.getState().moveTask(drag.draggingId, drag.targetId, drag.position)
+        const error = projectStore.getState().moveTasks(drag.ids, drag.targetId, drag.position)
         if (error) showNotice(tRef.current(`structure.error.${error}`, { max: MAX_DEPTH }))
       }
       setDrag(null)
@@ -463,7 +477,8 @@ export function TaskTable({ onAddTask, onLoadSample }: { onAddTask: () => void; 
   const numbers = useMemo(() => rowNumbers(project), [project])
   const rows = useVisibleRows(project)
   const collapsed = useViewState((s) => s.collapsed)
-  const selectedId = useSelectedId(project)
+  const selectedIds = useSelectedIds(project)
+  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds])
   const depths = useMemo(() => depthMap(project), [project])
   const wbs = useMemo(() => wbsNumbers(project), [project])
   const parents = useMemo(() => new Set(project.tasks.map((task) => task.parentId)), [project])
@@ -511,9 +526,9 @@ export function TaskTable({ onAddTask, onLoadSample }: { onAddTask: () => void; 
               predecessorsText={formatPredecessorsWith(numbers, task)}
               hasChildren={parents.has(task.id)}
               collapsed={collapsed.has(task.id)}
-              selected={task.id === selectedId}
+              selected={selectedSet.has(task.id)}
               dropIndicator={drag?.valid && drag.targetId === task.id ? drag.position : null}
-              dragging={drag?.draggingId === task.id}
+              dragging={drag?.ids.includes(task.id) ?? false}
               drag={handlers}
             />
           )

@@ -78,3 +78,48 @@ export function applyDrag(calendar: WorkCalendar, input: DragInput): DragResult 
     finishDay,
   }
 }
+
+/** Úsečka ve skupině, kterou uživatel táhne najednou (hromadný výběr). */
+export interface GroupDragItem {
+  id: string
+  kind: 'task' | 'milestone'
+  startDay: number
+  finishDay: number
+  durationDays: number
+}
+
+/**
+ * Posun více vybraných úseček najednou: tažená (`primaryId`) se posune stejně jako sama
+ * (přichycení na pracovní den); ostatní o STEJNÝ POČET PRACOVNÍCH DNŮ, délky se nemění.
+ * Každá dostane omezení „začít nejdříve“. Bez posunu vrátí prázdnou mapu.
+ */
+export function applyGroupMove(
+  calendar: WorkCalendar,
+  items: GroupDragItem[],
+  primaryId: string,
+  deltaDays: number,
+): Map<string, DragResult> {
+  const results = new Map<string, DragResult>()
+  const primary = items.find((x) => x.id === primaryId)
+  if (!primary || deltaDays === 0) return results
+  const moved = applyDrag(calendar, { ...primary, mode: 'move', deltaDays })
+  // O kolik pracovních dnů se tažená posunula (její začátek je vždy pracovní den).
+  const from = primary.startDay
+  const to = moved.startDay
+  const shift = to >= from ? calendar.countWorkingDays(from, to) - 1 : -(calendar.countWorkingDays(to, from) - 1)
+  if (shift === 0 && to === from) return results
+  for (const item of items) {
+    if (item.id === primaryId) {
+      results.set(item.id, moved)
+      continue
+    }
+    const start = calendar.addWorkingDays(item.startDay, shift)
+    results.set(item.id, {
+      constraintStart: dayToIso(start),
+      durationDays: item.durationDays,
+      startDay: start,
+      finishDay: finishOf(calendar, start, item.durationDays),
+    })
+  }
+  return results
+}

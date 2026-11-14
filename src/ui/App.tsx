@@ -68,6 +68,11 @@ export default function App() {
         setShortcutsOpen(true)
         return
       }
+      // Esc mimo pole (a když neruší tažení) zruší hromadný výběr – zůstane aktuální řádek.
+      if (event.key === 'Escape' && !event.defaultPrevented && !isEditingField(event.target)) {
+        useViewState.getState().clearMultiSelection()
+        return
+      }
       const ctrl = (event.ctrlKey || event.metaKey) && !event.altKey
       // Ctrl+S (Uložit), Ctrl+Shift+S (Uložit jako), Ctrl+O (Otevřít) – fungují i v poli tabulky;
       // rozepsaný text v poli se nejdřív potvrdí (opuštěním pole), aby se uložil také.

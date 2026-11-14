@@ -11,6 +11,7 @@ Je určená studentům a praktikům bez zkušenosti s projektovým řízením. B
 > se v tabulce i v Ganttově diagramu. Vazby se zapisují textem (`3SS+2`) nebo kreslí tažením v grafu.
 > Činnosti se seskupují do fází (WBS, sbalení, sumarizace), úsečky se v grafu táhnou s přichycením
 > na pracovní dny, řádky se přesouvají tlačítky, klávesami i tažením; přehled zkratek otevře F1.
+> Ctrl+klik / Shift+klik vybere více řádků a všechny tyto akce pak pracují s celým výběrem.
 > Vše jde vrátit Ctrl+Z. Fáze 5 (**MVP 1.0**) přidala ukládání a otevírání projektu (`.ganttbudget.json`),
 > automatickou zálohu v prohlížeči, export do Excelu / CSV a import z nich (viz [ZADANI.md](ZADANI.md), kap. 8).
 

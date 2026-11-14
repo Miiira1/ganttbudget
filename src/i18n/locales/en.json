@@ -180,7 +180,9 @@
     "emptyTitle": "The project is empty",
     "emptyText": "Start by adding your first task, or have a look at the sample project.",
     "fieldLabel": "{{field}}, row {{number}}",
-    "invalidName": "The name cannot be empty – the original value was restored."
+    "invalidName": "The name cannot be empty – the original value was restored.",
+    "confirmDeleteMany_one": "Really delete {{count}} item (the selected rows including items in selected phases)? You can undo this with Undo (Ctrl+Z).",
+    "confirmDeleteMany_other": "Really delete {{count}} items (the selected rows including items in selected phases)? You can undo this with Undo (Ctrl+Z)."
   },
   "kind": {
     "task": "Task",
@@ -205,8 +207,8 @@
       "saveAs": "Save the project to a new file",
       "open": "Open a project from a file",
       "addTask": "New task below the selected row",
-      "duplicate": "Duplicate the selected row (a phase with its tasks)",
-      "delete": "Delete the selected row (outside a text field – in a field Ctrl+Delete deletes a word)",
+      "duplicate": "Duplicate the selected rows (phases including their tasks)",
+      "delete": "Delete the selected rows (outside a text field – in a field Ctrl+Delete deletes a word)",
       "indent": "Indent – put under the row above (into a phase)",
       "outdent": "Outdent – move one level up, after the end of the phase",
       "moveUp": "Move the row up",
@@ -214,7 +216,7 @@
       "undo": "Undo the last change (outside a text field; in a field it undoes typing)",
       "redo": "Redo the undone change",
       "confirm": "Confirm the edit of a field",
-      "cancel": "Cancel an unfinished edit or a drag",
+      "cancel": "Cancel the edit of a field or a drag; outside a field, clear a multiple selection",
       "nextField": "Go to the next field (Shift+Tab to the previous one)",
       "help": "This overview"
     },
@@ -226,19 +228,21 @@
       "drawLink": "Drag from the circle at the start / finish of a bar onto another task = draw a dependency (type FS, SS, FF, SF depending on where from and where to).",
       "pin": "Click 📌 = remove the “start no earlier than” constraint.",
       "collapse": "Click ▾ / ▸ = collapse or expand a phase.",
-      "zoom": "Ctrl + mouse wheel or spreading / pinching two fingers on the touchpad over the chart = more / less detailed timeline (the day under the pointer stays in place)."
+      "zoom": "Ctrl + mouse wheel or spreading / pinching two fingers on the touchpad over the chart = more / less detailed timeline (the day under the pointer stays in place).",
+      "multiSelect": "Ctrl + click a row or bar = add it to / remove it from the selection; Shift + click = select a continuous range. Buttons, shortcuts and dragging then work with all selected rows.",
+      "dragGroup": "Drag one of the selected bars = move all selected by the same number of working days; drag ⠿ of a selected row = move the whole selection."
     }
   },
   "structure": {
     "toolbarLabel": "Plan structure",
     "indent": "Indent",
-    "indentHint": "Put the selected row under the row above it (into a phase) – Alt+Shift+→",
+    "indentHint": "Put the selected rows under the row above them (into a phase) – Alt+Shift+→",
     "outdent": "Outdent",
-    "outdentHint": "Move the selected row one level up, after the end of its phase – Alt+Shift+←",
+    "outdentHint": "Move the selected rows one level up, after the end of their phase – Alt+Shift+←",
     "moveUp": "Up",
-    "moveUpHint": "Move the selected row (with its tasks) up – Alt+Shift+↑",
+    "moveUpHint": "Move the selected rows (with their tasks) up – Alt+Shift+↑",
     "moveDown": "Down",
-    "moveDownHint": "Move the selected row (with its tasks) down – Alt+Shift+↓",
+    "moveDownHint": "Move the selected rows (with their tasks) down – Alt+Shift+↓",
     "noSelection": "First click into the row you want to work with.",
     "confirmConvert_one": "Row “{{name}}” will become a phase so it can contain tasks. Phases cannot have dependencies yet, so {{count}} dependency will be removed. Continue? (Ctrl+Z undoes it.)",
     "confirmConvert_other": "Row “{{name}}” will become a phase so it can contain tasks. Phases cannot have dependencies yet, so {{count}} dependencies will be removed. Continue? (Ctrl+Z undoes it.)",
@@ -250,7 +254,12 @@
       "maxDepth": "A plan can have at most {{max}} levels. The row cannot go any deeper.",
       "targetNotPhase": "A row can only be placed inside a phase.",
       "intoOwnSubtree": "A phase cannot be moved into itself or into its own tasks."
-    }
+    },
+    "selectedCount_one": "{{count}} row selected",
+    "selectedCount_other": "{{count}} rows selected",
+    "selectedHint": "Ctrl+click adds or removes a row, Shift+click selects a range, Esc clears the selection",
+    "confirmConvertMany_one": "Rows above the selection will become phases so they can contain tasks. Phases cannot have dependencies yet, so {{count}} dependency will be removed. Continue? (Ctrl+Z undoes it.)",
+    "confirmConvertMany_other": "Rows above the selection will become phases so they can contain tasks. Phases cannot have dependencies yet, so {{count}} dependencies will be removed. Continue? (Ctrl+Z undoes it.)"
   },
   "gantt": {
     "chartLabel": "Gantt chart – timeline of the tasks. The same data is in the table on the left.",
@@ -303,7 +312,9 @@
     "lag": ", lag {{days}}",
     "lead": ", lead {{days}}",
     "workingDays_one": "{{count}} working day",
-    "workingDays_other": "{{count}} working days"
+    "workingDays_other": "{{count}} working days",
+    "constraintOverriddenMany_one": "For {{count}} moved task a dependency applies, so it starts later than where you moved it. The constraint was saved (📌).",
+    "constraintOverriddenMany_other": "For {{count}} moved tasks a dependency applies, so they start later than where you moved them. The constraints were saved (📌)."
   },
   "notice": {
     "close": "Close notice"

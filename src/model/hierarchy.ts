@@ -39,17 +39,24 @@ function buildLists(project: Project): Map<ParentKey, string[]> {
   const ids = new Set(project.tasks.map((t) => t.id))
   for (const task of project.tasks) {
     const key = task.parentId !== null && ids.has(task.parentId) ? task.parentId : null
-    byParent.set(key, [...(byParent.get(key) ?? []), task])
+    const list = byParent.get(key)
+    if (list) list.push(task)
+    else byParent.set(key, [task])
   }
   for (const list of byParent.values()) list.sort((a, b) => a.order - b.order)
 
   const lists = new Map<ParentKey, string[]>()
   const reached = new Set<string>()
+  const append = (key: ParentKey, id: string) => {
+    const list = lists.get(key)
+    if (list) list.push(id)
+    else lists.set(key, [id])
+  }
   const visit = (key: ParentKey) => {
     for (const task of byParent.get(key) ?? []) {
       if (reached.has(task.id)) continue
       reached.add(task.id)
-      lists.set(key, [...(lists.get(key) ?? []), task.id])
+      append(key, task.id)
       visit(task.id)
     }
   }
@@ -57,7 +64,7 @@ function buildLists(project: Project): Map<ParentKey, string[]> {
   for (const task of project.tasks) {
     if (reached.has(task.id)) continue
     reached.add(task.id)
-    lists.set(null, [...(lists.get(null) ?? []), task.id])
+    append(null, task.id)
     visit(task.id)
   }
   return lists
@@ -185,6 +192,20 @@ class Tree {
     const list = [...(this.lists.get(parent) ?? [])]
     list.splice(index, 0, id)
     this.lists.set(parent, list)
+    this.parent.set(id, parent)
+  }
+
+  /** Aktuální úroveň položky i po přesunech v této operaci (`depth` platí jen pro výchozí stav). */
+  depthOf(id: string): number {
+    let depth = 0
+    for (let p = this.parent.get(id) ?? null; p !== null; p = this.parent.get(p) ?? null) depth++
+    return depth
+  }
+
+  /** Leží `id` v podstromu položky `root` (nebo je to ona)? */
+  isWithin(id: string, root: string): boolean {
+    for (let p: ParentKey = id; p !== null; p = this.parent.get(p) ?? null) if (p === root) return true
+    return false
   }
 
   /** Nový projekt podle upravených seznamů (parentId a order); nezměněné činnosti zůstanou stejné objekty. */
@@ -289,33 +310,60 @@ export function duplicate(
   makeId: () => string,
   nameSuffix: string,
 ): { ok: true; project: Project; newId: string } | { ok: false; reason: HierarchyError } {
-  const tree = new Tree(project)
-  if (!tree.has(id)) return { ok: false, reason: 'notFound' }
+  const result = duplicateMany(project, [id], makeId, nameSuffix)
+  return result.ok ? { ok: true, project: result.project, newId: result.newIds[0] as string } : result
+}
 
-  // Kopírované položky v pořadí řádků (kořen, pak jeho podřízené do hloubky) → nová ID.
-  const descendants = descendantsIn(tree.lists, id)
-  const subtree = [id, ...treeOrder(project).map((t) => t.id).filter((x) => descendants.has(x))]
-  const newIds = new Map(subtree.map((oldId) => [oldId, makeId()]))
-  const byId = new Map(project.tasks.map((t) => [t.id, t]))
+/**
+ * Duplikovat více řádků najednou (jeden krok Zpět). Souvislý blok sourozenců se zkopíruje
+ * za svůj konec ve stejném pořadí (A, B → A, B, A′, B′); osamocený řádek dostane kopii hned pod sebe.
+ * Vazby mezi kopírovanými položkami vedou na kopie, vazby ven zůstanou. Vrací ID kopií vybraných řádků.
+ */
+export function duplicateMany(
+  project: Project,
+  ids: Iterable<string>,
+  makeId: () => string,
+  nameSuffix: string,
+): { ok: true; project: Project; newIds: string[] } | { ok: false; reason: HierarchyError } {
+  const roots = selectionRoots(project, ids)
+  if (roots.length === 0) return { ok: false, reason: 'notFound' }
+  const original = new Tree(project)
+  const rootSet = new Set(roots)
 
-  const copies: Task[] = subtree.map((oldId) => {
-    const original = byId.get(oldId) as Task
-    const name =
-      oldId === id ? `${original.name}${nameSuffix}`.slice(0, MAX_NAME_LENGTH).trimEnd() || original.name : original.name
+  // Kopírované položky v pořadí řádků (kořeny i jejich podřízené) → nová ID.
+  const copied = new Set(roots)
+  for (const root of roots) for (const d of descendantsIn(original.lists, root)) copied.add(d)
+  const order = treeOrder(project).filter((t) => copied.has(t.id))
+  const newIds = new Map(order.map((t) => [t.id, makeId()]))
+
+  const copies: Task[] = order.map((task) => {
+    const isRoot = rootSet.has(task.id)
+    const name = isRoot ? `${task.name}${nameSuffix}`.slice(0, MAX_NAME_LENGTH).trimEnd() || task.name : task.name
     return {
-      ...original,
-      id: newIds.get(oldId) as string,
+      ...task,
+      id: newIds.get(task.id) as string,
       name,
-      parentId: oldId === id ? original.parentId : (newIds.get(original.parentId as string) ?? original.parentId),
-      dependencies: original.dependencies.map((d) => ({ ...d, predecessorId: newIds.get(d.predecessorId) ?? d.predecessorId })),
-      assignments: original.assignments.map((a) => ({ ...a })),
+      parentId: isRoot ? task.parentId : (newIds.get(task.parentId as string) ?? task.parentId),
+      dependencies: task.dependencies.map((d) => ({ ...d, predecessorId: newIds.get(d.predecessorId) ?? d.predecessorId })),
+      assignments: task.assignments.map((a) => ({ ...a })),
     }
   })
 
-  const withCopies = { ...project, tasks: [...project.tasks, ...copies] }
-  const rootCopy = newIds.get(id) as string
-  const placed = moveTo(withCopies, rootCopy, id, 'after')
-  return placed.ok ? { ok: true, project: placed.project, newId: rootCopy } : placed
+  // Podřízené kopií jsou díky parentId a order rovnou správně; kopie vybraných řádků se umístí.
+  const tree = new Tree({ ...project, tasks: [...project.tasks, ...copies] })
+  for (const run of siblingRuns(original, roots)) {
+    let anchor = run[run.length - 1] as string
+    for (const root of run) {
+      const copy = newIds.get(root) as string
+      const parent = original.parent.get(root) ?? null
+      tree.remove(copy)
+      tree.insert(copy, parent, (tree.lists.get(parent) ?? []).indexOf(anchor) + 1)
+      anchor = copy
+    }
+  }
+  const result = tree.result()
+  if (!result.ok) return result
+  return { ok: true, project: result.project, newIds: roots.map((r) => newIds.get(r) as string) }
 }
 
 export type DropPosition = 'before' | 'after' | 'inside'
@@ -348,4 +396,153 @@ export function moveTo(project: Project, id: string, targetId: string, position:
   const index = position === 'inside' ? list.length : list.indexOf(targetId) + (position === 'after' ? 1 : 0)
   tree.insert(id, newParent, index)
   return tree.result()
+}
+
+// ---------------------------------------------------------------------------
+// Hromadné operace (výběr více řádků Ctrl / Shift)
+//
+// Pravidla: s vybranou fází jdou i její položky (vybrané podřízené se nepočítají zvlášť).
+// Každá operace platí pro všechny vybrané řádky, nebo pro žádný: když nejde u jednoho,
+// vrátí důvod a projekt se nezmění.
+// ---------------------------------------------------------------------------
+
+/** Vybrané řádky, se kterými se opravdu pracuje: existující, bez podřízených vybrané fáze, v pořadí řádků. */
+export function selectionRoots(project: Project, ids: Iterable<string>): string[] {
+  const selected = new Set(ids)
+  if (selected.size === 0) return []
+  const tree = new Tree(project)
+  return treeOrder(project)
+    .map((t) => t.id)
+    .filter((id) => {
+      if (!selected.has(id)) return false
+      for (let p = tree.parent.get(id) ?? null; p !== null; p = tree.parent.get(p) ?? null) if (selected.has(p)) return false
+      return true
+    })
+}
+
+/** Rozdělí vybrané řádky na souvislé bloky sourozenců (v pořadí řádků). */
+function siblingRuns(tree: Tree, roots: string[]): string[][] {
+  const runs: string[][] = []
+  let previous: string | null = null
+  for (const id of roots) {
+    const siblings = tree.siblings(id)
+    const last = runs[runs.length - 1]
+    if (last && previous !== null && siblings[siblings.indexOf(id) - 1] === previous) last.push(id)
+    else runs.push([id])
+    previous = id
+  }
+  return runs
+}
+
+/** Odsadit vybrané: každý pod řádek nad sebou (souvislý blok tak skončí pod řádkem nad prvním). */
+export function indentMany(project: Project, ids: Iterable<string>): HierarchyResult {
+  const roots = selectionRoots(project, ids)
+  if (roots.length === 0) return fail('notFound')
+  const tree = new Tree(project)
+  const converted = new Set<string>()
+  const kinds = new Map(project.tasks.map((t) => [t.id, t.kind]))
+  for (const id of roots) {
+    const siblings = tree.siblings(id)
+    const previous = siblings[siblings.indexOf(id) - 1]
+    if (previous === undefined) return fail('noPreviousSibling')
+    if (!tree.fitsAt(id, tree.depthOf(previous) + 1)) return fail('maxDepth')
+    tree.remove(id)
+    tree.insert(id, previous, (tree.lists.get(previous) ?? []).length)
+    if (kinds.get(previous) !== 'phase') converted.add(previous)
+  }
+  return tree.result((task) => [...converted].reduce((t, phaseId) => convertToPhase(phaseId)(t), task))
+}
+
+const dependencyCount = (project: Project) => project.tasks.reduce((sum, t) => sum + t.dependencies.length, 0)
+
+/** Kolik vazeb by hromadné odsazení odebralo (řádky nad se změní na fáze). 0, když odsazení nejde. */
+export function dependenciesRemovedByIndentMany(project: Project, ids: Iterable<string>): number {
+  const result = indentMany(project, ids)
+  return result.ok ? dependencyCount(project) - dependencyCount(result.project) : 0
+}
+
+/** Předsadit vybrané: každý za konec své fáze; pořadí vybraných zůstane. */
+export function outdentMany(project: Project, ids: Iterable<string>): HierarchyResult {
+  const roots = selectionRoots(project, ids)
+  if (roots.length === 0) return fail('notFound')
+  const tree = new Tree(project)
+  // Odzadu: každý další předsazený se vloží PŘED ty, které už za fází jsou.
+  for (const id of [...roots].reverse()) {
+    const parent = tree.parent.get(id) ?? null
+    if (parent === null) return fail('topLevel')
+    const grandparent = tree.parent.get(parent) ?? null
+    tree.remove(id)
+    tree.insert(id, grandparent, (tree.lists.get(grandparent) ?? []).indexOf(parent) + 1)
+  }
+  return tree.result()
+}
+
+function shiftMany(project: Project, ids: Iterable<string>, offset: -1 | 1): HierarchyResult {
+  const roots = selectionRoots(project, ids)
+  if (roots.length === 0) return fail('notFound')
+  const tree = new Tree(project)
+  // Nahoru zepředu, dolů odzadu – blok se tak posune celý o jedno místo.
+  for (const id of offset < 0 ? roots : [...roots].reverse()) {
+    const parent = tree.parent.get(id) ?? null
+    const list = [...tree.siblings(id)]
+    const index = list.indexOf(id)
+    const other = index + offset
+    if (other < 0) return fail('noPreviousSibling')
+    if (other >= list.length) return fail('noNextSibling')
+    ;[list[index], list[other]] = [list[other] as string, id]
+    tree.lists.set(parent, list)
+  }
+  return tree.result()
+}
+
+/** Posunout vybrané o jedno místo nahoru mezi sourozenci. */
+export const moveUpMany = (project: Project, ids: Iterable<string>) => shiftMany(project, ids, -1)
+/** Posunout vybrané o jedno místo dolů mezi sourozenci. */
+export const moveDownMany = (project: Project, ids: Iterable<string>) => shiftMany(project, ids, 1)
+
+/** Přesun tažením více řádků: všechny před / za cílový řádek nebo dovnitř cílové fáze, ve stejném pořadí. */
+export function moveManyTo(project: Project, ids: Iterable<string>, targetId: string, position: DropPosition): HierarchyResult {
+  const roots = selectionRoots(project, ids)
+  const tree = new Tree(project)
+  if (roots.length === 0 || !tree.has(targetId)) return fail('notFound')
+  if (roots.some((root) => tree.isWithin(targetId, root))) return fail('intoOwnSubtree')
+  const target = project.tasks.find((t) => t.id === targetId) as Task
+  if (position === 'inside' && target.kind !== 'phase') return fail('targetNotPhase')
+
+  const newParent = position === 'inside' ? targetId : (tree.parent.get(targetId) ?? null)
+  const newDepth = newParent === null ? 0 : tree.depthOf(newParent) + 1
+  if (roots.some((id) => !tree.fitsAt(id, newDepth))) return fail('maxDepth')
+
+  for (const id of roots) tree.remove(id)
+  const list = tree.lists.get(newParent) ?? []
+  const index = position === 'inside' ? list.length : list.indexOf(targetId) + (position === 'after' ? 1 : 0)
+  roots.forEach((id, i) => tree.insert(id, newParent, index + i))
+  return tree.result()
+}
+
+/** Kolik řádků by hromadné smazání odstranilo: vybrané + jejich podřízené (pro potvrzení). */
+export function removalCount(project: Project, ids: Iterable<string>): { selected: number; descendants: number } {
+  const roots = selectionRoots(project, ids)
+  const lists = buildLists(project)
+  const descendants = roots.reduce((sum, id) => sum + descendantsIn(lists, id).size, 0)
+  return { selected: roots.length, descendants }
+}
+
+/** Smazat vybrané i s podřízenými; vazby na smazané se odeberou. */
+export function deleteMany(project: Project, ids: Iterable<string>): HierarchyResult {
+  const roots = selectionRoots(project, ids)
+  if (roots.length === 0) return fail('notFound')
+  const tree = new Tree(project)
+  const removed = new Set(roots)
+  for (const id of roots) {
+    for (const d of descendantsIn(tree.lists, id)) removed.add(d)
+    tree.remove(id)
+  }
+  const result = tree.result((task) =>
+    task.dependencies.some((d) => removed.has(d.predecessorId))
+      ? { ...task, dependencies: task.dependencies.filter((d) => !removed.has(d.predecessorId)) }
+      : task,
+  )
+  if (!result.ok) return result
+  return { ok: true, project: { ...result.project, tasks: result.project.tasks.filter((t) => !removed.has(t.id)) } }
 }

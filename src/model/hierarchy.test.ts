@@ -1,17 +1,27 @@
 import { describe, expect, it } from 'vitest'
 import { createEmptyProject, createTask, ProjectSchema, type Project, type TaskKind } from './schema'
 import {
+  deleteMany,
   dependenciesRemovedByIndent,
+  dependenciesRemovedByIndentMany,
   depthMap,
   descendantIds,
   dropPositionAt,
   duplicate,
+  duplicateMany,
   indent,
+  indentMany,
   MAX_DEPTH,
   moveDown,
+  moveDownMany,
+  moveManyTo,
   moveTo,
   moveUp,
+  moveUpMany,
   outdent,
+  outdentMany,
+  removalCount,
+  selectionRoots,
   treeOrder,
   visibleRows,
   wbsNumbers,
@@ -333,5 +343,154 @@ describe('čistota', () => {
     moveUp(p, 'D')
     moveTo(p, 'E', 'G', 'inside')
     expect(p).toEqual(copy)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Hromadné operace (výběr více řádků Ctrl / Shift)
+// ---------------------------------------------------------------------------
+
+describe('hromadně: které řádky výběr opravdu obsahuje', () => {
+  it('jen existující, bez podřízených už vybrané fáze, v pořadí řádků', () => {
+    const p = fromOutline(SAMPLE)
+    expect(selectionRoots(p, ['E', 'B', 'X', 'G'])).toEqual(['G', 'E'])
+    expect(selectionRoots(p, ['F', 'A', 'D'])).toEqual(['F'])
+    expect(selectionRoots(p, [])).toEqual([])
+  })
+})
+
+describe('hromadně: odsadit', () => {
+  it('souvislý blok se odsadí pod řádek nad prvním z nich, ve stejném pořadí', () => {
+    expect(ok(indentMany(fromOutline(['F', 'A', 'B', 'C']), ['B', 'A']))).toEqual(['F', '  A', '  B', 'C'])
+  })
+
+  it('nesouvislé řádky – každý pod řádek nad sebou', () => {
+    expect(ok(indentMany(fromOutline(['F', 'A', 'G', 'B']), ['A', 'B']))).toEqual(['F', '  A', 'G', '  B'])
+  })
+
+  it('když nejde u jednoho, nezmění se nic', () => {
+    expect(indentMany(fromOutline(['F', 'A']), ['F', 'A'])).toEqual({ ok: false, reason: 'noPreviousSibling' })
+  })
+
+  it('kolik vazeb by odsazení odebralo (řádek nad se změní na fázi jen jednou)', () => {
+    const p = withDeps(fromOutline(['A', 'B', 'C', 'D']), { D: ['A'] })
+    expect(dependenciesRemovedByIndentMany(p, ['B', 'C'])).toBe(1)
+    expect(dependenciesRemovedByIndentMany(p, ['A'])).toBe(0) // nejde odsadit → nic
+  })
+})
+
+describe('hromadně: předsadit', () => {
+  it('za konec své fáze; pořadí vybraných zůstane', () => {
+    expect(ok(outdentMany(fromOutline(SAMPLE), ['D', 'A']))).toEqual(['F', '  G', '    B', '    C', 'A', 'D', 'E'])
+  })
+
+  it('když nejde u jednoho (nejvyšší úroveň), nezmění se nic', () => {
+    expect(outdentMany(fromOutline(SAMPLE), ['A', 'E'])).toEqual({ ok: false, reason: 'topLevel' })
+  })
+})
+
+describe('hromadně: nahoru a dolů', () => {
+  it('nahoru: každý o jedno místo mezi sourozenci', () => {
+    expect(ok(moveUpMany(fromOutline(SAMPLE), ['D', 'G']))).toEqual(['F', '  G', '    B', '    C', '  D', '  A', 'E'])
+  })
+
+  it('dolů: souvislý blok zůstane pohromadě', () => {
+    expect(ok(moveDownMany(fromOutline(SAMPLE), ['A', 'G']))).toEqual(['F', '  D', '  A', '  G', '    B', '    C', 'E'])
+  })
+
+  it('blok na kraji se nepohne, ani jeho část', () => {
+    expect(moveUpMany(fromOutline(SAMPLE), ['A', 'G'])).toEqual({ ok: false, reason: 'noPreviousSibling' })
+    expect(moveDownMany(fromOutline(SAMPLE), ['G', 'D'])).toEqual({ ok: false, reason: 'noNextSibling' })
+  })
+})
+
+describe('hromadně: přesun tažením', () => {
+  it('za cílový řádek, ve stejném pořadí', () => {
+    expect(ok(moveManyTo(fromOutline(SAMPLE), ['D', 'A'], 'E', 'after'))).toEqual(['F', '  G', '    B', '    C', 'E', 'A', 'D'])
+  })
+
+  it('před cílový řádek a dovnitř fáze', () => {
+    expect(ok(moveManyTo(fromOutline(SAMPLE), ['E', 'A'], 'D', 'before'))).toEqual(['F', '  G', '    B', '    C', '  A', '  E', '  D'])
+    expect(ok(moveManyTo(fromOutline(SAMPLE), ['A', 'E'], 'G', 'inside'))).toEqual(['F', '  G', '    B', '    C', '    A', '    E', '  D'])
+  })
+
+  it('nejde na vybraný řádek ani do podřízených vybrané fáze', () => {
+    expect(moveManyTo(fromOutline(SAMPLE), ['A', 'D'], 'A', 'after')).toEqual({ ok: false, reason: 'intoOwnSubtree' })
+    expect(moveManyTo(fromOutline(SAMPLE), ['G', 'E'], 'B', 'after')).toEqual({ ok: false, reason: 'intoOwnSubtree' })
+  })
+
+  it('hlídá limit úrovní pro všechny', () => {
+    const deep = fromOutline(['F', '  G', '    H', '      F2', '        G2', '          A', 'B', 'H3', '  C'])
+    expect(moveManyTo(deep, ['B', 'H3'], 'G2', 'inside')).toEqual({ ok: false, reason: 'maxDepth' })
+  })
+})
+
+describe('hromadně: duplikovat', () => {
+  let n = 0
+  const makeId = () => `k${++n}`
+
+  it('souvislý blok: kopie za blokem ve stejném pořadí; vazby mezi kopiemi vedou na kopie', () => {
+    n = 0
+    const p = withDeps(fromOutline(['A', 'B', 'C']), { B: ['A'], C: ['B'] })
+    const result = duplicateMany(p, ['B', 'A'], makeId, ' (kopie)')
+    if (!result.ok) throw new Error(result.reason)
+    expect(ok(result)).toEqual(['A', 'B', 'k1', 'k2', 'C'])
+    expect(result.newIds).toEqual(['k1', 'k2'])
+    const byId = new Map(result.project.tasks.map((t) => [t.id, t]))
+    expect(byId.get('k1')!.name).toBe('A (kopie)')
+    expect(byId.get('k2')!.dependencies.map((d) => d.predecessorId)).toEqual(['k1'])
+    expect(byId.get('C')!.dependencies.map((d) => d.predecessorId)).toEqual(['B']) // ven se nic nemění
+  })
+
+  it('nesouvislé řádky: každá kopie pod svým originálem; fáze i s činnostmi', () => {
+    n = 0
+    const result = duplicateMany(fromOutline(['F', '  A', 'B', 'C']), ['C', 'F'], makeId, ' (kopie)')
+    expect(ok(result)).toEqual(['F', '  A', 'k1', '  k2', 'B', 'C', 'k3'])
+  })
+
+  it('prázdný výběr', () => {
+    expect(duplicateMany(fromOutline(['A']), ['X'], makeId, '')).toEqual({ ok: false, reason: 'notFound' })
+  })
+})
+
+describe('hromadně: smazat', () => {
+  it('smaže vybrané i s podřízenými a odebere vazby na ně', () => {
+    const p = withDeps(fromOutline(SAMPLE), { E: ['B', 'D'], D: ['A'] })
+    expect(removalCount(p, ['G', 'A', 'B'])).toEqual({ selected: 2, descendants: 2 })
+    const result = deleteMany(p, ['G', 'A', 'B'])
+    expect(ok(result)).toEqual(['F', '  D', 'E'])
+    if (!result.ok) return
+    const byId = new Map(result.project.tasks.map((t) => [t.id, t]))
+    expect(byId.get('E')!.dependencies.map((d) => d.predecessorId)).toEqual(['D'])
+    expect(byId.get('D')!.dependencies).toEqual([])
+  })
+
+  it('nic platného ve výběru', () => {
+    expect(deleteMany(fromOutline(['A']), ['X'])).toEqual({ ok: false, reason: 'notFound' })
+  })
+})
+
+describe('hromadně: čistota a výkon', () => {
+  it('operace nemění vstupní projekt', () => {
+    const p = withDeps(fromOutline(SAMPLE), { E: ['B'] })
+    const before = JSON.stringify(p)
+    indentMany(p, ['D', 'E'])
+    outdentMany(p, ['A', 'D'])
+    moveUpMany(p, ['D'])
+    moveDownMany(p, ['A'])
+    moveManyTo(p, ['A', 'E'], 'G', 'inside')
+    duplicateMany(p, ['F'], () => 'x', '')
+    deleteMany(p, ['G'])
+    expect(JSON.stringify(p)).toBe(before)
+  })
+
+  it('300 řádků: posun 100 vybraných dolů a přesun za poslední řádek do 100 ms', () => {
+    const lines = Array.from({ length: 300 }, (_, i) => `T${i}`)
+    const p = fromOutline(lines)
+    const selected = lines.filter((_, i) => i % 3 === 0)
+    const start = performance.now()
+    expect(moveDownMany(p, selected).ok).toBe(true)
+    expect(moveManyTo(p, selected, 'T299', 'after').ok).toBe(true)
+    expect(performance.now() - start).toBeLessThan(100)
   })
 })

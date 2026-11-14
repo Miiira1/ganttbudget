@@ -9,12 +9,19 @@
  */
 import { createStore } from 'zustand/vanilla'
 import {
+  deleteMany,
   duplicate,
+  duplicateMany,
   indent,
+  indentMany,
   moveDown,
+  moveDownMany,
+  moveManyTo,
   moveTo,
   moveUp,
+  moveUpMany,
   outdent,
+  outdentMany,
   type DropPosition,
   type HierarchyError,
   type HierarchyResult,
@@ -44,10 +51,25 @@ export interface ProjectState {
   moveTaskDown: (id: string) => HierarchyError | null
   moveTask: (id: string, targetId: string, position: DropPosition) => HierarchyError | null
   /**
+   * Totéž pro více vybraných řádků najednou (jeden krok Zpět). Když akce nejde u některého
+   * z nich, nezmění se nic a vrátí se důvod (model/hierarchy.ts – hromadné operace).
+   */
+  indentTasks: (ids: string[]) => HierarchyError | null
+  outdentTasks: (ids: string[]) => HierarchyError | null
+  moveTasksUp: (ids: string[]) => HierarchyError | null
+  moveTasksDown: (ids: string[]) => HierarchyError | null
+  moveTasks: (ids: string[], targetId: string, position: DropPosition) => HierarchyError | null
+  /** Duplikuje vybrané řádky; vrátí ID kopií, nebo null. */
+  duplicateTasks: (ids: string[], nameSuffix: string) => string[] | null
+  /** Smaže vybrané řádky i s podřízenými a vazby na ně. */
+  deleteTasks: (ids: string[]) => void
+  /**
    * Termín z tažení nebo z tabulky (fáze 4b): omezení „začít nejdříve“ (null = zrušit) a/nebo délka.
    * Obojí najednou = jeden krok Zpět. Fáze se nemění (počítá se ze svých položek).
    */
   setTaskTiming: (id: string, timing: { constraintStart?: string | null; durationDays?: number }) => void
+  /** Totéž pro více činností najednou (posun skupiny úseček) – jeden krok Zpět. */
+  setTasksTiming: (updates: { id: string; constraintStart?: string | null; durationDays?: number }[]) => void
   /** Duplikuje řádek (i s podřízenými) pod originál; vrátí ID kopie, nebo null. */
   duplicateTask: (id: string, nameSuffix: string) => string | null
   updateTask: (id: string, patch: TaskPatch) => void
@@ -147,18 +169,45 @@ export function createProjectStore(initialProject: Project) {
       moveTaskDown: (id) => applyHierarchy(moveDown(get().project, id)),
       moveTask: (id, targetId, position) => applyHierarchy(moveTo(get().project, id, targetId, position)),
 
+      indentTasks: (ids) => applyHierarchy(indentMany(get().project, ids)),
+      outdentTasks: (ids) => applyHierarchy(outdentMany(get().project, ids)),
+      moveTasksUp: (ids) => applyHierarchy(moveUpMany(get().project, ids)),
+      moveTasksDown: (ids) => applyHierarchy(moveDownMany(get().project, ids)),
+      moveTasks: (ids, targetId, position) => applyHierarchy(moveManyTo(get().project, ids, targetId, position)),
+
+      duplicateTasks(ids, nameSuffix) {
+        const result = duplicateMany(get().project, ids, newId, nameSuffix)
+        if (!result.ok) return null
+        commit(result.project)
+        return result.newIds
+      },
+
+      deleteTasks(ids) {
+        applyHierarchy(deleteMany(get().project, ids))
+      },
+
       setTaskTiming(id, timing) {
+        get().setTasksTiming([{ id, ...timing }])
+      },
+
+      setTasksTiming(updates) {
         const { project } = get()
-        const task = project.tasks.find((t) => t.id === id)
-        if (!task || task.kind === 'phase') return
-        const next: Task = { ...task }
-        if (timing.constraintStart === null) delete next.constraintStart
-        else if (timing.constraintStart !== undefined) next.constraintStart = timing.constraintStart
-        if (timing.durationDays !== undefined && task.kind !== 'milestone') {
-          next.durationDays = Math.max(1, Math.round(timing.durationDays))
-        }
-        if (next.constraintStart === task.constraintStart && next.durationDays === task.durationDays) return
-        commit({ ...project, tasks: project.tasks.map((t) => (t.id === id ? next : t)) })
+        const byId = new Map(updates.map((u) => [u.id, u]))
+        let changed = false
+        const tasks = project.tasks.map((task) => {
+          const timing = byId.get(task.id)
+          if (!timing || task.kind === 'phase') return task
+          const next: Task = { ...task }
+          if (timing.constraintStart === null) delete next.constraintStart
+          else if (timing.constraintStart !== undefined) next.constraintStart = timing.constraintStart
+          if (timing.durationDays !== undefined && task.kind !== 'milestone') {
+            next.durationDays = Math.max(1, Math.round(timing.durationDays))
+          }
+          if (next.constraintStart === task.constraintStart && next.durationDays === task.durationDays) return task
+          changed = true
+          return next
+        })
+        if (changed) commit({ ...project, tasks })
       },
 
       duplicateTask(id, nameSuffix) {

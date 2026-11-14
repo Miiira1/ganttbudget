@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createWorkCalendar, dayToIso, isoToDay } from '../engine/calendar'
 import { createDefaultCalendar } from '../model/schema'
-import { applyDrag, durationForFinish, pixelsToDays, type DragMode } from './drag'
+import { applyDrag, applyGroupMove, durationForFinish, pixelsToDays, type DragMode } from './drag'
 
 // Výchozí kalendář: Po–Pá, české svátky (17. 11. 2026 je úterý a svátek).
 const cal = createWorkCalendar(createDefaultCalendar())
@@ -36,6 +36,45 @@ describe('Konec zadaný v tabulce → délka', () => {
   it('konec před začátkem nejde (null)', () => {
     expect(durationForFinish(cal, day('2026-11-18'), day('2026-11-16'))).toBeNull()
     expect(durationForFinish(cal, day('2026-11-18'), day('2026-11-17'))).toBeNull() // svátek → Po 16. < začátek
+  })
+})
+
+describe('posun více vybraných úseček najednou', () => {
+  /** Výsledek pro každou úsečku: [omezení, délka, začátek, konec]. */
+  function group(delta: number) {
+    const items = [
+      { id: 'P', kind: 'task' as const, start: '2026-11-16', finish: '2026-11-19', duration: 3 }, // tažená
+      { id: 'Q', kind: 'task' as const, start: '2026-11-23', finish: '2026-11-24', duration: 2 },
+      { id: 'R', kind: 'task' as const, start: '2026-11-13', finish: '2026-11-13', duration: 1 }, // pátek
+      { id: 'M', kind: 'milestone' as const, start: '2026-11-20', finish: '2026-11-20', duration: 0 },
+    ].map((x) => ({ id: x.id, kind: x.kind, startDay: day(x.start), finishDay: day(x.finish), durationDays: x.duration }))
+    const result = applyGroupMove(cal, items, 'P', delta)
+    return Object.fromEntries(
+      [...result].map(([id, r]) => [id, [r.constraintStart ?? null, r.durationDays, dayToIso(r.startDay), dayToIso(r.finishDay)]]),
+    )
+  }
+
+  it('tažená se chová jako jedna; ostatní se posunou o stejný počet PRACOVNÍCH dnů', () => {
+    // P: Po 16. → Čt 19. = o 2 pracovní dny (16., 18., 19.; 17. je svátek)
+    expect(group(3)).toEqual({
+      P: ['2026-11-19', 3, '2026-11-19', '2026-11-23'],
+      Q: ['2026-11-25', 2, '2026-11-25', '2026-11-26'], // Po 23. + 2 pracovní dny
+      R: ['2026-11-18', 1, '2026-11-18', '2026-11-18'], // Pá 13. + 2 = Po 16., (svátek) St 18.
+      M: ['2026-11-24', 0, '2026-11-24', '2026-11-24'], // Pá 20. + 2 = Út 24.
+    })
+  })
+
+  it('doleva', () => {
+    // P: Po 16. → Pá 13. = o 1 pracovní den zpět
+    expect(group(-3)).toMatchObject({ P: ['2026-11-13', 3, '2026-11-13', '2026-11-18'], Q: ['2026-11-20', 2, '2026-11-20', '2026-11-23'] })
+  })
+
+  it('bez posunu se nic nemění (prázdný výsledek)', () => {
+    expect(group(0)).toEqual({})
+  })
+
+  it('přichycení přes svátek: Po 16. + 1 den = Út 17. (svátek) → St 18. = o 1 pracovní den', () => {
+    expect(group(1)).toMatchObject({ P: ['2026-11-18', 3, '2026-11-18', '2026-11-20'], Q: ['2026-11-24', 2, '2026-11-24', '2026-11-25'] })
   })
 })
 
