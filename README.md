@@ -4,6 +4,8 @@ Jednoduchá webová aplikace pro plánování projektů (Ganttův diagram) s nav
 Je určená studentům a praktikům bez zkušenosti s projektovým řízením. Běží jen v prohlížeči –
 **data zůstávají ve vašem počítači, nic se neposílá na server.**
 
+**▶ Vyzkoušet aplikaci: https://miiira1.github.io/ganttbudget/** (nic se neinstaluje, stačí prohlížeč)
+
 > Stav: **fáze 5 – MVP 1.0.** Termíny se počítají z délek, vazeb FS, SS, FF, SF
 > (s prodlevou), omezení „začít nejdříve“ a kalendáře (víkendy, české svátky, odstávky) a zobrazují
 > se v tabulce i v Ganttově diagramu. Vazby se zapisují textem (`3SS+2`) nebo kreslí tažením v grafu.
