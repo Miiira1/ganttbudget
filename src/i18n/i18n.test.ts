@@ -65,6 +65,11 @@ describe('vzorový projekt', () => {
     for (const task of project.tasks.filter((t) => t.kind !== 'phase')) {
       expect(result.tasks.get(task.id)?.start).not.toBeNull()
     }
+    // Od fáze 4a jsou činnosti zařazené do fází, takže termín má i každá fáze.
+    for (const phase of project.tasks.filter((t) => t.kind === 'phase')) {
+      expect(result.tasks.get(phase.id)?.start).not.toBeNull()
+      expect(project.tasks.some((t) => t.parentId === phase.id)).toBe(true)
+    }
     // Délka celého projektu odpovídá zadání (6–9 měsíců).
     expect(result.projectFinish! > '2027-07-01' && result.projectFinish! < '2027-10-31').toBe(true)
   })

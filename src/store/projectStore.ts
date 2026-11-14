@@ -8,6 +8,16 @@
  * Všechny změny projektu MUSÍ jít přes funkci `commit()` – jen tak se dostanou do historie.
  */
 import { createStore } from 'zustand/vanilla'
+import {
+  indent,
+  moveDown,
+  moveTo,
+  moveUp,
+  outdent,
+  type DropPosition,
+  type HierarchyError,
+  type HierarchyResult,
+} from '../model/hierarchy'
 import { createTask, type Calendar, type Dependency, type Project, type Task, type TaskKind } from '../model/schema'
 
 /** Kolik kroků zpět si aplikace pamatuje. */
@@ -21,8 +31,17 @@ export interface ProjectState {
   past: Project[]
   future: Project[]
 
-  /** Přidá činnost na konec seznamu a vrátí její ID. */
-  addTask: (name: string, kind?: TaskKind) => string
+  /**
+   * Přidá činnost a vrátí její ID. S `afterId` ji vloží hned pod tento řádek (za jeho podřízené)
+   * na stejnou úroveň; bez něj (nebo když řádek neexistuje) na konec.
+   */
+  addTask: (name: string, kind?: TaskKind, afterId?: string | null) => string
+  /** Odsadit / předsadit / nahoru / dolů / přesun tažením (model/hierarchy.ts). Vrací null, nebo důvod, proč to nejde. */
+  indentTask: (id: string) => HierarchyError | null
+  outdentTask: (id: string) => HierarchyError | null
+  moveTaskUp: (id: string) => HierarchyError | null
+  moveTaskDown: (id: string) => HierarchyError | null
+  moveTask: (id: string, targetId: string, position: DropPosition) => HierarchyError | null
   updateTask: (id: string, patch: TaskPatch) => void
   /** Smaže činnost (i s podřízenými položkami) a odkazy na ni z vazeb ostatních. */
   deleteTask: (id: string) => void
@@ -87,21 +106,39 @@ export function createProjectStore(initialProject: Project) {
       set({ project: next, past: [...past, project].slice(-HISTORY_LIMIT), future: [] })
     }
 
+    /** Výsledek operace se stromem: platný se zapíše (jeden krok Zpět), jinak vrátí důvod. */
+    function applyHierarchy(result: HierarchyResult): HierarchyError | null {
+      if (!result.ok) return result.reason
+      commit(result.project)
+      return null
+    }
+
     return {
       project: initialProject,
       past: [],
       future: [],
 
-      addTask(name, kind = 'task') {
+      addTask(name, kind = 'task', afterId = null) {
         const { project } = get()
         const id = newId()
         const order = project.tasks.filter((t) => t.parentId === null).length
-        commit({ ...project, tasks: [...project.tasks, createTask({ id, name, order, kind })] })
+        const added = { ...project, tasks: [...project.tasks, createTask({ id, name, order, kind })] }
+        // Pod vybraný řádek: přidat na konec a hned přesunout za něj – v historii je to jeden krok.
+        const placed = afterId ? moveTo(added, id, afterId, 'after') : null
+        commit(placed?.ok ? placed.project : added)
         return id
       },
 
+      indentTask: (id) => applyHierarchy(indent(get().project, id)),
+      outdentTask: (id) => applyHierarchy(outdent(get().project, id)),
+      moveTaskUp: (id) => applyHierarchy(moveUp(get().project, id)),
+      moveTaskDown: (id) => applyHierarchy(moveDown(get().project, id)),
+      moveTask: (id, targetId, position) => applyHierarchy(moveTo(get().project, id, targetId, position)),
+
       updateTask(id, patch) {
         const { project } = get()
+        // Fáze s podřízenými položkami musí zůstat fází (jinak by se její činnosti „ztratily“).
+        if (patch.kind !== undefined && patch.kind !== 'phase' && project.tasks.some((t) => t.parentId === id)) return
         let changed = false
         let tasks = project.tasks.map((task) => {
           if (task.id !== id) return task

@@ -140,6 +140,8 @@ export interface WorkCalendar {
    * Pokud výchozí den není pracovní, nejdřív se posune na nejbližší další pracovní den.
    */
   addWorkingDays(day: number, count: number): number
+  /** Počet pracovních dnů od `start` do `finish` včetně obou dnů (obrácený rozsah = 0). */
+  countWorkingDays(start: number, finish: number): number
 }
 
 /** Připraví rychlý kalendář pro výpočty z nastavení projektu. */
@@ -196,6 +198,11 @@ export function createWorkCalendar(calendar: Calendar): WorkCalendar {
       const direction = count >= 0 ? 1 : -1
       for (let i = 0; i < Math.abs(count); i++) current = step(current + direction, direction)
       return current
+    },
+    countWorkingDays(start, finish) {
+      let count = 0
+      for (let day = start; day <= finish; day++) if (isWorkingDay(day)) count++
+      return count
     },
   }
 }

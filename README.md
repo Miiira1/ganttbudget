@@ -4,10 +4,11 @@ Jednoduchá webová aplikace pro plánování projektů (Ganttův diagram) s nav
 Je určená studentům a praktikům bez zkušenosti s projektovým řízením. Běží jen v prohlížeči –
 **data zůstávají ve vašem počítači, nic se neposílá na server.**
 
-> Stav: **fáze 3 – Ganttův graf.** Termíny se počítají z délek, vazeb FS a kalendáře
-> (víkendy, české svátky, odstávky) a zobrazují se v tabulce i v Ganttově diagramu
-> (zoom, volné dny, dnešek, úsečky, milníky, šipky vazeb). Seskupování do fází, tažení v grafu,
-> další typy vazeb a ukládání přijdou v dalších fázích (viz [ZADANI.md](ZADANI.md), kap. 8).
+> Stav: **fáze 4a – hierarchie a přeskupování.** Termíny se počítají z délek, vazeb FS a kalendáře
+> (víkendy, české svátky, odstávky) a zobrazují se v tabulce i v Ganttově diagramu. Činnosti se
+> seskupují do fází (WBS číslování, sbalení, sumarizace), řádky se přesouvají tlačítky,
+> klávesami (Alt+Shift+šipky) i tažením; vše jde vrátit Ctrl+Z. Tažení v grafu, další typy vazeb
+> a ukládání přijdou v dalších fázích (viz [ZADANI.md](ZADANI.md), kap. 8).
 
 ## Co je potřeba
 
@@ -35,7 +36,7 @@ npm run dev        # spustí vývojovou verzi na http://localhost:5173
 |---|---|
 | `src/engine/` | plánovací jádro: kalendář (svátky, pracovní dny) a výpočet termínů – čisté funkce s testy |
 | `src/gantt/` | výpočty pro graf: časová osa, poloha úseček, trasy šipek – čisté funkce s testy |
-| `src/model/` | formát projektu (schéma Zod), práce s daty a zápis předchůdců |
+| `src/model/` | formát projektu (schéma Zod), strom fází a přesuny (`hierarchy.ts`), práce s daty a zápis předchůdců |
 | `src/store/` | stav aplikace s historií změn (Zpět / Znovu) |
 | `src/ui/` | obrazovky a komponenty (React); `src/ui/gantt/` kreslí Ganttův graf (SVG) |
 | `src/i18n/` | překlady (`locales/cs.json`, `locales/en.json`) a formát data a čísel |

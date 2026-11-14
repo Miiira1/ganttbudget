@@ -1,7 +1,7 @@
 # ZADÁNÍ: Aplikace pro Ganttovy diagramy s navázaným rozpočtem
 
 > Pracovní název: **GanttBudget** (změnitelný)
-> Verze zadání: 1.2 · Datum: 14. 11. 2026 (změny viz kap. 14)
+> Verze zadání: 1.3 · Datum: 14. 11. 2026 (změny viz kap. 14)
 > Dokument je zároveň vstupem pro Claude Code (vibe coding) a osnovou výukové case study.
 
 ---
@@ -397,3 +397,4 @@ Technicky: build bez chyb, testy plánovacího jádra projdou, aplikace je nasaz
 | 1.0 | 14. 11. 2026 | První verze |
 | 1.1 | 14. 11. 2026 | Fáze 4 rozdělena na 4a/4b/4c; návrh stavu s historií (Undo/Redo) přesunut do fáze 1; peníze jako celá čísla v nejmenší jednotce; ExcelJS místo SheetJS; přidána validace Zod; bezpečnostní požadavky N-10 až N-13; fáze 6 přejmenována (milníky jsou v MVP); sloupec zdrojů v F-01 přesunut do fáze 6; otevřené otázky 9 a 10 |
 | 1.2 | 14. 11. 2026 | Fáze 2: místo date-fns vlastní otestované funkce pro data; seznam svátků ověřen proti legislativě; pravidla výpočtu termínů (konec = poslední pracovní den, FS = další pracovní den po konci, milník na dni konce předchůdce); předchůdci se ve fázi 2 zadávají čísly řádků s prodlevou (`2; 5+3`), fáze zatím nemají vazby |
+| 1.3 | 14. 11. 2026 | Fáze 4a – pravidla stromu: sloupec Č. (čísla řádků pro předchůdce, sbalením se nemění) + nový sloupec WBS; podřízené položky má jen fáze, max. 6 úrovní; odsazení pod obyčejnou činnost ji změní na fázi (její vazby se po potvrzení odeberou, fáze zatím vazby mít nesmí); předsazení přesune řádek za konec jeho fáze; Nahoru/Dolů jen mezi sourozenci, do jiné fáze předsazením nebo tažením (nad fází: horní třetina = před, prostředek = dovnitř, spodní třetina = za); zkratky Alt+Shift+šipky; fázi s činnostmi nejde změnit na činnost/milník; délka fáze = pracovní dny od jejího začátku do konce; sbalení fáze je jen volba zobrazení (mimo Zpět/Znovu, zatím se neukládá – řeší fáze 5) |

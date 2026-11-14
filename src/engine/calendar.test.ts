@@ -121,6 +121,14 @@ describe('pracovní dny', () => {
     expect(iso(cal.addWorkingDays(day('2026-11-14'), 0))).toBe('2026-11-16') // začátek o víkendu se posune
   })
 
+  it('počet pracovních dnů v rozsahu (včetně obou krajních dnů)', () => {
+    const cal = calendar()
+    expect(cal.countWorkingDays(day('2026-11-16'), day('2026-11-23'))).toBe(5) // bez 17. 11. a víkendu
+    expect(cal.countWorkingDays(day('2026-11-16'), day('2026-11-16'))).toBe(1)
+    expect(cal.countWorkingDays(day('2026-11-14'), day('2026-11-15'))).toBe(0) // jen víkend
+    expect(cal.countWorkingDays(day('2026-11-20'), day('2026-11-16'))).toBe(0) // obrácený rozsah
+  })
+
   it('přes konec roku použije svátky obou let', () => {
     const cal = calendar()
     expect(iso(cal.addWorkingDays(day('2026-12-31'), 1))).toBe('2027-01-04') // 1. 1. svátek, pak víkend

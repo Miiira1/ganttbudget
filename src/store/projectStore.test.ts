@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createProjectStore, HISTORY_LIMIT } from './projectStore'
 import { createEmptyProject, createTask, ProjectSchema } from '../model/schema'
+import { depthMap, treeOrder } from '../model/hierarchy'
 
 function newStore() {
   return createProjectStore(createEmptyProject({ name: 'Test', language: 'cs', startDate: '2026-11-16' }))
@@ -63,6 +64,85 @@ describe('úpravy činností', () => {
     })
     store.getState().deleteTask('f')
     expect(store.getState().project.tasks.map((t) => t.id)).toEqual(['z'])
+  })
+})
+
+describe('strom: odsazení, přesuny, vkládání (fáze 4a)', () => {
+  /** Jména v pořadí řádků s odsazením podle úrovně, např. ['A', '  B']. */
+  function outline(store: ReturnType<typeof newStore>): string[] {
+    const project = store.getState().project
+    const depths = depthMap(project)
+    return treeOrder(project).map((t) => '  '.repeat(depths.get(t.id) ?? 0) + t.name)
+  }
+
+  it('odsadit, předsadit, nahoru, dolů – každá změna je jeden krok Zpět', () => {
+    const store = newStore()
+    store.getState().addTask('A')
+    const b = store.getState().addTask('B')
+    const c = store.getState().addTask('C')
+
+    expect(store.getState().indentTask(b)).toBeNull()
+    expect(outline(store)).toEqual(['A', '  B', 'C'])
+    expect(store.getState().project.tasks.find((t) => t.name === 'A')?.kind).toBe('phase')
+    expect(store.getState().indentTask(c)).toBeNull() // předchozí sourozenec C je fáze A → C za B
+    expect(outline(store)).toEqual(['A', '  B', '  C'])
+    expect(store.getState().moveTaskUp(c)).toBeNull()
+    expect(outline(store)).toEqual(['A', '  C', '  B'])
+    expect(store.getState().moveTaskDown(c)).toBeNull()
+    expect(store.getState().outdentTask(b)).toBeNull()
+    expect(outline(store)).toEqual(['A', '  C', 'B'])
+    expect(store.getState().past).toHaveLength(3 + 5)
+
+    store.getState().undo() // vrátí předsazení
+    expect(outline(store)).toEqual(['A', '  B', '  C'])
+    store.getState().redo()
+    expect(outline(store)).toEqual(['A', '  C', 'B'])
+  })
+
+  it('neplatná operace nic nezapíše a vrátí důvod pro hlášku', () => {
+    const store = newStore()
+    const a = store.getState().addTask('A')
+    expect(store.getState().indentTask(a)).toBe('noPreviousSibling')
+    expect(store.getState().outdentTask(a)).toBe('topLevel')
+    expect(store.getState().moveTaskUp(a)).toBe('noPreviousSibling')
+    expect(store.getState().moveTask(a, 'neexistuje', 'after')).toBe('notFound')
+    expect(store.getState().past).toHaveLength(1)
+  })
+
+  it('přesun tažením dovnitř fáze a před jiný řádek', () => {
+    const store = newStore()
+    const f = store.getState().addTask('F', 'phase')
+    const a = store.getState().addTask('A')
+    const b = store.getState().addTask('B')
+    expect(store.getState().moveTask(b, f, 'inside')).toBeNull()
+    expect(store.getState().moveTask(a, b, 'before')).toBeNull()
+    expect(outline(store)).toEqual(['F', '  A', '  B'])
+    store.getState().undo()
+    expect(outline(store)).toEqual(['F', '  B', 'A'])
+  })
+
+  it('fázi s podřízenými nejde změnit na činnost ani milník', () => {
+    const store = newStore()
+    const f = store.getState().addTask('F', 'phase')
+    const a = store.getState().addTask('A')
+    store.getState().moveTask(a, f, 'inside')
+    const pastBefore = store.getState().past.length
+    store.getState().updateTask(f, { kind: 'task' })
+    expect(store.getState().project.tasks.find((t) => t.id === f)?.kind).toBe('phase')
+    expect(store.getState().past).toHaveLength(pastBefore)
+  })
+
+  it('nová činnost se vloží pod vybraný řádek na stejnou úroveň', () => {
+    const store = newStore()
+    const f = store.getState().addTask('F', 'phase')
+    const x = store.getState().addTask('X')
+    store.getState().addTask('Z')
+    store.getState().moveTask(x, f, 'inside')
+    store.getState().addTask('N1', 'task', x) // pod X, uvnitř fáze
+    store.getState().addTask('N2', 'task', f) // pod fázi F (za celou fázi), na nejvyšší úroveň
+    expect(outline(store)).toEqual(['F', '  X', '  N1', 'N2', 'Z'])
+    store.getState().addTask('N3', 'task', 'neexistuje') // neznámý výběr → na konec
+    expect(outline(store).at(-1)).toBe('N3')
   })
 })
 
@@ -154,6 +234,38 @@ describe('historie změn (Zpět / Znovu)', () => {
     store.getState().undo()
     store.getState().redo()
     expect(store.getState().project).toBe(before)
+  })
+
+  it('Zpět/Znovu v plném rozsahu (G-05): všechny druhy změn tam i zpět', () => {
+    const store = newStore()
+    const initial = store.getState().project
+    const s = () => store.getState()
+
+    // Každý druh změny, který aplikace umí:
+    const a = s().addTask('A')
+    const b = s().addTask('B', 'task', a)
+    const c = s().addTask('C')
+    s().updateTask(b, { durationDays: 4, name: 'B2' })
+    s().setDependencies(c, [{ predecessorId: b, type: 'FS', lagDays: 1 }])
+    s().indentTask(b) // A se změní na fázi
+    s().moveTask(c, a, 'inside')
+    s().moveTaskUp(c)
+    s().moveTaskDown(c)
+    s().outdentTask(c)
+    s().updateCalendar({ customHolidays: [{ start: '2026-12-21', end: '2026-12-31', name: 'Odstávka' }] })
+    s().setProjectStart('2027-01-04')
+    s().deleteTask(a)
+    const final = s().project
+    const steps = s().past.length
+    expect(steps).toBe(13)
+
+    for (let i = 0; i < steps; i++) s().undo()
+    expect(s().project).toEqual(initial)
+    expect(s().past).toHaveLength(0)
+
+    for (let i = 0; i < steps; i++) s().redo()
+    expect(s().project).toEqual(final)
+    expect(s().future).toHaveLength(0)
   })
 
   it(`pamatuje si nejvýš ${HISTORY_LIMIT} kroků`, () => {

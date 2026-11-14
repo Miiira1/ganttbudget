@@ -12,6 +12,9 @@ import { TaskTable } from './TaskTable'
 import { SplitView } from './SplitView'
 import { GanttChart } from './gantt/GanttChart'
 import { ZoomSwitch } from './gantt/ZoomSwitch'
+import { StructureToolbar } from './StructureToolbar'
+import { runStructureCommand, STRUCTURE_COMMANDS, STRUCTURE_SHORTCUTS } from './structureCommands'
+import { useSelectedId, useViewState } from './viewState'
 
 /** Je kurzor v textovém poli? Tam necháme Ctrl+Z prohlížeči (vrací psaní v poli). */
 function isEditingField(target: EventTarget | null): boolean {
@@ -28,6 +31,8 @@ export default function App() {
   const notice = useNotice((s) => s.message)
   const clearNotice = useNotice((s) => s.clear)
   const [calendarOpen, setCalendarOpen] = useState(false)
+  const selectedId = useSelectedId(project)
+  const selectRow = useViewState((s) => s.select)
 
   // --- Vzhled (světlý / tmavý) ---
   const [theme, setTheme] = useState<ThemePreference>(loadThemePreference)
@@ -41,9 +46,18 @@ export default function App() {
   // Po každé úspěšné změně projektu staré upozornění zmizí.
   useEffect(() => clearNotice(), [project, clearNotice])
 
-  // --- Klávesové zkratky Zpět / Znovu ---
+  // --- Klávesové zkratky: Alt+Shift+šipky (struktura plánu), Ctrl+Z / Ctrl+Y (Zpět / Znovu) ---
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
+      // Alt+Shift+šipky fungují i v poli tabulky – při psaní se tahle kombinace nepoužívá.
+      if (event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey) {
+        const command = STRUCTURE_COMMANDS.find((c) => STRUCTURE_SHORTCUTS[c] === event.key)
+        if (command) {
+          event.preventDefault()
+          runStructureCommand(command, i18n.t)
+          return
+        }
+      }
       if (!(event.ctrlKey || event.metaKey) || event.altKey || isEditingField(event.target)) return
       const key = event.key.toLowerCase()
       if (key === 'z' && !event.shiftKey) {
@@ -56,10 +70,12 @@ export default function App() {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [])
+  }, [i18n])
 
   function handleAddTask() {
-    const id = addTask(t('task.defaultName'))
+    // Nová činnost přijde pod vybraný řádek (na stejnou úroveň) a sama se vybere.
+    const id = addTask(t('task.defaultName'), 'task', selectedId)
+    selectRow(id)
     // Kurzor rovnou do názvu nové činnosti, ať se dá hned psát.
     requestAnimationFrame(() => {
       const row = document.querySelector<HTMLInputElement>(`[data-task-id="${CSS.escape(id)}"] input[type="text"]`)
@@ -133,6 +149,7 @@ export default function App() {
           <button type="button" className="btn-secondary" onClick={() => setCalendarOpen(true)} title={t('toolbar.calendarHint')}>
             <span aria-hidden="true">📅</span> {t('toolbar.calendar')}
           </button>
+          {project.tasks.length > 0 && <StructureToolbar />}
           {project.tasks.length > 0 && (
             <div className="ml-auto">
               <ZoomSwitch />

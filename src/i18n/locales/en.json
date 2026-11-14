@@ -38,6 +38,16 @@
   "table": {
     "caption": "Project task list",
     "rowNumber": "No.",
+    "collapse": "Collapse phase {{name}}",
+    "expand": "Expand phase {{name}}",
+    "collapseHint": "Hide the tasks of this phase (in the table and the chart)",
+    "expandHint": "Show the tasks of this phase",
+    "confirmDeleteWithChildren_one": "Really delete phase “{{name}}” including {{count}} item inside it? You can undo this with Undo (Ctrl+Z).",
+    "confirmDeleteWithChildren_other": "Really delete phase “{{name}}” including {{count}} items inside it? You can undo this with Undo (Ctrl+Z).",
+    "dragHint": "Drag the row elsewhere. Over a phase: top part = before it, middle = into it, bottom part = after it. Esc cancels.",
+    "kindLockedHint": "This phase contains tasks, so it must stay a phase. To change it, move its tasks out first.",
+    "wbs": "WBS",
+    "wbsHint": "Number in the project breakdown (WBS – Work Breakdown Structure). E.g. 2.3 = third item of the second phase. Predecessors are written with row numbers from the No. column.",
     "name": "Name",
     "kind": "Type",
     "start": "Start",
@@ -50,8 +60,8 @@
     "actions": "Actions",
     "notComputed": "—",
     "datesHint": "Calculated automatically from duration, predecessors and the calendar. Finish = last working day.",
-    "phaseDatesHint": "Phase dates are calculated from its tasks (grouping comes in the next version).",
-    "phaseDurationHint": "A phase's duration is calculated from its tasks.",
+    "phaseDatesHint": "A phase runs from the start of its first task to the finish of its last task – calculated automatically.",
+    "phaseDurationHint": "Number of working days from the start to the finish of the phase. Calculated from its tasks.",
     "predecessorsHint": "Row numbers this task follows (it starts after they finish). E.g. 2; 5+3 = after row 2 and 3 working days after row 5.",
     "phasePredecessorsHint": "A phase cannot have predecessors yet.",
     "cycle": "Loop",
@@ -74,6 +84,29 @@
   },
   "task": {
     "defaultName": "New task"
+  },
+  "structure": {
+    "toolbarLabel": "Plan structure",
+    "indent": "Indent",
+    "indentHint": "Put the selected row under the row above it (into a phase) – Alt+Shift+→",
+    "outdent": "Outdent",
+    "outdentHint": "Move the selected row one level up, after the end of its phase – Alt+Shift+←",
+    "moveUp": "Up",
+    "moveUpHint": "Move the selected row (with its tasks) up – Alt+Shift+↑",
+    "moveDown": "Down",
+    "moveDownHint": "Move the selected row (with its tasks) down – Alt+Shift+↓",
+    "noSelection": "First click into the row you want to work with.",
+    "confirmConvert_one": "Row “{{name}}” will become a phase so it can contain tasks. Phases cannot have dependencies yet, so {{count}} dependency will be removed. Continue? (Ctrl+Z undoes it.)",
+    "confirmConvert_other": "Row “{{name}}” will become a phase so it can contain tasks. Phases cannot have dependencies yet, so {{count}} dependencies will be removed. Continue? (Ctrl+Z undoes it.)",
+    "error": {
+      "notFound": "The selected row no longer exists. Click into another row.",
+      "noPreviousSibling": "There is nothing above this row on the same level. It cannot be indented or moved up.",
+      "noNextSibling": "There is nothing below this row on the same level. Move it to another phase by outdenting or dragging.",
+      "topLevel": "The row is already at the top level.",
+      "maxDepth": "A plan can have at most {{max}} levels. The row cannot go any deeper.",
+      "targetNotPhase": "A row can only be placed inside a phase.",
+      "intoOwnSubtree": "A phase cannot be moved into itself or into its own tasks."
+    }
   },
   "gantt": {
     "chartLabel": "Gantt chart – timeline of the tasks. The same data is in the table on the left.",

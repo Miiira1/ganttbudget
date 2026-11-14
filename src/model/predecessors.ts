@@ -7,6 +7,7 @@
  *   "4-2"      začne 2 dny před koncem řádku 4 (předstih)
  * Zatím jen vazba FS (konec → začátek). Zápis "3SS+2" a další typy přidá fáze 4c.
  */
+import { treeOrder } from './hierarchy'
 import type { Dependency, Project, Task } from './schema'
 
 export interface PredecessorItem {
@@ -51,10 +52,11 @@ export function parsePredecessors(
 
 /**
  * Pořadí řádků tak, jak je vidí uživatel v tabulce (číslo řádku = pozice + 1).
- * Ve fázi 1–2 jsou všechny položky na jedné úrovni; strom (WBS) přidá fáze 4a.
+ * Je to průchod stromem fází (model/hierarchy.ts); počítají se i řádky ve sbalených fázích,
+ * takže se čísla řádků sbalením nemění.
  */
 export function rowOrder(project: Project): Task[] {
-  return [...project.tasks].sort((a, b) => a.order - b.order)
+  return treeOrder(project)
 }
 
 /** ID činnosti → číslo řádku. */

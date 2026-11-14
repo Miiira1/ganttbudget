@@ -19,6 +19,8 @@ export interface ScheduledTask {
   /** Začátek "YYYY-MM-DD", nebo null, když termín nejde spočítat. */
   start: string | null
   finish: string | null
+  /** Délka v pracovních dnech; u fáze spočítaná z jejího začátku a konce, null = nejde spočítat. */
+  durationDays: number | null
 }
 
 export interface ScheduleResult {
@@ -39,7 +41,7 @@ interface Computed {
   successorStartDay: number
 }
 
-const EMPTY: ScheduledTask = { start: null, finish: null }
+const EMPTY: ScheduledTask = { start: null, finish: null, durationDays: null }
 
 export function schedule(project: Project): ScheduleResult {
   const byId = new Map(project.tasks.map((t) => [t.id, t]))
@@ -163,7 +165,8 @@ export function schedule(project: Project): ScheduleResult {
       tasks.set(t.id, EMPTY)
       continue
     }
-    tasks.set(t.id, { start: dayToIso(c.startDay), finish: dayToIso(c.finishDay) })
+    const durationDays = t.kind === 'phase' ? calendar.countWorkingDays(c.startDay, c.finishDay) : t.durationDays
+    tasks.set(t.id, { start: dayToIso(c.startDay), finish: dayToIso(c.finishDay), durationDays })
     if (lastFinish === null || c.finishDay > lastFinish) lastFinish = c.finishDay
   }
 

@@ -1,7 +1,8 @@
 /**
  * Vzorový projekt „Zavedení automatizace do výroby“ (ZADANI.md, kap. 11) – zjednodušená verze.
- * Fáze 2: názvy, typy, délky v pracovních dnech a vazby FS (s prodlevou), vše na jedné úrovni.
- * Hierarchie fází, další typy vazeb, zdroje a rozpočet se doplní v dalších fázích.
+ * Názvy, typy, délky v pracovních dnech, vazby FS (s prodlevou) a od fáze 4a i hierarchie:
+ * činnosti a milníky patří do fáze, která je v seznamu nad nimi.
+ * Další typy vazeb, zdroje a rozpočet se doplní v dalších fázích.
  *
  * Názvy jsou v překladových souborech (sample.tasks.*), aby šel projekt vytvořit v každém jazyce.
  */
@@ -49,9 +50,19 @@ const idOf = (key: string) => `sample-${key}`
  */
 export function createSampleProject(translate: (key: string) => string, language: string, startDate?: string): Project {
   const project = createEmptyProject({ name: translate('sample.projectName'), language, startDate })
-  project.tasks = ROWS.map(([key, kind, durationDays, predecessors = []], order) => ({
-    ...createTask({ id: idOf(key), name: translate(`sample.tasks.${key}`), order, kind, durationDays }),
-    dependencies: predecessors.map(([pred, lagDays]) => ({ predecessorId: idOf(pred), type: 'FS' as const, lagDays })),
-  }))
+  let phaseId: string | null = null
+  const counters = new Map<string | null, number>()
+  project.tasks = ROWS.map(([key, kind, durationDays, predecessors = []]) => {
+    // Fáze je na nejvyšší úrovni, ostatní položky patří do poslední fáze nad nimi.
+    const parentId = kind === 'phase' ? null : phaseId
+    if (kind === 'phase') phaseId = idOf(key)
+    const order = counters.get(parentId) ?? 0
+    counters.set(parentId, order + 1)
+    return {
+      ...createTask({ id: idOf(key), name: translate(`sample.tasks.${key}`), order, kind, durationDays }),
+      parentId,
+      dependencies: predecessors.map(([pred, lagDays]) => ({ predecessorId: idOf(pred), type: 'FS' as const, lagDays })),
+    }
+  })
   return project
 }

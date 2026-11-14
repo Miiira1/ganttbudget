@@ -127,6 +127,34 @@ describe('fáze (sumární řádky)', () => {
     expect(dates(p, 'F')).toEqual(['2026-11-16', '2026-11-23'])
     expect(dates(p, 'C')).toEqual(['2026-11-24', '2026-11-24'])
   })
+
+  it('délka fáze = pracovní dny od jejího začátku do konce; činnost a milník mají svou délku', () => {
+    const tasks = [
+      task('F', 0, [], 'phase'),
+      { ...task('A', 2), parentId: 'F' },
+      { ...task('B', 3, [['A', 0]]), parentId: 'F' },
+      { ...task('M', 0, [['B', 0]], 'milestone'), parentId: 'F' },
+      task('E', 0, [], 'phase'), // prázdná fáze
+    ]
+    const result = schedule(project(tasks))
+    // F: Po 16.–Po 23. 11. = 16., 18., 19., 20., 23. (17. svátek, 21.–22. víkend) = 5 dní
+    expect(result.tasks.get('F')?.durationDays).toBe(5)
+    expect(result.tasks.get('A')?.durationDays).toBe(2)
+    expect(result.tasks.get('M')?.durationDays).toBe(0)
+    expect(result.tasks.get('E')?.durationDays).toBeNull()
+  })
+
+  it('vnořené fáze: nadřazená fáze zahrne termíny podfází', () => {
+    const tasks = [
+      task('F', 0, [], 'phase'),
+      { ...task('G', 0, [], 'phase'), parentId: 'F' },
+      { ...task('A', 2), parentId: 'G' },
+      { ...task('B', 1, [['A', 0]]), parentId: 'F' },
+    ]
+    const p = project(tasks)
+    expect(dates(p, 'G')).toEqual(['2026-11-16', '2026-11-18'])
+    expect(dates(p, 'F')).toEqual(['2026-11-16', '2026-11-19'])
+  })
 })
 
 describe('chyby a celkové výsledky', () => {
@@ -134,7 +162,7 @@ describe('chyby a celkové výsledky', () => {
     const p = project([task('A', 1, [['B', 0]]), task('B', 1, [['A', 0]]), task('C', 2)])
     const result = schedule(p)
     expect([...result.cycleTaskIds].sort()).toEqual(['A', 'B'])
-    expect(result.tasks.get('A')).toEqual({ start: null, finish: null })
+    expect(result.tasks.get('A')).toEqual({ start: null, finish: null, durationDays: null })
     expect(dates(p, 'C')).toEqual(['2026-11-16', '2026-11-18'])
   })
 
@@ -160,7 +188,7 @@ describe('chyby a celkové výsledky', () => {
     })
     const result = schedule(p)
     expect(result.error).toBe('noWorkingDays')
-    expect(result.tasks.get('A')).toEqual({ start: null, finish: null })
+    expect(result.tasks.get('A')).toEqual({ start: null, finish: null, durationDays: null })
   })
 
   it('výpočet nemění vstupní projekt (čistá funkce)', () => {

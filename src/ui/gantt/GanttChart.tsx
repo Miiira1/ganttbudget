@@ -13,11 +13,11 @@ import { formatIsoDate } from '../../i18n/format'
 import { layoutBars, ROW_HEIGHT } from '../../gantt/geometry'
 import { createTimeline, dayToX, headerRows, nonWorkingRuns, type NonWorkingRun, type Timeline } from '../../gantt/timeline'
 import { todayIso } from '../../model/dates'
-import { rowOrder } from '../../model/predecessors'
 import { useProject, useSchedule } from '../../store/useProject'
 import { DependencyArrows } from './DependencyArrows'
 import { TaskBars } from './TaskBars'
 import { TimelineHeader } from './TimelineHeader'
+import { useSelectedId, useVisibleRows } from '../viewState'
 import { useZoom } from './zoom'
 
 /** Text bubliny pro pruh volných dnů. */
@@ -71,7 +71,10 @@ export function GanttChart() {
   const project = useProject((s) => s.project)
   const { projectFinish, tasks: dates } = useSchedule()
   const zoom = useZoom((s) => s.zoom)
-  const rows = useMemo(() => rowOrder(project), [project])
+  // Jen viditelné řádky (bez položek sbalených fází) – stejné jako v tabulce.
+  const rows = useVisibleRows(project)
+  const selectedId = useSelectedId(project)
+  const selectedIndex = rows.findIndex((task) => task.id === selectedId)
   const patternId = useId()
   const wrapperRef = useRef<HTMLDivElement>(null)
 
@@ -136,6 +139,17 @@ export function GanttChart() {
         </defs>
 
         {background}
+
+        {/* Vybraný řádek – stejně zvýrazněný jako v tabulce. */}
+        {selectedIndex >= 0 && (
+          <rect
+            x={0}
+            y={selectedIndex * ROW_HEIGHT}
+            width={tl.width}
+            height={ROW_HEIGHT}
+            className="fill-blue-100/80 dark:fill-blue-900/40"
+          />
+        )}
 
         {/* Svislá mřížka po úsecích dolního řádku hlavičky (dny, týdny, měsíce, čtvrtletí). */}
         {gridLines.map((x) => (
