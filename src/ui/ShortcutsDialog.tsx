@@ -23,7 +23,7 @@ const KEYBOARD: [keys: string[], description: string][] = [
 ]
 
 /** Ovládání myší – jen popisy. */
-const MOUSE = ['dragBar', 'dragEdge', 'drawLink', 'dragRow', 'pin', 'collapse']
+const MOUSE = ['zoom', 'dragBar', 'dragEdge', 'drawLink', 'dragRow', 'resizeColumn', 'pin', 'collapse']
 
 export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useTranslation()

@@ -24,7 +24,7 @@ import {
 } from '../model/hierarchy'
 import { TASK_KINDS, type Task, type TaskKind } from '../model/schema'
 import type { ScheduledTask } from '../engine/schedule'
-import { HEADER_HEIGHT, ROW_HEIGHT } from '../gantt/geometry'
+import { ROW_HEIGHT } from '../gantt/geometry'
 import { getSchedule, projectStore, useProject, useSchedule } from '../store/useProject'
 import { DateInputCell, NumberCell, TextCell } from './EditableCells'
 import { createWorkCalendar, isoToDay } from '../engine/calendar'
@@ -32,11 +32,12 @@ import { durationForFinish } from '../gantt/drag'
 import { isValidIsoDate } from '../model/dates'
 import { showNotice } from './notice'
 import { confirmAndDelete } from './structureCommands'
+import { TableColumns, TableHeader, useTableWidth } from './TableHeader'
 import { useSelectedId, useViewState, useVisibleRows } from './viewState'
 
-// Výška hlavičky a řádků je pevná a stejná jako v grafu (gantt/geometry.ts), aby řádky lícovaly.
-const th = 'sticky top-0 z-10 whitespace-nowrap border-b border-slate-300 bg-slate-100 px-2 py-0 text-left text-xs font-semibold uppercase tracking-wide text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
-const td = 'border-b border-slate-200 px-1 py-0 align-middle whitespace-nowrap dark:border-slate-700/70'
+// Výška řádků je pevná a stejná jako v grafu (gantt/geometry.ts), aby řádky lícovaly.
+// Šířky sloupců nastavuje uživatel (TableHeader.tsx); co se do buňky nevejde, ořízne se.
+const td = 'overflow-hidden border-b border-slate-200 px-1 py-0 align-middle whitespace-nowrap dark:border-slate-700/70'
 
 const kindRowClass: Record<TaskKind, string> = {
   task: '',
@@ -235,7 +236,7 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
         </span>
       </td>
       <td className={`${td} px-2 tabular-nums text-slate-500`}>{wbs}</td>
-      <td className={`${td} min-w-64`}>
+      <td className={`${td}`}>
         <div className="flex items-center gap-1" style={{ paddingLeft: depth * INDENT_PX }}>
           <CollapseToggle task={task} hasChildren={hasChildren} collapsed={collapsed} />
           {task.kind === 'milestone' && (
@@ -259,7 +260,7 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
           <ConstraintPin task={task} ignored={constraintIgnored} />
         </div>
       </td>
-      <td className={`${td} min-w-32`}>
+      <td className={`${td}`}>
         <select
           aria-label={label('table.kind')}
           title={hasChildren ? t('table.kindLockedHint') : t(`kind.${task.kind}Hint`)}
@@ -309,7 +310,7 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
           </td>
         </>
       )}
-      <td className={`${td} w-24`}>
+      <td className={`${td}`}>
         {isPhase ? (
           <span className="block px-1.5 text-right tabular-nums" title={t('table.phaseDurationHint')}>
             {computedDuration ?? t('table.notComputed')}
@@ -326,7 +327,7 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
           />
         )}
       </td>
-      <td className={`${td} w-32`}>
+      <td className={`${td}`}>
         {isPhase ? (
           <span className="block px-1.5 text-slate-400" title={t('table.phasePredecessorsHint')}>
             {t('table.notComputed')}
@@ -350,7 +351,7 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
           />
         )}
       </td>
-      <td className={`${td} w-20`}>
+      <td className={`${td}`}>
         <NumberCell
           value={task.percentComplete}
           label={label('table.percentComplete')}
@@ -359,7 +360,7 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
           onCommit={(percentComplete) => updateTask(task.id, { percentComplete })}
         />
       </td>
-      <td className={`${td} min-w-48`}>
+      <td className={`${td}`}>
         <TextCell value={task.notes} label={label('table.notes')} onCommit={(notes) => updateTask(task.id, { notes })} />
       </td>
       <td className={`${td} text-center`}>
@@ -467,6 +468,7 @@ export function TaskTable({ onAddTask, onLoadSample }: { onAddTask: () => void; 
   const wbs = useMemo(() => wbsNumbers(project), [project])
   const parents = useMemo(() => new Set(project.tasks.map((task) => task.parentId)), [project])
   const { drag, handlers } = useRowDrag()
+  const tableWidth = useTableWidth()
 
   if (rows.length === 0) {
     return (
@@ -486,45 +488,11 @@ export function TaskTable({ onAddTask, onLoadSample }: { onAddTask: () => void; 
   }
 
   return (
-    <table className="w-full border-collapse text-sm">
+    // Pevné rozvržení: šířky sloupců určuje <colgroup> podle nastavení uživatele (TableHeader.tsx).
+    <table className="table-fixed border-collapse text-sm" style={{ width: tableWidth }}>
       <caption className="sr-only">{t('table.caption')}</caption>
-      <thead>
-        <tr style={{ height: HEADER_HEIGHT }}>
-          <th scope="col" className={`${th} w-10 text-right`}>
-            {t('table.rowNumber')}
-          </th>
-          <th scope="col" className={`${th} w-16`} title={t('table.wbsHint')}>
-            {t('table.wbs')}
-          </th>
-          <th scope="col" className={th}>
-            {t('table.name')}
-          </th>
-          <th scope="col" className={`${th} w-32`}>
-            {t('table.kind')}
-          </th>
-          <th scope="col" className={`${th} w-36`} title={t('table.startHint')}>
-            {t('table.start')}
-          </th>
-          <th scope="col" className={`${th} w-36`} title={t('table.finishHint')}>
-            {t('table.finish')}
-          </th>
-          <th scope="col" className={`${th} text-right`} title={t('table.durationHint')}>
-            {t('table.duration')}
-          </th>
-          <th scope="col" className={th} title={t('table.predecessorsHint')}>
-            {t('table.predecessors')}
-          </th>
-          <th scope="col" className={`${th} text-right`}>
-            {t('table.percentComplete')}
-          </th>
-          <th scope="col" className={th}>
-            {t('table.notes')}
-          </th>
-          <th scope="col" className={`${th} w-14 text-center`}>
-            <span className="sr-only">{t('table.actions')}</span>
-          </th>
-        </tr>
-      </thead>
+      <TableColumns />
+      <TableHeader />
       <tbody>
         {rows.map((task) => {
           const dates = result.tasks.get(task.id) ?? NO_DATES

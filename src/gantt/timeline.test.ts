@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import { createWorkCalendar, dayToIso, isoToDay } from '../engine/calendar'
 import { createDefaultCalendar } from '../model/schema'
-import { createTimeline, dayToX, headerRows, isoWeek, nonWorkingRuns, xToDay } from './timeline'
+import {
+  createTimeline,
+  dayAtOffset,
+  dayToX,
+  headerRows,
+  isoWeek,
+  nonWorkingRuns,
+  scrollLeftForAnchor,
+  stepZoom,
+  xToDay,
+} from './timeline'
 
 const day = isoToDay
 const iso = dayToIso
@@ -52,6 +62,34 @@ describe('rozsah časové osy', () => {
     expect(xToDay(tl, 84)).toBe(day('2026-11-16'))
     expect(xToDay(tl, 95.9)).toBe(day('2026-11-16')) // kdekoli uvnitř dne
     expect(xToDay(tl, 96)).toBe(day('2026-11-17'))
+  })
+})
+
+describe('zoom gestem (Ctrl + kolečko, dva prsty)', () => {
+  it('o jeden krok podrobněji / hrubší', () => {
+    expect(stepZoom('week', 'in')).toBe('day')
+    expect(stepZoom('week', 'out')).toBe('month')
+    expect(stepZoom('month', 'out')).toBe('quarter')
+  })
+
+  it('na krajích zůstane', () => {
+    expect(stepZoom('day', 'in')).toBe('day')
+    expect(stepZoom('quarter', 'out')).toBe('quarter')
+  })
+
+  it('den pod kurzorem zůstane na stejném místě obrazovky', () => {
+    const week = createTimeline({ zoom: 'week', projectStart: START, projectFinish: FINISH })
+    const day = createTimeline({ zoom: 'day', projectStart: START, projectFinish: FINISH })
+    // V týdnech: posun 120 px, kurzor 60 px od levého okraje → den 15 od začátku osy (2026-11-24)
+    const anchor = dayAtOffset(week, 120, 60)
+    expect(anchor).toBe(week.startDay + 15)
+    // Ve dnech (28 px/den, osa začíná stejně) musí ten den být zase 60 px od okraje
+    expect(scrollLeftForAnchor(day, anchor, 60)).toBe(15 * 28 - 60)
+  })
+
+  it('posun nikdy záporný (u začátku osy)', () => {
+    const tl = createTimeline({ zoom: 'day', projectStart: START, projectFinish: FINISH })
+    expect(scrollLeftForAnchor(tl, tl.startDay + 1, 200)).toBe(0)
   })
 })
 

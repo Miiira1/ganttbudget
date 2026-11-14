@@ -81,6 +81,8 @@
     "constraint": "Začne nejdříve {{date}} (nastaveno posunem úsečky nebo v tabulce). Kliknutím omezení zrušíte – lze vrátit Ctrl+Z.",
     "constraintIgnored": "Začne nejdříve {{date}} – teď ale platí vazba na předchůdce, která dovolí začít až později. Kliknutím omezení zrušíte.",
     "constraintClear": "Zrušit omezení „začít nejdříve {{date}}“ u činnosti {{name}}",
+    "resizeColumn": "Šířka sloupce {{name}}",
+    "resizeHint": "Táhněte pro změnu šířky sloupce. Dvojklik = výchozí šířka. Z klávesnice šipky ←/→ (se Shiftem po větších krocích), Home = výchozí.",
     "dragHint": "Přetáhněte řádek jinam. Nad fází: horní část = před ni, prostředek = do ní, spodní část = za ni. Esc tažení zruší.",
     "kindLockedHint": "Fáze obsahuje činnosti, proto musí zůstat fází. Chcete-li ji změnit, nejdřív z ní činnosti přesuňte.",
     "emptyTitle": "Projekt je zatím prázdný",
@@ -125,9 +127,11 @@
       "dragBar": "Táhnout úsečku v grafu = posunout činnost (nastaví „začít nejdříve“ 📌).",
       "dragEdge": "Táhnout okraj úsečky = změnit začátek nebo konec (délku).",
       "dragRow": "Táhnout řádek za ⠿ = přesunout ho jinam nebo do fáze.",
+      "resizeColumn": "Táhnout pravý okraj hlavičky sloupce = změnit jeho šířku; dvojklik = výchozí šířka.",
       "drawLink": "Táhnout z kolečka u začátku / konce úsečky na jinou činnost = nakreslit vazbu (typ FS, SS, FF, SF podle toho, odkud a kam).",
       "pin": "Kliknout na 📌 = zrušit omezení „začít nejdříve“.",
-      "collapse": "Kliknout na ▾ / ▸ = sbalit nebo rozbalit fázi."
+      "collapse": "Kliknout na ▾ / ▸ = sbalit nebo rozbalit fázi.",
+      "zoom": "Ctrl + kolečko nebo roztažení / sevření dvou prstů na touchpadu nad grafem = podrobnější / hrubší časová osa (den pod kurzorem zůstane na místě)."
     }
   },
   "structure": {
@@ -160,7 +164,7 @@
     "splitter": "Oddělovač tabulky a grafu",
     "splitterHint": "Táhněte myší, nebo použijte šipky vlevo/vpravo",
     "zoom": "Měřítko časové osy",
-    "zoomHint": "Jak podrobně ukázat čas v grafu",
+    "zoomHint": "Jak podrobně ukázat čas v grafu. Nad grafem jde měřítko měnit i Ctrl + kolečkem myši nebo dvěma prsty na touchpadu.",
     "zoomLevel": {
       "day": "Dny",
       "week": "Týdny",

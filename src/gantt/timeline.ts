@@ -12,6 +12,15 @@ import { dayToIso, isoToDay, isoWeekday, type DayInfo, type WorkCalendar } from 
 export type Zoom = 'day' | 'week' | 'month' | 'quarter'
 export const ZOOMS: Zoom[] = ['day', 'week', 'month', 'quarter']
 
+/**
+ * Zoom gestem (dva prsty na touchpadu, Ctrl + kolečko): o jeden krok podrobněji ('in', směrem
+ * k Dnům) nebo hrubší ('out', směrem ke Čtvrtletím). Na krajích zůstane.
+ */
+export function stepZoom(current: Zoom, direction: 'in' | 'out'): Zoom {
+  const index = ZOOMS.indexOf(current) + (direction === 'in' ? -1 : 1)
+  return ZOOMS[Math.min(ZOOMS.length - 1, Math.max(0, index))] as Zoom
+}
+
 /** Šířka jednoho dne v pixelech pro každé měřítko. */
 export const DAY_WIDTH: Record<Zoom, number> = { day: 28, week: 12, month: 4, quarter: 1.5 }
 
@@ -118,6 +127,19 @@ export function dayToX(tl: Timeline, day: number): number {
 /** Který den leží na pozici x. */
 export function xToDay(tl: Timeline, x: number): number {
   return tl.startDay + Math.floor(x / tl.dayWidth)
+}
+
+/**
+ * Který den (i s částí dne) je pod kurzorem: graf je posunutý o `scrollLeft` a kurzor je
+ * `offsetX` pixelů od levého okraje viditelné části.
+ */
+export function dayAtOffset(tl: Timeline, scrollLeft: number, offsetX: number): number {
+  return tl.startDay + (scrollLeft + offsetX) / tl.dayWidth
+}
+
+/** O kolik posunout graf, aby den `day` byl `offsetX` pixelů od levého okraje (nikdy záporně). */
+export function scrollLeftForAnchor(tl: Timeline, day: number, offsetX: number): number {
+  return Math.max(0, dayToX(tl, day) - offsetX)
 }
 
 /** Jeden úsek hlavičky (např. „listopad 2026“ nebo „týden 47“). */

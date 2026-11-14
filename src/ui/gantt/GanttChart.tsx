@@ -11,7 +11,17 @@ import type { TFunction } from 'i18next'
 import { createWorkCalendar, dayToIso, isoToDay } from '../../engine/calendar'
 import { formatIsoDate } from '../../i18n/format'
 import { layoutBars, ROW_HEIGHT } from '../../gantt/geometry'
-import { createTimeline, dayToX, headerRows, nonWorkingRuns, type NonWorkingRun, type Timeline } from '../../gantt/timeline'
+import {
+  createTimeline,
+  dayAtOffset,
+  dayToX,
+  headerRows,
+  nonWorkingRuns,
+  scrollLeftForAnchor,
+  stepZoom,
+  type NonWorkingRun,
+  type Timeline,
+} from '../../gantt/timeline'
 import { todayIso } from '../../model/dates'
 import { useProject, useSchedule } from '../../store/useProject'
 import { BarDragLayer } from './BarDragLayer'
@@ -37,16 +47,26 @@ function runTitle(run: NonWorkingRun, t: TFunction, lang: string): string {
   }
 }
 
+/** Jak velký pohyb kolečka / prstů (v px) přepne měřítko o jeden krok. */
+const ZOOM_GESTURE_THRESHOLD = 40
+/** Po jaké pauze (ms) v gestu může další pohyb přepnout znovu – jedno gesto = jeden krok. */
+const ZOOM_GESTURE_PAUSE = 250
+
 /**
- * Při změně zoomu (nebo posunu začátku osy) zůstane vlevo vidět stejný den,
- * jinak by uživatel po přepnutí „ztratil“ místo, kam se díval.
+ * Zoom a místo, kam se uživatel dívá:
  *
- * Den u levého okraje si pamatujeme průběžně při posouvání. Číst ho až po přepnutí nejde:
- * když se graf zúží, prohlížeč posun sám ořízne dřív, než se k němu dostaneme.
+ * - Při změně zoomu tlačítkem (nebo posunu začátku osy) zůstane vlevo vidět stejný den.
+ *   Den u levého okraje si pamatujeme průběžně při posouvání – číst ho až po přepnutí nejde:
+ *   když se graf zúží, prohlížeč posun sám ořízne dřív, než se k němu dostaneme.
+ * - Ctrl + kolečko nebo dva prsty na touchpadu (prohlížeč je posílá jako Ctrl + kolečko)
+ *   přepnou měřítko o jeden krok a den POD KURZOREM zůstane na stejném místě.
+ *   Zoom celé stránky prohlížeče je nad grafem vypnutý; samotné kolečko dál posouvá řádky.
  */
-function useKeepVisibleDay(wrapperRef: RefObject<HTMLDivElement | null>, tl: Timeline) {
+function useZoomNavigation(wrapperRef: RefObject<HTMLDivElement | null>, tl: Timeline) {
   const current = useRef<Timeline | null>(null)
   const leftDay = useRef<number | null>(null)
+  /** Den pod kurzorem a jeho vzdálenost od levého okraje – nastaví gesto, použije se po přepnutí. */
+  const anchor = useRef<{ day: number; offsetX: number } | null>(null)
 
   useEffect(() => {
     const scroller = wrapperRef.current?.parentElement
@@ -55,8 +75,38 @@ function useKeepVisibleDay(wrapperRef: RefObject<HTMLDivElement | null>, tl: Tim
       const timeline = current.current
       if (timeline) leftDay.current = timeline.startDay + scroller.scrollLeft / timeline.dayWidth
     }
+
+    const gesture = { sum: 0, stepped: false, timer: 0 }
+    const onWheel = (event: WheelEvent) => {
+      if (!(event.ctrlKey || event.metaKey)) return // samotné kolečko posouvá řádky jako dosud
+      event.preventDefault() // nezvětšovat celou stránku
+      window.clearTimeout(gesture.timer)
+      gesture.timer = window.setTimeout(() => {
+        gesture.sum = 0
+        gesture.stepped = false
+      }, ZOOM_GESTURE_PAUSE)
+      if (gesture.stepped) return
+      // Kolečko někdy hlásí řádky místo pixelů (deltaMode 1) – přepočteme na pixely.
+      gesture.sum += event.deltaMode === 1 ? event.deltaY * 33 : event.deltaY
+      if (Math.abs(gesture.sum) < ZOOM_GESTURE_THRESHOLD) return
+      gesture.stepped = true
+      const timeline = current.current
+      if (!timeline) return
+      // Roztažení prstů / kolečko nahoru (záporné deltaY) = podrobněji.
+      const next = stepZoom(timeline.zoom, gesture.sum < 0 ? 'in' : 'out')
+      if (next === timeline.zoom) return
+      const offsetX = event.clientX - scroller.getBoundingClientRect().left
+      anchor.current = { day: dayAtOffset(timeline, scroller.scrollLeft, offsetX), offsetX }
+      useZoom.getState().setZoom(next)
+    }
+
     scroller.addEventListener('scroll', onScroll, { passive: true })
-    return () => scroller.removeEventListener('scroll', onScroll)
+    scroller.addEventListener('wheel', onWheel, { passive: false })
+    return () => {
+      scroller.removeEventListener('scroll', onScroll)
+      scroller.removeEventListener('wheel', onWheel)
+      window.clearTimeout(gesture.timer)
+    }
   }, [wrapperRef])
 
   useLayoutEffect(() => {
@@ -64,7 +114,12 @@ function useKeepVisibleDay(wrapperRef: RefObject<HTMLDivElement | null>, tl: Tim
     const prev = current.current
     current.current = tl
     if (!scroller || !prev || (prev.zoom === tl.zoom && prev.startDay === tl.startDay)) return
-    if (leftDay.current !== null) scroller.scrollLeft = Math.max(0, dayToX(tl, leftDay.current))
+    if (anchor.current) {
+      scroller.scrollLeft = scrollLeftForAnchor(tl, anchor.current.day, anchor.current.offsetX)
+      anchor.current = null
+    } else if (leftDay.current !== null) {
+      scroller.scrollLeft = Math.max(0, dayToX(tl, leftDay.current))
+    }
   }, [wrapperRef, tl])
 }
 
@@ -94,7 +149,7 @@ export function GanttChart() {
   )
   const bars = useMemo(() => layoutBars(tl, rows, dates), [tl, rows, dates])
   const gridLines = useMemo(() => headerRows(tl)[1].slice(1).map((s) => s.x), [tl])
-  useKeepVisibleDay(wrapperRef, tl)
+  useZoomNavigation(wrapperRef, tl)
 
   const bodyHeight = rows.length * ROW_HEIGHT
   const today = todayIso()

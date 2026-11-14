@@ -54,6 +54,8 @@
     "constraint": "Starts no earlier than {{date}} (set by moving the bar or in the table). Click to remove the constraint – Ctrl+Z undoes it.",
     "constraintIgnored": "Starts no earlier than {{date}} – but right now a dependency on a predecessor only allows a later start. Click to remove the constraint.",
     "constraintClear": "Remove the “start no earlier than {{date}}” constraint from task {{name}}",
+    "resizeColumn": "Width of column {{name}}",
+    "resizeHint": "Drag to change the column width. Double-click = default width. From the keyboard: arrows ←/→ (with Shift in bigger steps), Home = default.",
     "dragHint": "Drag the row elsewhere. Over a phase: top part = before it, middle = into it, bottom part = after it. Esc cancels.",
     "kindLockedHint": "This phase contains tasks, so it must stay a phase. To change it, move its tasks out first.",
     "wbs": "WBS",
@@ -121,9 +123,11 @@
       "dragBar": "Drag a bar in the chart = move the task (sets “start no earlier than” 📌).",
       "dragEdge": "Drag the edge of a bar = change the start or finish (duration).",
       "dragRow": "Drag a row by ⠿ = move it elsewhere or into a phase.",
+      "resizeColumn": "Drag the right edge of a column header = change its width; double-click = default width.",
       "drawLink": "Drag from the circle at the start / finish of a bar onto another task = draw a dependency (type FS, SS, FF, SF depending on where from and where to).",
       "pin": "Click 📌 = remove the “start no earlier than” constraint.",
-      "collapse": "Click ▾ / ▸ = collapse or expand a phase."
+      "collapse": "Click ▾ / ▸ = collapse or expand a phase.",
+      "zoom": "Ctrl + mouse wheel or spreading / pinching two fingers on the touchpad over the chart = more / less detailed timeline (the day under the pointer stays in place)."
     }
   },
   "structure": {
@@ -154,7 +158,7 @@
     "splitter": "Divider between table and chart",
     "splitterHint": "Drag with the mouse, or use the left/right arrow keys",
     "zoom": "Timeline scale",
-    "zoomHint": "How much detail of time to show in the chart",
+    "zoomHint": "How much detail of time to show in the chart. Over the chart you can also use Ctrl + mouse wheel or two fingers on the touchpad.",
     "zoomLevel": {
       "day": "Days",
       "week": "Weeks",
