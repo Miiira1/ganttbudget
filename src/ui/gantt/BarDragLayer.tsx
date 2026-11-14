@@ -1,0 +1,206 @@
+/**
+ * Tažení úseček v grafu (G-02): posun celé úsečky, levý okraj (začátek), pravý okraj (konec).
+ *
+ * - Úchyty kreslí TaskBars.tsx (prvky s atributy data-drag-mode a data-drag-task).
+ * - Tahle vrstva poslouchá ukazatel myši (Pointer Events) na celém grafu, během tažení
+ *   kreslí jen průhledný náhled a bublinu s novými daty – projekt se nemění.
+ * - Po puštění se změna zapíše jedním krokem (setTaskTiming → jeden krok Zpět).
+ * - Esc tažení zruší. Výpočty přichycení na pracovní dny: gantt/drag.ts (otestované).
+ */
+import { useEffect, useRef, useState, type RefObject } from 'react'
+import { useTranslation } from 'react-i18next'
+import { dayToIso, isoToDay, type WorkCalendar } from '../../engine/calendar'
+import type { ScheduledTask } from '../../engine/schedule'
+import { applyDrag, pixelsToDays, type DragMode, type DragResult } from '../../gantt/drag'
+import { barGeometry, BAR_HALF_HEIGHT, MILESTONE_HALF } from '../../gantt/geometry'
+import type { Timeline } from '../../gantt/timeline'
+import { formatIsoDate } from '../../i18n/format'
+import type { Task } from '../../model/schema'
+import { getSchedule, projectStore } from '../../store/useProject'
+import { showNotice } from '../notice'
+import { useViewState } from '../viewState'
+
+interface ActiveDrag {
+  task: Task
+  mode: DragMode
+  pointerId: number
+  /** Kde myš začala (px na obrazovce). */
+  startX: number
+  startDay: number
+  finishDay: number
+  rowIndex: number
+  deltaDays: number
+  /** Náhled nového termínu; null = zatím beze změny. */
+  result: DragResult | null
+}
+
+interface BarDragLayerProps {
+  svgRef: RefObject<SVGSVGElement | null>
+  tl: Timeline
+  calendar: WorkCalendar
+  rows: Task[]
+  dates: Map<string, ScheduledTask>
+}
+
+export function BarDragLayer(props: BarDragLayerProps) {
+  const { t, i18n } = useTranslation()
+  const [active, setActiveState] = useState<ActiveDrag | null>(null)
+  // Posluchače se registrují jednou; aktuální údaje čtou přes ref.
+  const propsRef = useRef(props)
+  propsRef.current = props
+  const activeRef = useRef<ActiveDrag | null>(null)
+  const tRef = useRef(t)
+  tRef.current = t
+  const { svgRef } = props
+
+  useEffect(() => {
+    const svg = svgRef.current
+    if (!svg) return
+    const setActive = (next: ActiveDrag | null) => {
+      activeRef.current = next
+      setActiveState(next)
+    }
+
+    function onPointerDown(event: PointerEvent) {
+      if (event.button !== 0) return
+      const handle = (event.target as Element).closest<SVGElement>('[data-drag-mode]')
+      const taskId = handle?.dataset.dragTask
+      if (!handle || !taskId || !svg) return
+      const { rows, dates } = propsRef.current
+      const rowIndex = rows.findIndex((x) => x.id === taskId)
+      const task = rows[rowIndex]
+      const d = dates.get(taskId)
+      if (!task || !d?.start || !d.finish) return
+      event.preventDefault()
+      try {
+        // Pohyb myši chodí do grafu, i když myš z úsečky „uteče“.
+        svg.setPointerCapture(event.pointerId)
+      } catch {
+        // Některá zařízení zachycení neumí – tažení funguje i bez něj, jen nad grafem.
+      }
+      useViewState.getState().select(taskId)
+      setActive({
+        task,
+        mode: handle.dataset.dragMode as DragMode,
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startDay: isoToDay(d.start),
+        finishDay: isoToDay(d.finish),
+        rowIndex,
+        deltaDays: 0,
+        result: null,
+      })
+    }
+
+    function onPointerMove(event: PointerEvent) {
+      const drag = activeRef.current
+      if (!drag || event.pointerId !== drag.pointerId) return
+      const { tl, calendar } = propsRef.current
+      const deltaDays = pixelsToDays(event.clientX - drag.startX, tl.dayWidth)
+      if (deltaDays === drag.deltaDays) return
+      const result =
+        deltaDays === 0
+          ? null
+          : applyDrag(calendar, {
+              mode: drag.mode,
+              kind: drag.task.kind === 'milestone' ? 'milestone' : 'task',
+              startDay: drag.startDay,
+              finishDay: drag.finishDay,
+              durationDays: drag.task.durationDays,
+              deltaDays,
+            })
+      setActive({ ...drag, deltaDays, result })
+    }
+
+    function onPointerUp(event: PointerEvent) {
+      const drag = activeRef.current
+      if (!drag || event.pointerId !== drag.pointerId) return
+      setActive(null)
+      if (!drag.result) return // jen kliknutí (výběr řádku), nic se nemění
+      const { constraintStart, durationDays } = drag.result
+      projectStore.getState().setTaskTiming(drag.task.id, { constraintStart, durationDays })
+      // Táhl uživatel před termín daný vazbou? Omezení se uložilo, ale platí vazba – vysvětlíme to.
+      if (constraintStart && getSchedule(projectStore.getState().project).constraintOverridden.has(drag.task.id)) {
+        showNotice(tRef.current('gantt.constraintOverridden', { name: drag.task.name }))
+      }
+    }
+
+    const cancel = () => setActive(null)
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && activeRef.current) {
+        event.preventDefault()
+        cancel()
+      }
+    }
+
+    svg.addEventListener('pointerdown', onPointerDown)
+    svg.addEventListener('pointermove', onPointerMove)
+    svg.addEventListener('pointerup', onPointerUp)
+    svg.addEventListener('pointercancel', cancel)
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      svg.removeEventListener('pointerdown', onPointerDown)
+      svg.removeEventListener('pointermove', onPointerMove)
+      svg.removeEventListener('pointerup', onPointerUp)
+      svg.removeEventListener('pointercancel', cancel)
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [svgRef])
+
+  // Kurzor během tažení na celém grafu (i když myš „uteče“ z úsečky).
+  useEffect(() => {
+    const svg = svgRef.current
+    if (!svg) return
+    svg.style.cursor = active ? (active.mode === 'move' || active.task.kind === 'milestone' ? 'grabbing' : 'ew-resize') : ''
+  }, [svgRef, active])
+
+  if (!active?.result) return null
+
+  // --- Náhled: kde úsečka bude a s jakými daty ---
+  const { tl } = props
+  const { result, task, rowIndex } = active
+  const kind = task.kind === 'milestone' ? 'milestone' : 'task'
+  const ghost = barGeometry(tl, kind, dayToIso(result.startDay), dayToIso(result.finishDay), rowIndex)
+  const lang = i18n.language
+  const from = formatIsoDate(dayToIso(result.startDay), lang)
+  const to = formatIsoDate(dayToIso(result.finishDay), lang)
+  const label =
+    kind === 'milestone'
+      ? from
+      : t('gantt.dragLabel', {
+          range: from === to ? from : t('gantt.range', { from, to }),
+          duration: t('gantt.workingDays', { count: result.durationDays }),
+        })
+  // Bublina vpravo od náhledu; u pravého okraje grafu vlevo.
+  const labelWidth = label.length * 6.5 + 12
+  const rightSide = ghost.xEnd + 8 + labelWidth < tl.width
+  const labelX = rightSide ? ghost.xEnd + 8 : ghost.xStart - 8 - labelWidth
+  const cy = ghost.centerY
+
+  return (
+    <g pointerEvents="none" aria-hidden="true">
+      {kind === 'milestone' ? (
+        <polygon
+          points={`${ghost.xStart + MILESTONE_HALF},${cy - MILESTONE_HALF} ${ghost.xEnd},${cy} ${ghost.xStart + MILESTONE_HALF},${cy + MILESTONE_HALF} ${ghost.xStart},${cy}`}
+          className="fill-amber-400/40 stroke-amber-700 dark:stroke-amber-200"
+          strokeDasharray="3 2"
+        />
+      ) : (
+        <rect
+          x={ghost.xStart}
+          y={cy - BAR_HALF_HEIGHT}
+          width={Math.max(2, ghost.xEnd - ghost.xStart)}
+          height={2 * BAR_HALF_HEIGHT}
+          rx={3}
+          className="fill-blue-400/30 stroke-blue-700 dark:stroke-blue-200"
+          strokeDasharray="4 2"
+          strokeWidth={1.5}
+        />
+      )}
+      <rect x={labelX} y={cy - 10} width={labelWidth} height={20} rx={4} className="fill-slate-800 dark:fill-slate-100" />
+      <text x={labelX + 6} y={cy + 4} className="fill-white text-xs dark:fill-slate-900">
+        {label}
+      </text>
+    </g>
+  )
+}

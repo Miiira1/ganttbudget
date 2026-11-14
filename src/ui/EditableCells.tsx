@@ -48,6 +48,43 @@ export function TextCell({ value, label, onCommit, className = '', title }: Text
   )
 }
 
+interface DateCellInputProps {
+  /** Den "YYYY-MM-DD", nebo prázdný text. */
+  value: string
+  label: string
+  title?: string
+  disabled?: boolean
+  /** Vrátí false, pokud datum nejde použít (pak se vrátí původní hodnota). Prázdný text = smazat. */
+  onCommit: (value: string) => boolean | void
+}
+
+/**
+ * Pole pro datum (vestavěný výběr data v prohlížeči). Zapíše se až po opuštění pole nebo Enteru –
+ * při psaní roku po číslicích by se jinak ukládaly mezivýsledky (0002, 0020, 0202…).
+ * Formát zobrazení (např. 14. 11. 2026) řídí prohlížeč podle nastavení systému.
+ */
+export function DateInputCell({ value, label, title, disabled, onCommit }: DateCellInputProps) {
+  const [draft, setDraft] = useState<string | null>(null)
+  return (
+    <input
+      type="date"
+      aria-label={label}
+      title={title}
+      disabled={disabled}
+      min="1900-01-01"
+      max="2199-12-31"
+      className={`${inputClass} date-cell tabular-nums`}
+      value={draft ?? value}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => {
+        if (draft !== null && draft !== value) onCommit(draft)
+        setDraft(null)
+      }}
+      onKeyDown={(e) => handleKeys(e, () => setDraft(null))}
+    />
+  )
+}
+
 interface NumberCellProps {
   value: number
   label: string

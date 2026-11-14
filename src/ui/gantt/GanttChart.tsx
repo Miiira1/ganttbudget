@@ -14,6 +14,7 @@ import { layoutBars, ROW_HEIGHT } from '../../gantt/geometry'
 import { createTimeline, dayToX, headerRows, nonWorkingRuns, type NonWorkingRun, type Timeline } from '../../gantt/timeline'
 import { todayIso } from '../../model/dates'
 import { useProject, useSchedule } from '../../store/useProject'
+import { BarDragLayer } from './BarDragLayer'
 import { DependencyArrows } from './DependencyArrows'
 import { TaskBars } from './TaskBars'
 import { TimelineHeader } from './TimelineHeader'
@@ -77,6 +78,7 @@ export function GanttChart() {
   const selectedIndex = rows.findIndex((task) => task.id === selectedId)
   const patternId = useId()
   const wrapperRef = useRef<HTMLDivElement>(null)
+  const svgRef = useRef<SVGSVGElement>(null)
 
   const tl = useMemo(
     () => createTimeline({ zoom, projectStart: project.startDate, projectFinish }),
@@ -122,6 +124,7 @@ export function GanttChart() {
     <div ref={wrapperRef} className="flex min-h-full flex-col" style={{ width: tl.width }}>
       <TimelineHeader tl={tl} />
       <svg
+        ref={svgRef}
         width={tl.width}
         role="img"
         aria-label={t('gantt.chartLabel')}
@@ -186,6 +189,9 @@ export function GanttChart() {
         {/* Šipky vazeb pod úsečkami, úsečky nad čárou dneška, aby byly čitelné. */}
         <DependencyArrows rows={rows} bars={bars} />
         <TaskBars rows={rows} bars={bars} dates={dates} />
+
+        {/* Náhled při tažení úsečky (G-02) – nad vším ostatním. */}
+        <BarDragLayer svgRef={svgRef} tl={tl} calendar={calendar} rows={rows} dates={dates} />
       </svg>
     </div>
   )

@@ -9,6 +9,7 @@
  */
 import { createStore } from 'zustand/vanilla'
 import {
+  duplicate,
   indent,
   moveDown,
   moveTo,
@@ -42,6 +43,13 @@ export interface ProjectState {
   moveTaskUp: (id: string) => HierarchyError | null
   moveTaskDown: (id: string) => HierarchyError | null
   moveTask: (id: string, targetId: string, position: DropPosition) => HierarchyError | null
+  /**
+   * Termín z tažení nebo z tabulky (fáze 4b): omezení „začít nejdříve“ (null = zrušit) a/nebo délka.
+   * Obojí najednou = jeden krok Zpět. Fáze se nemění (počítá se ze svých položek).
+   */
+  setTaskTiming: (id: string, timing: { constraintStart?: string | null; durationDays?: number }) => void
+  /** Duplikuje řádek (i s podřízenými) pod originál; vrátí ID kopie, nebo null. */
+  duplicateTask: (id: string, nameSuffix: string) => string | null
   updateTask: (id: string, patch: TaskPatch) => void
   /** Smaže činnost (i s podřízenými položkami) a odkazy na ni z vazeb ostatních. */
   deleteTask: (id: string) => void
@@ -134,6 +142,27 @@ export function createProjectStore(initialProject: Project) {
       moveTaskUp: (id) => applyHierarchy(moveUp(get().project, id)),
       moveTaskDown: (id) => applyHierarchy(moveDown(get().project, id)),
       moveTask: (id, targetId, position) => applyHierarchy(moveTo(get().project, id, targetId, position)),
+
+      setTaskTiming(id, timing) {
+        const { project } = get()
+        const task = project.tasks.find((t) => t.id === id)
+        if (!task || task.kind === 'phase') return
+        const next: Task = { ...task }
+        if (timing.constraintStart === null) delete next.constraintStart
+        else if (timing.constraintStart !== undefined) next.constraintStart = timing.constraintStart
+        if (timing.durationDays !== undefined && task.kind !== 'milestone') {
+          next.durationDays = Math.max(1, Math.round(timing.durationDays))
+        }
+        if (next.constraintStart === task.constraintStart && next.durationDays === task.durationDays) return
+        commit({ ...project, tasks: project.tasks.map((t) => (t.id === id ? next : t)) })
+      },
+
+      duplicateTask(id, nameSuffix) {
+        const result = duplicate(get().project, id, newId, nameSuffix)
+        if (!result.ok) return null
+        commit(result.project)
+        return result.newId
+      },
 
       updateTask(id, patch) {
         const { project } = get()

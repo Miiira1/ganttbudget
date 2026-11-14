@@ -275,6 +275,49 @@ export const moveUp = (project: Project, id: string) => swapWithSibling(project,
 /** Prohodí položku s dalším sourozencem (i s podřízenými). */
 export const moveDown = (project: Project, id: string) => swapWithSibling(project, id, 1)
 
+/** Nejdelší povolený název (stejně jako ve schématu). */
+const MAX_NAME_LENGTH = 200
+
+/**
+ * Duplikovat řádek (G-06, Ctrl+D): kopie hned pod originál, fáze i se všemi svými položkami.
+ * Kopie dostanou nová ID (`makeId`), název kopírovaného řádku příponu (`nameSuffix`, např. " (kopie)").
+ * Vazby uvnitř kopírované skupiny vedou na kopie, vazby ven zůstanou na původní činnosti.
+ */
+export function duplicate(
+  project: Project,
+  id: string,
+  makeId: () => string,
+  nameSuffix: string,
+): { ok: true; project: Project; newId: string } | { ok: false; reason: HierarchyError } {
+  const tree = new Tree(project)
+  if (!tree.has(id)) return { ok: false, reason: 'notFound' }
+
+  // Kopírované položky v pořadí řádků (kořen, pak jeho podřízené do hloubky) → nová ID.
+  const descendants = descendantsIn(tree.lists, id)
+  const subtree = [id, ...treeOrder(project).map((t) => t.id).filter((x) => descendants.has(x))]
+  const newIds = new Map(subtree.map((oldId) => [oldId, makeId()]))
+  const byId = new Map(project.tasks.map((t) => [t.id, t]))
+
+  const copies: Task[] = subtree.map((oldId) => {
+    const original = byId.get(oldId) as Task
+    const name =
+      oldId === id ? `${original.name}${nameSuffix}`.slice(0, MAX_NAME_LENGTH).trimEnd() || original.name : original.name
+    return {
+      ...original,
+      id: newIds.get(oldId) as string,
+      name,
+      parentId: oldId === id ? original.parentId : (newIds.get(original.parentId as string) ?? original.parentId),
+      dependencies: original.dependencies.map((d) => ({ ...d, predecessorId: newIds.get(d.predecessorId) ?? d.predecessorId })),
+      assignments: original.assignments.map((a) => ({ ...a })),
+    }
+  })
+
+  const withCopies = { ...project, tasks: [...project.tasks, ...copies] }
+  const rootCopy = newIds.get(id) as string
+  const placed = moveTo(withCopies, rootCopy, id, 'after')
+  return placed.ok ? { ok: true, project: placed.project, newId: rootCopy } : placed
+}
+
 export type DropPosition = 'before' | 'after' | 'inside'
 
 /**

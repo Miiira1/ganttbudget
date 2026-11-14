@@ -3,26 +3,35 @@
  * Začátek a konec počítá plánovací jádro (engine/schedule.ts) z délky, předchůdců a kalendáře.
  * Řádky jsou ve stromovém pořadí (model/hierarchy.ts): název je odsazený podle úrovně, WBS číslo vedle.
  */
-import { useMemo, useState, type DragEvent } from 'react'
+import { memo, useMemo, useRef, useState, type DragEvent, type RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { formatIsoDate } from '../i18n/format'
-import { formatPredecessors, parsePredecessors, resolvePredecessors, rowNumbers, type PredecessorError } from '../model/predecessors'
+import {
+  formatPredecessorsWith,
+  parsePredecessors,
+  resolvePredecessors,
+  rowNumbers,
+  type PredecessorError,
+} from '../model/predecessors'
 import {
   depthMap,
-  descendantIds,
   dropPositionAt,
   MAX_DEPTH,
   moveTo,
   wbsNumbers,
   type DropPosition,
 } from '../model/hierarchy'
-import { TASK_KINDS, type Project, type Task, type TaskKind } from '../model/schema'
+import { TASK_KINDS, type Task, type TaskKind } from '../model/schema'
 import type { ScheduledTask } from '../engine/schedule'
 import { HEADER_HEIGHT, ROW_HEIGHT } from '../gantt/geometry'
-import { projectStore, useProject, useSchedule } from '../store/useProject'
-import { NumberCell, TextCell } from './EditableCells'
+import { getSchedule, projectStore, useProject, useSchedule } from '../store/useProject'
+import { DateInputCell, NumberCell, TextCell } from './EditableCells'
+import { createWorkCalendar, isoToDay } from '../engine/calendar'
+import { durationForFinish } from '../gantt/drag'
+import { isValidIsoDate } from '../model/dates'
 import { showNotice } from './notice'
+import { confirmAndDelete } from './structureCommands'
 import { useSelectedId, useViewState, useVisibleRows } from './viewState'
 
 // Výška hlavičky a řádků je pevná a stejná jako v grafu (gantt/geometry.ts), aby řádky lícovaly.
@@ -56,29 +65,40 @@ function DateCell({ date, hint }: { date: string | null; hint: string }) {
 /** O kolik pixelů se název odsadí za každou úroveň stromu. */
 const INDENT_PX = 18
 
+/**
+ * Údaje jednoho řádku. Jsou to jen jednoduché hodnoty (texty, čísla) a neměnné objekty,
+ * aby se řádek překreslil, jen když se změní jeho vlastní údaje (React.memo) – s 300 řádky
+ * to výrazně zrychlí každou změnu (viz měření ve fázi 4b).
+ */
 interface TaskRowProps {
   task: Task
   number: number
   /** Úroveň ve stromu (0 = nejvyšší). */
   depth: number
   wbs: string
-  dates: ScheduledTask
+  /** Spočítaný začátek / konec ("YYYY-MM-DD" nebo null) a u fáze spočítaná délka. */
+  start: string | null
+  finish: string | null
+  computedDuration: number | null
   inCycle: boolean
+  /** Omezení „začít nejdříve“ teď neplatí, protože vazba dovolí začít až později. */
+  constraintIgnored: boolean
+  /** Text sloupce Předchůdci, např. "2; 5+3". */
+  predecessorsText: string
   /** Má fáze podřízené položky (pak jde sbalit)? */
   hasChildren: boolean
   collapsed: boolean
   /** Je řádek vybraný (zvýrazněný)? */
   selected: boolean
-  /** Přetahování řádků (F-05): sdílený stav z tabulky. */
+  /** Kam by přetahovaný řádek dopadl, pokud je právě nad tímto řádkem. */
+  dropIndicator: DropPosition | null
+  /** Táhne se právě tento řádek? */
+  dragging: boolean
+  /** Obsluha přetahování – stále stejný objekt (nemění se mezi překresleními). */
   drag: RowDragHandlers
 }
 
-/** Kam by přetahovaný řádek dopadl, pokud je právě nad tímto řádkem (jinak null). */
-type DropIndicator = DropPosition | null
-
 interface RowDragHandlers {
-  draggingId: string | null
-  indicatorFor: (taskId: string) => DropIndicator
   onDragStart: (taskId: string, event: DragEvent<HTMLElement>) => void
   onDragOver: (task: Task, event: DragEvent<HTMLTableRowElement>) => void
   onDrop: (event: DragEvent<HTMLTableRowElement>) => void
@@ -94,6 +114,30 @@ const INDICATOR_SHADOW: Record<DropPosition, string> = {
 
 /** Vybraný řádek: modré pozadí a pruh vlevo (barva není jediným nositelem informace – U-06). */
 const selectedRowClass = 'bg-blue-100 shadow-[inset_3px_0_0_0_rgb(37_99_235)] dark:bg-blue-900/40'
+
+/**
+ * Ikona 📌: činnost má omezení „začít nejdříve k datu“ (nastavené tažením nebo v tabulce).
+ * Kliknutím se omezení zruší (jeden krok Zpět). Když teď platí vazba (je později), ikona je bledší
+ * a bublina to vysvětlí.
+ */
+function ConstraintPin({ task, ignored }: { task: Task; ignored: boolean }) {
+  const { t, i18n } = useTranslation()
+  if (!task.constraintStart) return null
+  const date = formatIsoDate(task.constraintStart, i18n.language)
+  return (
+    <button
+      type="button"
+      title={t(ignored ? 'table.constraintIgnored' : 'table.constraint', { date })}
+      aria-label={t('table.constraintClear', { date, name: task.name })}
+      onClick={() => projectStore.getState().setTaskTiming(task.id, { constraintStart: null })}
+      className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-xs hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:bg-slate-700 ${
+        ignored ? 'opacity-40' : ''
+      }`}
+    >
+      <span aria-hidden="true">📌</span>
+    </button>
+  )
+}
 
 /** Tlačítko ▸/▾ pro sbalení a rozbalení fáze; u ostatních řádků jen stejně široké místo. */
 function CollapseToggle({ task, hasChildren, collapsed }: { task: Task; hasChildren: boolean; collapsed: boolean }) {
@@ -114,26 +158,52 @@ function CollapseToggle({ task, hasChildren, collapsed }: { task: Task; hasChild
   )
 }
 
-function TaskRow({ task, number, depth, wbs, dates, inCycle, hasChildren, collapsed, selected, drag }: TaskRowProps) {
-  const { t } = useTranslation()
-  const project = useProject((s) => s.project)
+const TaskRow = memo(function TaskRow(props: TaskRowProps) {
+  const { task, number, depth, wbs, start, finish, computedDuration, inCycle, predecessorsText } = props
+  const { hasChildren, collapsed, selected, dropIndicator: indicator, dragging, drag, constraintIgnored } = props
+  const { t, i18n } = useTranslation()
   const select = useViewState((s) => s.select)
-  const { updateTask, deleteTask, setDependencies } = projectStore.getState()
+  // Řádek nesleduje celý projekt (jinak by se překresloval při každé změně kdekoli);
+  // aktuální projekt si vezme až ve chvíli, kdy ho opravdu potřebuje.
+  const { updateTask, setDependencies } = projectStore.getState()
   const label = (field: string) => t('table.fieldLabel', { field: t(field), number })
   const isPhase = task.kind === 'phase'
   const datesHint = isPhase ? t('table.phaseDatesHint') : t('table.datesHint')
 
-  function handleDelete() {
-    // Před smazáním fáze řekneme, kolik podřízených položek zmizí s ní (N-08).
-    const children = descendantIds(project, task.id).size
-    const question =
-      children > 0
-        ? t('table.confirmDeleteWithChildren', { name: task.name, count: children })
-        : t('table.confirmDelete', { name: task.name })
-    if (window.confirm(question)) deleteTask(task.id)
+  /** Začátek z tabulky = omezení „začít nejdříve“ (stejně jako posun úsečky); prázdné pole ho zruší. */
+  function commitStart(value: string): boolean | void {
+    const store = projectStore.getState()
+    if (value === '') {
+      store.setTaskTiming(task.id, { constraintStart: null })
+      return
+    }
+    if (!isValidIsoDate(value)) {
+      showNotice(t('table.invalidDate'))
+      return false
+    }
+    store.setTaskTiming(task.id, { constraintStart: value })
+    if (getSchedule(projectStore.getState().project).constraintOverridden.has(task.id)) {
+      showNotice(t('gantt.constraintOverridden', { name: task.name }))
+    }
   }
 
-  const indicator = drag.indicatorFor(task.id)
+  /** Konec z tabulky přepočítá délku (pracovní dny od začátku do konce). */
+  function commitFinish(value: string): boolean | void {
+    if (!start || !isValidIsoDate(value)) {
+      showNotice(t('table.invalidDate'))
+      return false
+    }
+    const project = projectStore.getState().project
+    const duration = durationForFinish(createWorkCalendar(project.calendar), isoToDay(start), isoToDay(value))
+    if (duration === null) {
+      showNotice(t('table.finishBeforeStart', { start: formatIsoDate(start, i18n.language) }))
+      return false
+    }
+    projectStore.getState().setTaskTiming(task.id, { durationDays: duration })
+  }
+
+  // Před smazáním fáze řekne, kolik podřízených položek zmizí s ní (N-08).
+  const handleDelete = () => confirmAndDelete(task.id, t)
 
   return (
     <tr
@@ -145,7 +215,7 @@ function TaskRow({ task, number, depth, wbs, dates, inCycle, hasChildren, collap
       onDragOver={(e) => drag.onDragOver(task, e)}
       onDrop={drag.onDrop}
       className={`${selected ? selectedRowClass : `hover:bg-blue-50/60 dark:hover:bg-slate-800 ${kindRowClass[task.kind]}`} ${
-        drag.draggingId === task.id ? 'opacity-50' : ''
+        dragging ? 'opacity-50' : ''
       }`}
     >
       <td className={`${td} px-1 text-right tabular-nums text-slate-500`}>
@@ -186,6 +256,7 @@ function TaskRow({ task, number, depth, wbs, dates, inCycle, hasChildren, collap
               updateTask(task.id, { name: trimmed })
             }}
           />
+          <ConstraintPin task={task} ignored={constraintIgnored} />
         </div>
       </td>
       <td className={`${td} min-w-32`}>
@@ -212,20 +283,36 @@ function TaskRow({ task, number, depth, wbs, dates, inCycle, hasChildren, collap
             <span className="sr-only">: {t('table.cycleHint')}</span>
           </span>
         </td>
+      ) : isPhase ? (
+        // Fáze: termíny se počítají z jejích činností, jen pro čtení.
+        <>
+          <td className={td}>
+            <DateCell date={start} hint={datesHint} />
+          </td>
+          <td className={td}>
+            <DateCell date={finish} hint={datesHint} />
+          </td>
+        </>
       ) : (
         <>
           <td className={td}>
-            <DateCell date={dates.start} hint={datesHint} />
+            <DateInputCell value={start ?? ''} label={label('table.start')} title={t('table.startHint')} onCommit={commitStart} />
           </td>
           <td className={td}>
-            <DateCell date={dates.finish} hint={datesHint} />
+            <DateInputCell
+              value={finish ?? ''}
+              label={label('table.finish')}
+              title={task.kind === 'milestone' ? t('table.milestoneFinishHint') : t('table.finishHint')}
+              disabled={task.kind === 'milestone'}
+              onCommit={commitFinish}
+            />
           </td>
         </>
       )}
       <td className={`${td} w-24`}>
         {isPhase ? (
           <span className="block px-1.5 text-right tabular-nums" title={t('table.phaseDurationHint')}>
-            {dates.durationDays ?? t('table.notComputed')}
+            {computedDuration ?? t('table.notComputed')}
           </span>
         ) : (
           <NumberCell
@@ -246,12 +333,13 @@ function TaskRow({ task, number, depth, wbs, dates, inCycle, hasChildren, collap
           </span>
         ) : (
           <TextCell
-            value={formatPredecessors(project, task)}
+            value={predecessorsText}
             label={label('table.predecessors')}
             title={t('table.predecessorsHint')}
             className="tabular-nums"
             onCommit={(text) => {
               const parsed = parsePredecessors(text)
+              const project = projectStore.getState().project
               const resolved = parsed.ok ? resolvePredecessors(project, task.id, parsed.items) : parsed
               if (!resolved.ok) {
                 showNotice(predecessorErrorText(t, resolved.error))
@@ -287,7 +375,7 @@ function TaskRow({ task, number, depth, wbs, dates, inCycle, hasChildren, collap
       </td>
     </tr>
   )
-}
+})
 
 const NO_DATES: ScheduledTask = { start: null, finish: null, durationDays: null }
 
@@ -305,14 +393,31 @@ interface DragState {
  * Platnost místa ověří stejná funkce, která přesun provede (model/hierarchy.ts → moveTo),
  * jen „naprázdno“. Esc tažení zruší (prohlížeč pak pošle dragend bez drop).
  */
-function useRowDrag(project: Project): RowDragHandlers {
+function useRowDrag(): { drag: DragState | null; handlers: RowDragHandlers } {
   const { t } = useTranslation()
-  const [drag, setDrag] = useState<DragState | null>(null)
+  const [drag, setDragState] = useState<DragState | null>(null)
   const select = useViewState((s) => s.select)
+  // Obsluha se vytvoří jen jednou; aktuální stav tažení čte z ref (proměnné, která přežívá překreslení).
+  const dragRef = useRef<DragState | null>(null)
+  const setDrag = (next: DragState | null) => {
+    dragRef.current = next
+    setDragState(next)
+  }
+  const tRef = useRef(t)
+  tRef.current = t
 
+  // Prázdný seznam závislostí: objekt vznikne jen jednou (všechno proměnlivé čte přes ref nebo úložiště).
+  const handlers = useMemo<RowDragHandlers>(() => createDragHandlers(dragRef, setDrag, select, tRef), [])
+  return { drag, handlers }
+}
+
+function createDragHandlers(
+  dragRef: RefObject<DragState | null>,
+  setDrag: (next: DragState | null) => void,
+  select: (id: string | null) => void,
+  tRef: RefObject<TFunction>,
+): RowDragHandlers {
   return {
-    draggingId: drag?.draggingId ?? null,
-    indicatorFor: (taskId) => (drag?.valid && drag.targetId === taskId ? drag.position : null),
     onDragStart(taskId, event) {
       event.dataTransfer.effectAllowed = 'move'
       event.dataTransfer.setData('text/plain', taskId) // Firefox bez dat tažení nespustí
@@ -322,12 +427,13 @@ function useRowDrag(project: Project): RowDragHandlers {
       select(taskId)
     },
     onDragOver(task, event) {
+      const drag = dragRef.current
       if (!drag) return
       const box = event.currentTarget.getBoundingClientRect()
       const position = dropPositionAt(event.clientY - box.top, box.height, task.kind === 'phase')
       let { valid } = drag
       if (drag.targetId !== task.id || drag.position !== position) {
-        valid = moveTo(project, drag.draggingId, task.id, position).ok
+        valid = moveTo(projectStore.getState().project, drag.draggingId, task.id, position).ok
         setDrag({ ...drag, targetId: task.id, position, valid })
       }
       if (valid) {
@@ -337,9 +443,10 @@ function useRowDrag(project: Project): RowDragHandlers {
     },
     onDrop(event) {
       event.preventDefault()
+      const drag = dragRef.current
       if (drag?.valid && drag.targetId && drag.position) {
         const error = projectStore.getState().moveTask(drag.draggingId, drag.targetId, drag.position)
-        if (error) showNotice(t(`structure.error.${error}`, { max: MAX_DEPTH }))
+        if (error) showNotice(tRef.current(`structure.error.${error}`, { max: MAX_DEPTH }))
       }
       setDrag(null)
     },
@@ -359,7 +466,7 @@ export function TaskTable({ onAddTask, onLoadSample }: { onAddTask: () => void; 
   const depths = useMemo(() => depthMap(project), [project])
   const wbs = useMemo(() => wbsNumbers(project), [project])
   const parents = useMemo(() => new Set(project.tasks.map((task) => task.parentId)), [project])
-  const drag = useRowDrag(project)
+  const { drag, handlers } = useRowDrag()
 
   if (rows.length === 0) {
     return (
@@ -395,10 +502,10 @@ export function TaskTable({ onAddTask, onLoadSample }: { onAddTask: () => void; 
           <th scope="col" className={`${th} w-32`}>
             {t('table.kind')}
           </th>
-          <th scope="col" className={`${th} w-28`} title={t('table.datesHint')}>
+          <th scope="col" className={`${th} w-36`} title={t('table.startHint')}>
             {t('table.start')}
           </th>
-          <th scope="col" className={`${th} w-28`} title={t('table.datesHint')}>
+          <th scope="col" className={`${th} w-36`} title={t('table.finishHint')}>
             {t('table.finish')}
           </th>
           <th scope="col" className={`${th} text-right`} title={t('table.durationHint')}>
@@ -419,21 +526,30 @@ export function TaskTable({ onAddTask, onLoadSample }: { onAddTask: () => void; 
         </tr>
       </thead>
       <tbody>
-        {rows.map((task) => (
-          <TaskRow
-            key={task.id}
-            task={task}
-            number={numbers.get(task.id) ?? 0}
-            hasChildren={parents.has(task.id)}
-            collapsed={collapsed.has(task.id)}
-            selected={task.id === selectedId}
-            drag={drag}
-            depth={depths.get(task.id) ?? 0}
-            wbs={wbs.get(task.id) ?? ''}
-            dates={result.tasks.get(task.id) ?? NO_DATES}
-            inCycle={result.cycleTaskIds.has(task.id)}
-          />
-        ))}
+        {rows.map((task) => {
+          const dates = result.tasks.get(task.id) ?? NO_DATES
+          return (
+            <TaskRow
+              key={task.id}
+              task={task}
+              number={numbers.get(task.id) ?? 0}
+              depth={depths.get(task.id) ?? 0}
+              wbs={wbs.get(task.id) ?? ''}
+              start={dates.start}
+              finish={dates.finish}
+              computedDuration={task.kind === 'phase' ? dates.durationDays : null}
+              inCycle={result.cycleTaskIds.has(task.id)}
+              constraintIgnored={result.constraintOverridden.has(task.id)}
+              predecessorsText={formatPredecessorsWith(numbers, task)}
+              hasChildren={parents.has(task.id)}
+              collapsed={collapsed.has(task.id)}
+              selected={task.id === selectedId}
+              dropIndicator={drag?.valid && drag.targetId === task.id ? drag.position : null}
+              dragging={drag?.draggingId === task.id}
+              drag={handlers}
+            />
+          )
+        })}
       </tbody>
     </table>
   )

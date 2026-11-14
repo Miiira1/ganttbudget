@@ -1,5 +1,5 @@
 /** Hlavní okno aplikace: lišta s nástroji, tabulka činností a patička. */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LANGUAGES } from '../i18n/languages'
 import { formatIsoDate } from '../i18n/format'
@@ -15,6 +15,8 @@ import { ZoomSwitch } from './gantt/ZoomSwitch'
 import { StructureToolbar } from './StructureToolbar'
 import { runStructureCommand, STRUCTURE_COMMANDS, STRUCTURE_SHORTCUTS } from './structureCommands'
 import { useSelectedId, useViewState } from './viewState'
+import { ShortcutsDialog } from './ShortcutsDialog'
+import { deleteSelected, duplicateSelected } from './structureCommands'
 
 /** Je kurzor v textovém poli? Tam necháme Ctrl+Z prohlížeči (vrací psaní v poli). */
 function isEditingField(target: EventTarget | null): boolean {
@@ -31,6 +33,7 @@ export default function App() {
   const notice = useNotice((s) => s.message)
   const clearNotice = useNotice((s) => s.clear)
   const [calendarOpen, setCalendarOpen] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const selectedId = useSelectedId(project)
   const selectRow = useViewState((s) => s.select)
 
@@ -43,12 +46,38 @@ export default function App() {
     return watchSystemTheme(() => applyTheme('system'))
   }, [theme])
 
-  // Po každé úspěšné změně projektu staré upozornění zmizí.
-  useEffect(() => clearNotice(), [project, clearNotice])
+  // Po každé změně projektu staré upozornění zmizí (to, které ke změně patří, zůstane).
+  useEffect(() => useNotice.getState().clearIfStale(project), [project])
 
-  // --- Klávesové zkratky: Alt+Shift+šipky (struktura plánu), Ctrl+Z / Ctrl+Y (Zpět / Znovu) ---
+  // --- Klávesové zkratky (G-06), přehled v ShortcutsDialog.tsx ---
+  // Posluchač se registruje jednou; přidání činnosti čte aktuální výběr přes ref.
+  const addTaskRef = useRef<() => void>(() => {})
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
+      // F1 = přehled zkratek (místo nápovědy prohlížeče).
+      if (event.key === 'F1') {
+        event.preventDefault()
+        setShortcutsOpen(true)
+        return
+      }
+      const ctrl = (event.ctrlKey || event.metaKey) && !event.altKey
+      // Ctrl+Enter a Ctrl+D fungují i v poli tabulky (při psaní se nepoužívají).
+      if (ctrl && !event.shiftKey && event.key === 'Enter') {
+        event.preventDefault()
+        addTaskRef.current()
+        return
+      }
+      if (ctrl && !event.shiftKey && event.key.toLowerCase() === 'd') {
+        event.preventDefault() // jinak by prohlížeč přidal záložku
+        duplicateSelected(i18n.t)
+        return
+      }
+      // Ctrl+Delete jen mimo textové pole – v poli maže slovo za kurzorem.
+      if (ctrl && !event.shiftKey && event.key === 'Delete' && !isEditingField(event.target)) {
+        event.preventDefault()
+        deleteSelected(i18n.t)
+        return
+      }
       // Alt+Shift+šipky fungují i v poli tabulky – při psaní se tahle kombinace nepoužívá.
       if (event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey) {
         const command = STRUCTURE_COMMANDS.find((c) => STRUCTURE_SHORTCUTS[c] === event.key)
@@ -83,6 +112,7 @@ export default function App() {
       row?.select()
     })
   }
+  addTaskRef.current = handleAddTask
 
   function handleLoadSample() {
     // Varování před nahrazením plánu (N-08). Prázdný projekt není co ztratit.
@@ -149,6 +179,9 @@ export default function App() {
           <button type="button" className="btn-secondary" onClick={() => setCalendarOpen(true)} title={t('toolbar.calendarHint')}>
             <span aria-hidden="true">📅</span> {t('toolbar.calendar')}
           </button>
+          <button type="button" className="btn-secondary" onClick={() => setShortcutsOpen(true)} title={t('toolbar.shortcutsHint')}>
+            <span aria-hidden="true">⌨</span> {t('toolbar.shortcuts')}
+          </button>
           {project.tasks.length > 0 && <StructureToolbar />}
           {project.tasks.length > 0 && (
             <div className="ml-auto">
@@ -180,6 +213,7 @@ export default function App() {
         )}
       </div>
       <CalendarDialog open={calendarOpen} onClose={() => setCalendarOpen(false)} />
+      <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
 
       {project.tasks.length === 0 ? (
         // Prázdný projekt: jen uvítání přes celou šířku, graf by byl prázdný.

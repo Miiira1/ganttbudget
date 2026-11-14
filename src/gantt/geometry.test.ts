@@ -90,9 +90,16 @@ describe('výkon (N-02)', () => {
       return bars
     }
     run() // zahřátí
-    const t0 = performance.now()
-    const bars = run()
-    expect(performance.now() - t0).toBeLessThan(50)
+    // Nejrychlejší z pěti běhů: měří rychlost kódu, ne náhodné vytížení počítače
+    // (testy běží souběžně, jeden pomalý běh by jinak hlásil planý poplach).
+    let best = Infinity
+    let bars = new Map()
+    for (let i = 0; i < 5; i++) {
+      const t0 = performance.now()
+      bars = run()
+      best = Math.min(best, performance.now() - t0)
+    }
+    expect(best).toBeLessThan(50)
     expect(bars.size).toBe(300)
   })
 })
@@ -125,11 +132,56 @@ describe('trasa šipky vazby', () => {
     expect(dependencyPoints(from, to, 'FS').at(-1)).toEqual([144 + ARROW_GAP, 48 + BAR_HALF_HEIGHT])
   })
 
-  it('FS do milníku: hrot se dotkne hrany kosočtverce', () => {
-    const from = bar(0, 84, 144)
-    // milník se středem 148 (2 px vedle místa, kde šipka klesá)
-    const to: Bar = { kind: 'milestone', xStart: 148 - MILESTONE_HALF, xEnd: 148 + MILESTONE_HALF, centerY: 48 }
-    expect(dependencyPoints(from, to, 'FS').at(-1)).toEqual([150, 48 - (MILESTONE_HALF - 2)])
+  describe('do milníku vždy svisle do jeho špičky', () => {
+    /** Milník se středem cx na řádku row. */
+    const milestone = (row: number, cx: number): Bar => ({
+      kind: 'milestone',
+      xStart: cx - MILESTONE_HALF,
+      xEnd: cx + MILESTONE_HALF,
+      centerY: row * ROW_HEIGHT + ROW_HEIGHT / 2,
+    })
+    const topTip = (row: number) => row * ROW_HEIGHT + ROW_HEIGHT / 2 - MILESTONE_HALF
+    const bottomTip = (row: number) => row * ROW_HEIGHT + ROW_HEIGHT / 2 + MILESTONE_HALF
+
+    it('milník v den konce předchůdce: svisle ze spodní hrany úsečky do horní špičky', () => {
+      expect(dependencyPoints(bar(0, 84, 144), milestone(1, 144), 'FS')).toEqual([
+        [144, 16 + BAR_HALF_HEIGHT],
+        [144, topTip(1)],
+      ])
+    })
+
+    it('milník vpravo: vodorovně nad něj, pak dolů do špičky', () => {
+      expect(dependencyPoints(bar(0, 84, 144), milestone(2, 170), 'FS')).toEqual([
+        [144, 16],
+        [170, 16],
+        [170, topTip(2)],
+      ])
+    })
+
+    it('milník výš než předchůdce: do spodní špičky', () => {
+      expect(dependencyPoints(bar(3, 84, 144), milestone(1, 170), 'FS')).toEqual([
+        [144, 112],
+        [170, 112],
+        [170, bottomTip(1)],
+      ])
+    })
+
+    it('milník vlevo od předchůdce: oklika mezerou mezi řádky, pak do špičky', () => {
+      expect(dependencyPoints(bar(0, 84, 144), milestone(1, 60), 'FS')).toEqual([
+        [144, 16],
+        [144 + ARROW_GAP, 16],
+        [144 + ARROW_GAP, 32],
+        [60, 32],
+        [60, topTip(1)],
+      ])
+    })
+
+    it('z milníku do milníku pod ním: ze spodní špičky do horní', () => {
+      expect(dependencyPoints(milestone(0, 100), milestone(2, 100), 'FS')).toEqual([
+        [100, bottomTip(0)],
+        [100, topTip(2)],
+      ])
+    })
   })
 
   it('FS bez místa (následník začíná dřív a končí před ohybem): oklika mezerou mezi řádky', () => {

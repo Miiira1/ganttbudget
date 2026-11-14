@@ -26,14 +26,45 @@ function barTitle(task: Task, dates: { start: string; finish: string }, t: TFunc
   const from = formatIsoDate(dates.start, lang)
   const to = formatIsoDate(dates.finish, lang)
   const range = from === to ? from : t('gantt.range', { from, to })
+  // Případné omezení „začít nejdříve“ a nápověda, co jde s úsečkou dělat myší.
+  const constraint = task.constraintStart
+    ? `\n📌 ${t('gantt.barConstraint', { date: formatIsoDate(task.constraintStart, lang) })}`
+    : ''
   switch (task.kind) {
     case 'milestone':
-      return t('gantt.barMilestone', { name: task.name, date: to })
+      return `${t('gantt.barMilestone', { name: task.name, date: to })}${constraint}\n${t('gantt.dragMilestoneHint')}`
     case 'phase':
-      return t('gantt.barPhase', { name: task.name, range })
+      return `${t('gantt.barPhase', { name: task.name, range })}\n${t('gantt.phaseNotDraggable')}`
     case 'task':
-      return t('gantt.barTask', { name: task.name, range, duration: t('gantt.workingDays', { count: task.durationDays }) })
+      return `${t('gantt.barTask', { name: task.name, range, duration: t('gantt.workingDays', { count: task.durationDays }) })}${constraint}\n${t('gantt.dragTaskHint')}`
   }
+}
+
+/** Šířka úchytu pro změnu délky na okraji úsečky (px). */
+const EDGE_HANDLE = 6
+
+/**
+ * Neviditelné úchyty pro tažení (zpracovává je BarDragLayer.tsx):
+ * tělo úsečky = posun, okraje = změna začátku / konce. Fáze úchyty nemá.
+ */
+function DragHandles({ bar, taskId }: { bar: Bar; taskId: string }) {
+  if (bar.kind === 'phase') return null
+  const top = bar.centerY - TASK_BAR_HEIGHT / 2 - 2
+  const height = TASK_BAR_HEIGHT + 4
+  const width = Math.max(MIN_WIDTH, bar.xEnd - bar.xStart)
+  const common = { y: top, height, fill: 'transparent', 'data-drag-task': taskId, style: { touchAction: 'none' } }
+  if (bar.kind === 'milestone') {
+    return <rect {...common} x={bar.xStart} width={width} data-drag-mode="move" className="cursor-grab" />
+  }
+  // U krátkých úseček zabírají okraje nejvýš třetinu šířky, aby šlo chytit i tělo.
+  const edge = Math.min(EDGE_HANDLE, width / 3)
+  return (
+    <>
+      <rect {...common} x={bar.xStart} width={width} data-drag-mode="move" className="cursor-grab" />
+      <rect {...common} x={bar.xStart - edge / 2} width={edge} data-drag-mode="start" className="cursor-ew-resize" />
+      <rect {...common} x={bar.xStart + width - edge / 2} width={edge} data-drag-mode="end" className="cursor-ew-resize" />
+    </>
+  )
 }
 
 function Shape({ bar }: { bar: Bar }) {
@@ -100,6 +131,7 @@ export const TaskBars = memo(function TaskBars({ rows, bars, dates }: TaskBarsPr
           <g key={task.id} data-task-id={task.id}>
             <title>{barTitle(task, { start: d.start, finish: d.finish }, t, i18n.language)}</title>
             <Shape bar={bar} />
+            <DragHandles bar={bar} taskId={task.id} />
           </g>
         )
       })}

@@ -19,13 +19,17 @@ export function useProject<T>(selector: (state: ProjectState) => T): T {
 // Spočítané termíny se pamatují pro každou verzi projektu – počítají se jen po změně.
 const scheduleCache = new WeakMap<Project, ScheduleResult>()
 
-/** Spočítané termíny aktuálního projektu (výsledek plánovacího jádra). */
-export function useSchedule(): ScheduleResult {
-  const project = useProject((s) => s.project)
+/** Spočítané termíny dané verze projektu (z paměti, pokud už byly spočítané). */
+export function getSchedule(project: Project): ScheduleResult {
   let result = scheduleCache.get(project)
   if (!result) {
     result = schedule(project)
     scheduleCache.set(project, result)
   }
   return result
+}
+
+/** Spočítané termíny aktuálního projektu (výsledek plánovacího jádra). */
+export function useSchedule(): ScheduleResult {
+  return getSchedule(useProject((s) => s.project))
 }

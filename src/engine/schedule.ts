@@ -8,7 +8,9 @@
  *  - délka je v pracovních dnech, konec = poslední pracovní den činnosti,
  *  - vazba FS: následník začne další pracovní den po konci předchůdce (+ prodleva),
  *  - milník leží na dni konce předchůdce; bez předchůdců na začátku projektu,
- *  - fáze trvá od nejdřívějšího začátku do nejpozdějšího konce svých podřízených položek.
+ *  - fáze trvá od nejdřívějšího začátku do nejpozdějšího konce svých podřízených položek,
+ *  - omezení „začít nejdříve k datu“ (fáze 4b): začátek = nejpozdější z (začátek projektu,
+ *    vazby, omezení přichycené na pracovní den).
  *
  * Ve fázi 2 se počítají jen vazby FS. Typy SS, FF, SF přidá fáze 4c.
  */
@@ -29,6 +31,8 @@ export interface ScheduleResult {
   projectFinish: string | null
   /** Položky, které nejde spočítat, protože vazby tvoří kruh (nebo na kruh čekají). */
   cycleTaskIds: Set<string>
+  /** Činnosti, jejichž omezení „začít nejdříve“ je dřív, než dovolí vazby – platí vazba (UI to vysvětlí). */
+  constraintOverridden: Set<string>
   /** Chyba, kvůli které nejde spočítat nic. */
   error?: 'noWorkingDays'
 }
@@ -49,6 +53,7 @@ export function schedule(project: Project): ScheduleResult {
     tasks: new Map(project.tasks.map((t) => [t.id, EMPTY])),
     projectFinish: null,
     cycleTaskIds: new Set(),
+    constraintOverridden: new Set(),
     ...extra,
   })
 
@@ -108,6 +113,7 @@ export function schedule(project: Project): ScheduleResult {
 
   // --- 3. Výpočet termínů v tomto pořadí (forward pass) ---
   const computed = new Map<string, Computed>()
+  const constraintOverridden = new Set<string>()
   try {
     for (const id of order) {
       const t = byId.get(id) as Task
@@ -120,16 +126,29 @@ export function schedule(project: Project): ScheduleResult {
   }
 
   function computeTask(t: Task): Computed {
-    let earliestStart = projectStartDay
-    let drivenByDependency = false
+    // Nejdřívější začátek podle vazeb (null = žádná vazba neomezuje).
+    let dependencyStart: number | null = null
     for (const d of dependenciesOf(t)) {
       const pred = computed.get(d.predecessorId)
       if (!pred) continue // předchůdce bez termínu (prázdná fáze) neomezuje
       const candidate = calendar.addWorkingDays(pred.successorStartDay, d.lagDays)
-      if (candidate >= earliestStart) {
-        earliestStart = candidate
-        drivenByDependency = true
-      }
+      if (dependencyStart === null || candidate > dependencyStart) dependencyStart = candidate
+    }
+    // Omezení „začít nejdříve k datu“ (fáze 4b), přichycené na pracovní den.
+    const constraintDay = t.constraintStart ? calendar.nextWorkingDay(isoToDay(t.constraintStart)) : null
+
+    // Skutečný začátek = nejpozdější z: začátek projektu, vazby, omezení.
+    let earliestStart = projectStartDay
+    let drivenByDependency = false
+    if (dependencyStart !== null && dependencyStart >= earliestStart) {
+      earliestStart = dependencyStart
+      drivenByDependency = true
+    }
+    if (constraintDay !== null && constraintDay > earliestStart) {
+      earliestStart = constraintDay
+      drivenByDependency = false
+    } else if (constraintDay !== null && drivenByDependency && constraintDay < earliestStart) {
+      constraintOverridden.add(t.id) // omezení je dřív, než dovolí vazba – platí vazba
     }
     if (t.kind === 'milestone' || t.durationDays === 0) {
       // Milník „leží“ na konci dne předchůdce, ale nikdy před začátkem projektu.
@@ -170,5 +189,5 @@ export function schedule(project: Project): ScheduleResult {
     if (lastFinish === null || c.finishDay > lastFinish) lastFinish = c.finishDay
   }
 
-  return { tasks, projectFinish: lastFinish === null ? null : dayToIso(lastFinish), cycleTaskIds }
+  return { tasks, projectFinish: lastFinish === null ? null : dayToIso(lastFinish), cycleTaskIds, constraintOverridden }
 }

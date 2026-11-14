@@ -1,12 +1,12 @@
 /**
- * Příkazy pro strukturu plánu (F-05): Odsadit, Předsadit, Nahoru, Dolů – na vybraném řádku.
- * Používají je tlačítka v liště (StructureToolbar.tsx) i klávesové zkratky Alt+Shift+šipky (App.tsx).
+ * Příkazy pro vybraný řádek: Odsadit, Předsadit, Nahoru, Dolů (F-05), Smazat a Duplikovat (G-06).
+ * Používají je tlačítka v liště (StructureToolbar.tsx), tabulka i klávesové zkratky (App.tsx).
  *
  * Postará se o potvrzení (odsazení pod činnost s vazbami) a o srozumitelnou hlášku,
  * když příkaz nejde provést. Samotnou změnu dělá úložiště (každá = jeden krok Zpět).
  */
 import type { TFunction } from 'i18next'
-import { dependenciesRemovedByIndent, MAX_DEPTH } from '../model/hierarchy'
+import { dependenciesRemovedByIndent, descendantIds, MAX_DEPTH } from '../model/hierarchy'
 import { projectStore } from '../store/useProject'
 import { showNotice } from './notice'
 import { useViewState } from './viewState'
@@ -20,6 +20,43 @@ export const STRUCTURE_SHORTCUTS: Record<StructureCommand, string> = {
   outdent: 'ArrowLeft',
   moveUp: 'ArrowUp',
   moveDown: 'ArrowDown',
+}
+
+/**
+ * Smazat řádek po potvrzení (N-08). U fáze řekne, kolik podřízených položek zmizí s ní.
+ * Používá křížek v tabulce i zkratka Ctrl+Delete.
+ */
+export function confirmAndDelete(taskId: string, t: TFunction): void {
+  const store = projectStore.getState()
+  const task = store.project.tasks.find((x) => x.id === taskId)
+  if (!task) return
+  const children = descendantIds(store.project, taskId).size
+  const question =
+    children > 0
+      ? t('table.confirmDeleteWithChildren', { name: task.name, count: children })
+      : t('table.confirmDelete', { name: task.name })
+  if (window.confirm(question)) store.deleteTask(taskId)
+}
+
+/** Ctrl+Delete: smazat vybraný řádek. */
+export function deleteSelected(t: TFunction): void {
+  const id = useViewState.getState().selectedId
+  if (!id || !projectStore.getState().project.tasks.some((x) => x.id === id)) {
+    showNotice(t('structure.noSelection'))
+    return
+  }
+  confirmAndDelete(id, t)
+}
+
+/** Ctrl+D: duplikovat vybraný řádek (fáze i s činnostmi) a vybrat kopii. */
+export function duplicateSelected(t: TFunction): void {
+  const id = useViewState.getState().selectedId
+  const copy = id ? projectStore.getState().duplicateTask(id, t('task.copySuffix')) : null
+  if (!copy) {
+    showNotice(t('structure.noSelection'))
+    return
+  }
+  useViewState.getState().select(copy)
 }
 
 export function runStructureCommand(command: StructureCommand, t: TFunction): void {

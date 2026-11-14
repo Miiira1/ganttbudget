@@ -1,7 +1,7 @@
 # ZADÁNÍ: Aplikace pro Ganttovy diagramy s navázaným rozpočtem
 
 > Pracovní název: **GanttBudget** (změnitelný)
-> Verze zadání: 1.3 · Datum: 14. 11. 2026 (změny viz kap. 14)
+> Verze zadání: 1.4 · Datum: 14. 11. 2026 (změny viz kap. 14)
 > Dokument je zároveň vstupem pro Claude Code (vibe coding) a osnovou výukové case study.
 
 ---
@@ -377,7 +377,7 @@ Technicky: build bez chyb, testy plánovacího jádra projdou, aplikace je nasaz
 
 | # | Téma | Aktuální předpoklad |
 |---|---|---|
-| 1 | Chování tažení úsečky u činností s předchůdci | Nastaví se omezení „začít nejdříve k datu" (viz kap. 4.2); ověřit v praxi s uživateli |
+| 1 | Chování tažení úsečky u činností s předchůdci | ✅ Rozhodnuto ve fázi 4b (v1.4): posun nastaví omezení „začít nejdříve k datu“; platí nejpozdější z (začátek projektu, vazby, omezení); když vyhraje vazba, aplikace to vysvětlí a ikona 📌 je bledší. Ověřit v praxi s uživateli zůstává doporučeno |
 | 2 | Zdroje a rozpočet: mzda se počítá z hodin zdroje, nebo z celkové délky činnosti | Hodiny = délka činnosti × kapacita × podíl úvazku; ověřit ve fázi 6–7 |
 | 3 | Zaokrouhlování peněz | ✅ Rozhodnuto (v1.1): celá čísla v nejmenší jednotce měny, zobrazení na 2 desetinná místa |
 | 4 | Průběžný náklad „za měsíc" u činnosti, která nezačíná na začátku měsíce | Poměrně po dnech; upřesnit ve fázi 7 |
@@ -398,3 +398,4 @@ Technicky: build bez chyb, testy plánovacího jádra projdou, aplikace je nasaz
 | 1.1 | 14. 11. 2026 | Fáze 4 rozdělena na 4a/4b/4c; návrh stavu s historií (Undo/Redo) přesunut do fáze 1; peníze jako celá čísla v nejmenší jednotce; ExcelJS místo SheetJS; přidána validace Zod; bezpečnostní požadavky N-10 až N-13; fáze 6 přejmenována (milníky jsou v MVP); sloupec zdrojů v F-01 přesunut do fáze 6; otevřené otázky 9 a 10 |
 | 1.2 | 14. 11. 2026 | Fáze 2: místo date-fns vlastní otestované funkce pro data; seznam svátků ověřen proti legislativě; pravidla výpočtu termínů (konec = poslední pracovní den, FS = další pracovní den po konci, milník na dni konce předchůdce); předchůdci se ve fázi 2 zadávají čísly řádků s prodlevou (`2; 5+3`), fáze zatím nemají vazby |
 | 1.3 | 14. 11. 2026 | Fáze 4a – pravidla stromu: sloupec Č. (čísla řádků pro předchůdce, sbalením se nemění) + nový sloupec WBS; podřízené položky má jen fáze, max. 6 úrovní; odsazení pod obyčejnou činnost ji změní na fázi (její vazby se po potvrzení odeberou, fáze zatím vazby mít nesmí); předsazení přesune řádek za konec jeho fáze; Nahoru/Dolů jen mezi sourozenci, do jiné fáze předsazením nebo tažením (nad fází: horní třetina = před, prostředek = dovnitř, spodní třetina = za); zkratky Alt+Shift+šipky; fázi s činnostmi nejde změnit na činnost/milník; délka fáze = pracovní dny od jejího začátku do konce; sbalení fáze je jen volba zobrazení (mimo Zpět/Znovu, zatím se neukládá – řeší fáze 5) |
+| 1.4 | 14. 11. 2026 | Fáze 4b – tažení: posun úsečky přichytí začátek na nejbližší pracovní den a nastaví omezení „začít nejdříve k datu“; pravý okraj mění konec (délku, min. 1 den), levý okraj mění začátek a konec zůstane; milník se jen posouvá, fázi táhnout nejde; během tažení náhled s daty, Esc zruší, jedno tažení = jeden krok Zpět. Omezení: začátek = nejpozdější z (začátek projektu, vazby, omezení); když vyhraje vazba, aplikace to vysvětlí (otevřená otázka č. 1 uzavřena); ikona 📌 u činnosti, kliknutím se omezení zruší. Začátek a Konec jdou zadat v tabulce (Začátek = omezení, smazání ho zruší; Konec přepočítá délku). Zkratky (G-06): Ctrl+Enter nová činnost pod výběr, Ctrl+D duplikovat (fáze i s činnostmi), Ctrl+Delete smazat (jen mimo textové pole), Alt+Shift+šipky, Ctrl+Z/Y, F1 přehled. Výkon: krok tažení < 3 ms; puštění, které posune všech 300 řádků, cca 0,4 s – zrychlení (např. pole data až po kliknutí) ve fázi 13 |

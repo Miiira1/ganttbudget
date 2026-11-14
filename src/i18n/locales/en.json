@@ -20,6 +20,8 @@
     "loadSampleHint": "Load the sample project “Introducing production automation”",
     "calendar": "Calendar",
     "calendarHint": "Project start, working days, holidays and shutdowns",
+    "shortcuts": "Shortcuts",
+    "shortcutsHint": "Overview of keyboard shortcuts and mouse controls (F1)",
     "language": "Language",
     "theme": "Appearance"
   },
@@ -44,6 +46,14 @@
     "expandHint": "Show the tasks of this phase",
     "confirmDeleteWithChildren_one": "Really delete phase “{{name}}” including {{count}} item inside it? You can undo this with Undo (Ctrl+Z).",
     "confirmDeleteWithChildren_other": "Really delete phase “{{name}}” including {{count}} items inside it? You can undo this with Undo (Ctrl+Z).",
+    "startHint": "Start. If you change it, the task starts no earlier than this date (📌 – same as moving the bar). Clear the date to remove the constraint.",
+    "finishHint": "Finish = last working day. If you change it, the duration in working days is recalculated.",
+    "milestoneFinishHint": "A milestone lasts 0 days – its finish equals its start. Move the start instead.",
+    "invalidDate": "That is not a valid date – the previous value was restored.",
+    "finishBeforeStart": "The finish cannot be before the start ({{start}}). The previous value was restored.",
+    "constraint": "Starts no earlier than {{date}} (set by moving the bar or in the table). Click to remove the constraint – Ctrl+Z undoes it.",
+    "constraintIgnored": "Starts no earlier than {{date}} – but right now a dependency on a predecessor only allows a later start. Click to remove the constraint.",
+    "constraintClear": "Remove the “start no earlier than {{date}}” constraint from task {{name}}",
     "dragHint": "Drag the row elsewhere. Over a phase: top part = before it, middle = into it, bottom part = after it. Esc cancels.",
     "kindLockedHint": "This phase contains tasks, so it must stay a phase. To change it, move its tasks out first.",
     "wbs": "WBS",
@@ -83,7 +93,37 @@
     "milestoneHint": "An important moment with no duration, e.g. signing a contract."
   },
   "task": {
-    "defaultName": "New task"
+    "defaultName": "New task",
+    "copySuffix": " (copy)"
+  },
+  "shortcuts": {
+    "title": "Keyboard shortcuts",
+    "intro": "Shortcuts work with the selected row (click into it). On a Mac, use Cmd instead of Ctrl.",
+    "keyboard": "Keyboard shortcuts",
+    "mouse": "Mouse",
+    "close": "Close",
+    "items": {
+      "addTask": "New task below the selected row",
+      "duplicate": "Duplicate the selected row (a phase with its tasks)",
+      "delete": "Delete the selected row (outside a text field – in a field Ctrl+Delete deletes a word)",
+      "indent": "Indent – put under the row above (into a phase)",
+      "outdent": "Outdent – move one level up, after the end of the phase",
+      "moveUp": "Move the row up",
+      "moveDown": "Move the row down",
+      "undo": "Undo the last change (outside a text field; in a field it undoes typing)",
+      "redo": "Redo the undone change",
+      "confirm": "Confirm the edit of a field",
+      "cancel": "Cancel an unfinished edit or a drag",
+      "nextField": "Go to the next field (Shift+Tab to the previous one)",
+      "help": "This overview"
+    },
+    "mouseItems": {
+      "dragBar": "Drag a bar in the chart = move the task (sets “start no earlier than” 📌).",
+      "dragEdge": "Drag the edge of a bar = change the start or finish (duration).",
+      "dragRow": "Drag a row by ⠿ = move it elsewhere or into a phase.",
+      "pin": "Click 📌 = remove the “start no earlier than” constraint.",
+      "collapse": "Click ▾ / ▸ = collapse or expand a phase."
+    }
   },
   "structure": {
     "toolbarLabel": "Plan structure",
@@ -132,6 +172,12 @@
     "barTask": "{{name}}: {{range}} ({{duration}})",
     "barPhase": "Phase {{name}}: {{range}}",
     "barMilestone": "Milestone {{name}}: {{date}}",
+    "barConstraint": "Starts no earlier than {{date}} (constraint)",
+    "dragTaskHint": "Drag the bar to move it, drag its edges to change the start or finish. Esc cancels.",
+    "dragMilestoneHint": "Drag the milestone to move it. Esc cancels.",
+    "phaseNotDraggable": "A phase is calculated from its tasks – move or change its tasks instead.",
+    "dragLabel": "{{range}} · {{duration}}",
+    "constraintOverridden": "“{{name}}” cannot start earlier than its predecessors allow (dependency). The “start no earlier than” date was saved, but the dependency wins. To move it earlier, change its predecessors.",
     "dependency": "Dependency: “{{from}}” → “{{to}}” ({{type}}{{lag}})",
     "dependencyType": {
       "FS": "starts after finish",

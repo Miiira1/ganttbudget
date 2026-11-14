@@ -20,6 +20,8 @@
     "loadSampleHint": "Načíst ukázkový projekt „Zavedení automatizace do výroby“",
     "calendar": "Kalendář",
     "calendarHint": "Začátek projektu, pracovní dny, svátky a odstávky",
+    "shortcuts": "Zkratky",
+    "shortcutsHint": "Přehled klávesových zkratek a ovládání myší (F1)",
     "language": "Jazyk",
     "theme": "Vzhled"
   },
@@ -71,6 +73,14 @@
     "confirmDeleteWithChildren_few": "Opravdu smazat fázi „{{name}}“ včetně {{count}} podřízených položek? Změnu lze vrátit tlačítkem Zpět (Ctrl+Z).",
     "confirmDeleteWithChildren_many": "Opravdu smazat fázi „{{name}}“ včetně {{count}} podřízených položek? Změnu lze vrátit tlačítkem Zpět (Ctrl+Z).",
     "confirmDeleteWithChildren_other": "Opravdu smazat fázi „{{name}}“ včetně {{count}} podřízených položek? Změnu lze vrátit tlačítkem Zpět (Ctrl+Z).",
+    "startHint": "Začátek. Když ho změníte, činnost začne nejdříve k tomuto datu (📌 – stejně jako posun úsečky). Smazáním data omezení zrušíte.",
+    "finishHint": "Konec = poslední pracovní den. Když ho změníte, přepočítá se délka v pracovních dnech.",
+    "milestoneFinishHint": "Milník trvá 0 dní – konec je stejný jako začátek. Posuňte začátek.",
+    "invalidDate": "Tohle není platné datum – vrátila se původní hodnota.",
+    "finishBeforeStart": "Konec nemůže být dřív než začátek ({{start}}). Vrátila se původní hodnota.",
+    "constraint": "Začne nejdříve {{date}} (nastaveno posunem úsečky nebo v tabulce). Kliknutím omezení zrušíte – lze vrátit Ctrl+Z.",
+    "constraintIgnored": "Začne nejdříve {{date}} – teď ale platí vazba na předchůdce, která dovolí začít až později. Kliknutím omezení zrušíte.",
+    "constraintClear": "Zrušit omezení „začít nejdříve {{date}}“ u činnosti {{name}}",
     "dragHint": "Přetáhněte řádek jinam. Nad fází: horní část = před ni, prostředek = do ní, spodní část = za ni. Esc tažení zruší.",
     "kindLockedHint": "Fáze obsahuje činnosti, proto musí zůstat fází. Chcete-li ji změnit, nejdřív z ní činnosti přesuňte.",
     "emptyTitle": "Projekt je zatím prázdný",
@@ -87,7 +97,37 @@
     "milestoneHint": "Důležitý okamžik bez trvání, např. podpis smlouvy."
   },
   "task": {
-    "defaultName": "Nová činnost"
+    "defaultName": "Nová činnost",
+    "copySuffix": " (kopie)"
+  },
+  "shortcuts": {
+    "title": "Klávesové zkratky",
+    "intro": "Zkratky pracují s vybraným řádkem (klikněte do něj). Na Macu místo Ctrl použijte Cmd.",
+    "keyboard": "Klávesové zkratky",
+    "mouse": "Myší",
+    "close": "Zavřít",
+    "items": {
+      "addTask": "Nová činnost pod vybraný řádek",
+      "duplicate": "Duplikovat vybraný řádek (fázi i s činnostmi)",
+      "delete": "Smazat vybraný řádek (mimo textové pole – v poli Ctrl+Delete maže slovo)",
+      "indent": "Odsadit – zařadit pod řádek nad sebou (do fáze)",
+      "outdent": "Předsadit – vytáhnout o úroveň výš, za konec fáze",
+      "moveUp": "Posunout řádek nahoru",
+      "moveDown": "Posunout řádek dolů",
+      "undo": "Zpět – vrátit poslední změnu (mimo textové pole; v poli vrací psaní)",
+      "redo": "Znovu – obnovit vrácenou změnu",
+      "confirm": "Potvrdit úpravu pole",
+      "cancel": "Zrušit rozepsanou úpravu pole nebo tažení",
+      "nextField": "Přejít na další pole (Shift+Tab na předchozí)",
+      "help": "Tento přehled"
+    },
+    "mouseItems": {
+      "dragBar": "Táhnout úsečku v grafu = posunout činnost (nastaví „začít nejdříve“ 📌).",
+      "dragEdge": "Táhnout okraj úsečky = změnit začátek nebo konec (délku).",
+      "dragRow": "Táhnout řádek za ⠿ = přesunout ho jinam nebo do fáze.",
+      "pin": "Kliknout na 📌 = zrušit omezení „začít nejdříve“.",
+      "collapse": "Kliknout na ▾ / ▸ = sbalit nebo rozbalit fázi."
+    }
   },
   "structure": {
     "toolbarLabel": "Struktura plánu",
@@ -138,6 +178,12 @@
     "barTask": "{{name}}: {{range}} ({{duration}})",
     "barPhase": "Fáze {{name}}: {{range}}",
     "barMilestone": "Milník {{name}}: {{date}}",
+    "barConstraint": "Začne nejdříve {{date}} (omezení)",
+    "dragTaskHint": "Táhněte úsečku pro posun, okraje pro změnu začátku nebo konce. Esc tažení zruší.",
+    "dragMilestoneHint": "Táhněte milník pro posun. Esc tažení zruší.",
+    "phaseNotDraggable": "Fáze se počítá ze svých činností – posuňte nebo změňte její činnosti.",
+    "dragLabel": "{{range}} · {{duration}}",
+    "constraintOverridden": "„{{name}}“ nemůže začít dřív, než dovolí její předchůdci (vazba). Datum „začít nejdříve“ se uložilo, ale platí vazba. Chcete-li ji posunout dřív, upravte předchůdce.",
     "dependency": "Vazba: „{{from}}“ → „{{to}}“ ({{type}}{{lag}})",
     "dependencyType": {
       "FS": "začne po konci",

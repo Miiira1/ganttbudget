@@ -146,6 +146,55 @@ describe('strom: odsazení, přesuny, vkládání (fáze 4a)', () => {
   })
 })
 
+describe('termíny z tažení a duplikování (fáze 4b)', () => {
+  const find = (store: ReturnType<typeof newStore>, id: string) => store.getState().project.tasks.find((t) => t.id === id)!
+
+  it('nastaví omezení i délku najednou – jeden krok Zpět', () => {
+    const store = newStore()
+    const a = store.getState().addTask('A')
+    store.getState().setTaskTiming(a, { constraintStart: '2026-11-25', durationDays: 4 })
+    expect(find(store, a)).toMatchObject({ constraintStart: '2026-11-25', durationDays: 4 })
+    expect(store.getState().past).toHaveLength(2)
+    store.getState().undo()
+    expect(find(store, a).constraintStart).toBeUndefined()
+    expect(find(store, a).durationDays).toBe(1)
+  })
+
+  it('null omezení zruší; beze změny se nic nezapíše', () => {
+    const store = newStore()
+    const a = store.getState().addTask('A')
+    store.getState().setTaskTiming(a, { constraintStart: '2026-11-25' })
+    store.getState().setTaskTiming(a, { constraintStart: '2026-11-25' })
+    expect(store.getState().past).toHaveLength(2)
+    store.getState().setTaskTiming(a, { constraintStart: null })
+    expect('constraintStart' in find(store, a)).toBe(false)
+    expect(ProjectSchema.safeParse(store.getState().project).success).toBe(true)
+  })
+
+  it('milník si nechá délku 0, fáze se tažením nemění', () => {
+    const store = newStore()
+    const m = store.getState().addTask('M', 'milestone')
+    const f = store.getState().addTask('F', 'phase')
+    store.getState().setTaskTiming(m, { constraintStart: '2026-11-20', durationDays: 5 })
+    expect(find(store, m)).toMatchObject({ constraintStart: '2026-11-20', durationDays: 0 })
+    const pastBefore = store.getState().past.length
+    store.getState().setTaskTiming(f, { constraintStart: '2026-11-20' })
+    expect(store.getState().past).toHaveLength(pastBefore)
+  })
+
+  it('duplikuje řádek pod originál a vrátí ID kopie; jde to vrátit', () => {
+    const store = newStore()
+    const a = store.getState().addTask('A')
+    store.getState().addTask('B')
+    const copy = store.getState().duplicateTask(a, ' (kopie)')
+    expect(treeOrder(store.getState().project).map((t) => t.name)).toEqual(['A', 'A (kopie)', 'B'])
+    expect(copy).not.toBeNull()
+    store.getState().undo()
+    expect(store.getState().project.tasks).toHaveLength(2)
+    expect(store.getState().duplicateTask('neexistuje', ' (kopie)')).toBeNull()
+  })
+})
+
 describe('vazby, kalendář a začátek projektu', () => {
   it('nastaví vazby a jdou vrátit', () => {
     const store = newStore()

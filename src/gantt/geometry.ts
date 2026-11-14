@@ -68,6 +68,7 @@ export type Point = [number, number]
  *  - Když je na přímou cestu místo: vyjít, svisle k cílovému řádku, vodorovně do cíle.
  *  - Když šipka po ohybu klesá (stoupá) přímo nad (pod) úsečkou cíle – typicky činnost
  *    začínající hned další den: svisle do horní (spodní) hrany cíle, bez kličky.
+ *  - Do milníku vždy svisle do jeho špičky (viz milestonePoints).
  *  - Jinak oklika mezerou mezi řádky (polovina výšky řádku směrem k cíli).
  */
 export function dependencyPoints(from: Bar, to: Bar, type: DependencyType): Point[] {
@@ -82,6 +83,9 @@ export function dependencyPoints(from: Bar, to: Bar, type: DependencyType): Poin
   const yT = to.centerY
   const vx = x0 + exitDir * ARROW_GAP
 
+  // Do milníku vede šipka vždy svisle do jeho horní (dolní) špičky – vypadá to čistě.
+  if (to.kind === 'milestone' && yT !== y0) return milestonePoints(from, to, x0, y0, exitDir)
+
   if (entryDir * (xT - vx) >= MIN_ENTRY) {
     return [
       [x0, y0],
@@ -92,12 +96,10 @@ export function dependencyPoints(from: Bar, to: Bar, type: DependencyType): Poin
   }
   const down = yT >= y0 ? 1 : -1
   if (yT !== y0 && vx >= to.xStart && vx <= to.xEnd) {
-    // Jak daleko od středu řádku je hrana cíle v místě, kam šipka dosedne.
-    const edge = to.kind === 'milestone' ? MILESTONE_HALF - Math.abs(vx - (to.xStart + MILESTONE_HALF)) : BAR_HALF_HEIGHT
     return [
       [x0, y0],
       [vx, y0],
-      [vx, yT - down * edge],
+      [vx, yT - down * BAR_HALF_HEIGHT],
     ]
   }
   const midY = y0 + down * (ROW_HEIGHT / 2)
@@ -109,6 +111,43 @@ export function dependencyPoints(from: Bar, to: Bar, type: DependencyType): Poin
     [ex, midY],
     [ex, yT],
     [xT, yT],
+  ]
+}
+
+/**
+ * Šipka do milníku – vždy svisle do jeho špičky (horní, když je milník níž; dolní, když výš):
+ *  - milník je ve směru výstupu šipky: vodorovně nad (pod) jeho střed, pak svisle do špičky,
+ *  - milník leží nad / pod úsečkou předchůdce (typicky milník v den jejího konce):
+ *    šipka spadne svisle z hrany úsečky (u milníku z jeho špičky) přímo do špičky cíle,
+ *  - jinak oklika mezerou mezi řádky a svisle do špičky.
+ */
+function milestonePoints(from: Bar, to: Bar, x0: number, y0: number, exitDir: 1 | -1): Point[] {
+  const cx = to.xStart + MILESTONE_HALF
+  const down = to.centerY > y0 ? 1 : -1
+  const tip = to.centerY - down * MILESTONE_HALF
+
+  if (exitDir * (cx - x0) > 1) {
+    return [
+      [x0, y0],
+      [cx, y0],
+      [cx, tip],
+    ]
+  }
+  if (cx >= from.xStart - 1 && cx <= from.xEnd + 1) {
+    const edge = from.kind === 'milestone' ? MILESTONE_HALF - Math.abs(cx - (from.xStart + MILESTONE_HALF)) : BAR_HALF_HEIGHT
+    return [
+      [cx, y0 + down * edge],
+      [cx, tip],
+    ]
+  }
+  const vx = x0 + exitDir * ARROW_GAP
+  const midY = y0 + down * (ROW_HEIGHT / 2)
+  return [
+    [x0, y0],
+    [vx, y0],
+    [vx, midY],
+    [cx, midY],
+    [cx, tip],
   ]
 }
 

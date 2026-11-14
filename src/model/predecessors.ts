@@ -129,7 +129,11 @@ export function resolvePredecessors(
 
 /** Vazby činnosti → text pro tabulku, např. "1; 2+3". */
 export function formatPredecessors(project: Project, task: Task): string {
-  const numbers = rowNumbers(project)
+  return formatPredecessorsWith(rowNumbers(project), task)
+}
+
+/** Totéž s předem spočítanými čísly řádků (tabulka je spočítá jednou pro všechny řádky). */
+export function formatPredecessorsWith(numbers: Map<string, number>, task: Task): string {
   return task.dependencies
     .map((d) => {
       const row = numbers.get(d.predecessorId)

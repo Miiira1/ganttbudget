@@ -110,6 +110,49 @@ describe('milníky', () => {
   })
 })
 
+describe('omezení „začít nejdříve k datu“ (fáze 4b)', () => {
+  /** Činnost s omezením. */
+  const constrained = (t: Task, constraintStart: string): Task => ({ ...t, constraintStart })
+
+  it('činnost bez předchůdců začne k datu omezení', () => {
+    expect(dates(project([constrained(task('A', 2), '2026-11-25')]), 'A')).toEqual(['2026-11-25', '2026-11-26'])
+  })
+
+  it('omezení o víkendu nebo ve svátek se posune na další pracovní den', () => {
+    expect(dates(project([constrained(task('A', 1), '2026-11-21')]), 'A')).toEqual(['2026-11-23', '2026-11-23']) // So → Po
+    expect(dates(project([constrained(task('B', 1), '2026-11-17')]), 'B')).toEqual(['2026-11-18', '2026-11-18']) // svátek → St
+  })
+
+  it('omezení později než vazba: platí omezení', () => {
+    const p = project([task('A', 3), constrained(task('B', 1, [['A', 0]]), '2026-11-25')])
+    // A: 16.–19. → podle vazby by B začala Pá 20.; omezení říká St 25.
+    expect(dates(p, 'B')).toEqual(['2026-11-25', '2026-11-25'])
+    expect(schedule(p).constraintOverridden.has('B')).toBe(false)
+  })
+
+  it('omezení dřív než vazba: platí vazba a jádro to oznámí', () => {
+    const p = project([task('A', 3), constrained(task('B', 1, [['A', 0]]), '2026-11-16')])
+    expect(dates(p, 'B')).toEqual(['2026-11-20', '2026-11-20'])
+    expect([...schedule(p).constraintOverridden]).toEqual(['B'])
+  })
+
+  it('omezení před začátkem projektu se neuplatní (projekt začíná později)', () => {
+    expect(dates(project([constrained(task('A', 1), '2026-11-01')]), 'A')).toEqual(['2026-11-16', '2026-11-16'])
+  })
+
+  it('milník s omezením leží na jeho dni, následník začne týž den', () => {
+    const p = project([constrained(task('M', 0, [], 'milestone'), '2026-11-20'), task('B', 1, [['M', 0]])])
+    expect(dates(p, 'M')).toEqual(['2026-11-20', '2026-11-20'])
+    expect(dates(p, 'B')).toEqual(['2026-11-20', '2026-11-20'])
+  })
+
+  it('posunutá činnost posune i své následníky', () => {
+    const p = project([constrained(task('A', 2), '2026-11-23'), task('B', 1, [['A', 0]])])
+    // A: Po 23., Út 24. → B: St 25.
+    expect(dates(p, 'B')).toEqual(['2026-11-25', '2026-11-25'])
+  })
+})
+
 describe('fáze (sumární řádky)', () => {
   it('fáze bez činností nemá termín', () => {
     expect(dates(project([task('F', 0, [], 'phase')]), 'F')).toEqual([null, null])
