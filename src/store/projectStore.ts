@@ -8,7 +8,7 @@
  * Všechny změny projektu MUSÍ jít přes funkci `commit()` – jen tak se dostanou do historie.
  */
 import { createStore } from 'zustand/vanilla'
-import { createTask, type Project, type Task, type TaskKind } from '../model/schema'
+import { createTask, type Calendar, type Dependency, type Project, type Task, type TaskKind } from '../model/schema'
 
 /** Kolik kroků zpět si aplikace pamatuje. */
 export const HISTORY_LIMIT = 100
@@ -26,6 +26,12 @@ export interface ProjectState {
   updateTask: (id: string, patch: TaskPatch) => void
   /** Smaže činnost (i s podřízenými položkami) a odkazy na ni z vazeb ostatních. */
   deleteTask: (id: string) => void
+  /** Nastaví vazby činnosti (už zkontrolované – viz model/predecessors.ts). */
+  setDependencies: (id: string, dependencies: Dependency[]) => void
+  /** Změní nastavení kalendáře projektu. */
+  updateCalendar: (patch: Partial<Calendar>) => void
+  /** Změní datum začátku projektu ("YYYY-MM-DD"). */
+  setProjectStart: (startDate: string) => void
   /** Nahradí celý projekt (např. vzorovým). Lze vrátit přes Zpět. */
   loadProject: (project: Project) => void
   undo: () => void
@@ -97,14 +103,44 @@ export function createProjectStore(initialProject: Project) {
       updateTask(id, patch) {
         const { project } = get()
         let changed = false
-        const tasks = project.tasks.map((task) => {
+        let tasks = project.tasks.map((task) => {
           if (task.id !== id) return task
           const next = applyPatch(task, patch)
           if (sameTask(task, next)) return task
           changed = true
           return next
         })
-        if (changed) commit({ ...project, tasks })
+        if (!changed) return
+        // Fáze zatím nemůže mít vazby (fáze 2–4b): při změně na fázi se její vazby odeberou.
+        if (patch.kind === 'phase') {
+          tasks = tasks.map((t) => {
+            if (t.id === id) return t.dependencies.length > 0 ? { ...t, dependencies: [] } : t
+            return t.dependencies.some((d) => d.predecessorId === id)
+              ? { ...t, dependencies: t.dependencies.filter((d) => d.predecessorId !== id) }
+              : t
+          })
+        }
+        commit({ ...project, tasks })
+      },
+
+      setDependencies(id, dependencies) {
+        const { project } = get()
+        const task = project.tasks.find((t) => t.id === id)
+        if (!task || JSON.stringify(task.dependencies) === JSON.stringify(dependencies)) return
+        commit({ ...project, tasks: project.tasks.map((t) => (t.id === id ? { ...t, dependencies } : t)) })
+      },
+
+      updateCalendar(patch) {
+        const { project } = get()
+        const calendar = { ...project.calendar, ...patch }
+        if (JSON.stringify(calendar) === JSON.stringify(project.calendar)) return
+        commit({ ...project, calendar })
+      },
+
+      setProjectStart(startDate) {
+        const { project } = get()
+        if (startDate === project.startDate) return
+        commit({ ...project, startDate })
       },
 
       deleteTask(id) {

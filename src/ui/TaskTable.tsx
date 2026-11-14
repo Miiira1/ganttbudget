@@ -1,11 +1,16 @@
 /**
  * Tabulka činností (F-01, textová část).
- * Ve fázi 1 se termíny a předchůdci ještě nepočítají – ukazují „—“.
+ * Začátek a konec počítá plánovací jádro (engine/schedule.ts) z délky, předchůdců a kalendáře.
  */
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
+import { formatIsoDate } from '../i18n/format'
+import { formatPredecessors, parsePredecessors, resolvePredecessors, rowOrder, type PredecessorError } from '../model/predecessors'
 import { TASK_KINDS, type Task, type TaskKind } from '../model/schema'
-import { projectStore, useProject } from '../store/useProject'
+import type { ScheduledTask } from '../engine/schedule'
+import { projectStore, useProject, useSchedule } from '../store/useProject'
 import { NumberCell, TextCell } from './EditableCells'
+import { showNotice } from './notice'
 
 const th = 'sticky top-0 z-10 border-b border-slate-300 bg-slate-100 px-2 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
 const td = 'border-b border-slate-200 px-1 py-0.5 align-middle dark:border-slate-700/70'
@@ -16,19 +21,31 @@ const kindRowClass: Record<TaskKind, string> = {
   milestone: '',
 }
 
-function NotComputed() {
-  const { t } = useTranslation()
+/** Text chyby zápisu předchůdců pro uživatele. */
+function predecessorErrorText(t: TFunction, error: PredecessorError): string {
+  const text =
+    error.code === 'cycle'
+      ? t('predecessorError.cycle', { path: error.rows.join(' → ') })
+      : t(`predecessorError.${error.code}`, error)
+  return `${text} ${t('predecessorError.restored')}`
+}
+
+function DateCell({ date, hint }: { date: string | null; hint: string }) {
+  const { i18n, t } = useTranslation()
   return (
-    <span className="px-1.5 text-slate-400 dark:text-slate-500" title={t('table.notComputedHint')}>
-      {t('table.notComputed')}
+    <span className={`block whitespace-nowrap px-1.5 tabular-nums ${date ? '' : 'text-slate-400 dark:text-slate-500'}`} title={hint}>
+      {date ? formatIsoDate(date, i18n.language) : t('table.notComputed')}
     </span>
   )
 }
 
-function TaskRow({ task, number }: { task: Task; number: number }) {
+function TaskRow({ task, number, dates, inCycle }: { task: Task; number: number; dates: ScheduledTask; inCycle: boolean }) {
   const { t } = useTranslation()
-  const { updateTask, deleteTask } = projectStore.getState()
+  const project = useProject((s) => s.project)
+  const { updateTask, deleteTask, setDependencies } = projectStore.getState()
   const label = (field: string) => t('table.fieldLabel', { field: t(field), number })
+  const isPhase = task.kind === 'phase'
+  const datesHint = isPhase ? t('table.phaseDatesHint') : t('table.datesHint')
 
   return (
     <tr data-task-id={task.id} className={`hover:bg-blue-50/60 dark:hover:bg-slate-800 ${kindRowClass[task.kind]}`}>
@@ -43,11 +60,11 @@ function TaskRow({ task, number }: { task: Task; number: number }) {
           <TextCell
             value={task.name}
             label={label('table.name')}
-            className={task.kind === 'phase' ? 'font-semibold' : ''}
+            className={isPhase ? 'font-semibold' : ''}
             onCommit={(name) => {
               const trimmed = name.trim()
               if (trimmed === '') {
-                window.alert(t('table.invalidName'))
+                showNotice(t('table.invalidName'))
                 return false
               }
               updateTask(task.id, { name: trimmed })
@@ -70,14 +87,26 @@ function TaskRow({ task, number }: { task: Task; number: number }) {
           ))}
         </select>
       </td>
-      <td className={td}>
-        <NotComputed />
-      </td>
-      <td className={td}>
-        <NotComputed />
-      </td>
+      {inCycle ? (
+        <td colSpan={2} className={td}>
+          <span className="block px-1.5 font-medium text-red-700 dark:text-red-400" title={t('table.cycleHint')}>
+            <span aria-hidden="true">⚠ </span>
+            {t('table.cycle')}
+            <span className="sr-only">: {t('table.cycleHint')}</span>
+          </span>
+        </td>
+      ) : (
+        <>
+          <td className={td}>
+            <DateCell date={dates.start} hint={datesHint} />
+          </td>
+          <td className={td}>
+            <DateCell date={dates.finish} hint={datesHint} />
+          </td>
+        </>
+      )}
       <td className={`${td} w-24`}>
-        {task.kind === 'phase' ? (
+        {isPhase ? (
           <span className="block px-1.5 text-right text-slate-400" title={t('table.phaseDurationHint')}>
             {t('table.notComputed')}
           </span>
@@ -93,8 +122,28 @@ function TaskRow({ task, number }: { task: Task; number: number }) {
           />
         )}
       </td>
-      <td className={td}>
-        <NotComputed />
+      <td className={`${td} w-32`}>
+        {isPhase ? (
+          <span className="block px-1.5 text-slate-400" title={t('table.phasePredecessorsHint')}>
+            {t('table.notComputed')}
+          </span>
+        ) : (
+          <TextCell
+            value={formatPredecessors(project, task)}
+            label={label('table.predecessors')}
+            title={t('table.predecessorsHint')}
+            className="tabular-nums"
+            onCommit={(text) => {
+              const parsed = parsePredecessors(text)
+              const resolved = parsed.ok ? resolvePredecessors(project, task.id, parsed.items) : parsed
+              if (!resolved.ok) {
+                showNotice(predecessorErrorText(t, resolved.error))
+                return false
+              }
+              setDependencies(task.id, resolved.dependencies)
+            }}
+          />
+        )}
       </td>
       <td className={`${td} w-20`}>
         <NumberCell
@@ -125,11 +174,13 @@ function TaskRow({ task, number }: { task: Task; number: number }) {
   )
 }
 
+const NO_DATES: ScheduledTask = { start: null, finish: null }
+
 export function TaskTable({ onAddTask, onLoadSample }: { onAddTask: () => void; onLoadSample: () => void }) {
   const { t } = useTranslation()
-  const tasks = useProject((s) => s.project.tasks)
-  // Ve fázi 1 jsou všechny položky na jedné úrovni – stačí seřadit podle pořadí.
-  const rows = [...tasks].sort((a, b) => a.order - b.order)
+  const project = useProject((s) => s.project)
+  const result = useSchedule()
+  const rows = rowOrder(project)
 
   if (rows.length === 0) {
     return (
@@ -162,16 +213,16 @@ export function TaskTable({ onAddTask, onLoadSample }: { onAddTask: () => void; 
           <th scope="col" className={`${th} w-32`}>
             {t('table.kind')}
           </th>
-          <th scope="col" className={`${th} w-24`}>
+          <th scope="col" className={`${th} w-28`} title={t('table.datesHint')}>
             {t('table.start')}
           </th>
-          <th scope="col" className={`${th} w-24`}>
+          <th scope="col" className={`${th} w-28`} title={t('table.datesHint')}>
             {t('table.finish')}
           </th>
           <th scope="col" className={`${th} text-right`} title={t('table.durationHint')}>
             {t('table.duration')}
           </th>
-          <th scope="col" className={`${th} w-28`}>
+          <th scope="col" className={th} title={t('table.predecessorsHint')}>
             {t('table.predecessors')}
           </th>
           <th scope="col" className={`${th} text-right`}>
@@ -187,7 +238,13 @@ export function TaskTable({ onAddTask, onLoadSample }: { onAddTask: () => void; 
       </thead>
       <tbody>
         {rows.map((task, index) => (
-          <TaskRow key={task.id} task={task} number={index + 1} />
+          <TaskRow
+            key={task.id}
+            task={task}
+            number={index + 1}
+            dates={result.tasks.get(task.id) ?? NO_DATES}
+            inCycle={result.cycleTaskIds.has(task.id)}
+          />
         ))}
       </tbody>
     </table>

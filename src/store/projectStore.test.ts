@@ -66,6 +66,47 @@ describe('úpravy činností', () => {
   })
 })
 
+describe('vazby, kalendář a začátek projektu', () => {
+  it('nastaví vazby a jdou vrátit', () => {
+    const store = newStore()
+    const a = store.getState().addTask('A')
+    const b = store.getState().addTask('B')
+    store.getState().setDependencies(b, [{ predecessorId: a, type: 'FS', lagDays: 2 }])
+    expect(store.getState().project.tasks[1]!.dependencies).toEqual([{ predecessorId: a, type: 'FS', lagDays: 2 }])
+    store.getState().undo()
+    expect(store.getState().project.tasks[1]!.dependencies).toEqual([])
+  })
+
+  it('změna na fázi odebere vazby činnosti i vazby na ni', () => {
+    const store = newStore()
+    const a = store.getState().addTask('A')
+    const b = store.getState().addTask('B')
+    const c = store.getState().addTask('C')
+    store.getState().setDependencies(b, [{ predecessorId: a, type: 'FS', lagDays: 0 }])
+    store.getState().setDependencies(c, [{ predecessorId: b, type: 'FS', lagDays: 0 }])
+    store.getState().updateTask(b, { kind: 'phase' })
+    const tasks = store.getState().project.tasks
+    expect(tasks[1]!.dependencies).toEqual([])
+    expect(tasks[2]!.dependencies).toEqual([])
+    store.getState().undo() // jeden krok vrátí změnu typu i vazby
+    expect(store.getState().project.tasks[2]!.dependencies).toHaveLength(1)
+  })
+
+  it('změní kalendář a začátek projektu, prázdná změna se nezapíše', () => {
+    const store = newStore()
+    store.getState().updateCalendar({ useCzechHolidays: false })
+    store.getState().updateCalendar({ useCzechHolidays: false })
+    store.getState().setProjectStart('2027-01-04')
+    store.getState().setProjectStart('2027-01-04')
+    expect(store.getState().project.calendar.useCzechHolidays).toBe(false)
+    expect(store.getState().project.startDate).toBe('2027-01-04')
+    expect(store.getState().past).toHaveLength(2)
+    store.getState().undo()
+    store.getState().undo()
+    expect(store.getState().project.calendar.useCzechHolidays).toBe(true)
+  })
+})
+
 describe('historie změn (Zpět / Znovu)', () => {
   it('přidání → Zpět → Znovu', () => {
     const store = newStore()

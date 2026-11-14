@@ -18,6 +18,8 @@
     "redoHint": "Redo the undone change (Ctrl+Y)",
     "loadSample": "Sample project",
     "loadSampleHint": "Load the sample project “Introducing production automation”",
+    "calendar": "Calendar",
+    "calendarHint": "Project start, working days, holidays and shutdowns",
     "language": "Language",
     "theme": "Appearance"
   },
@@ -29,6 +31,7 @@
   "project": {
     "defaultName": "New project",
     "start": "Project start: {{date}}",
+    "finish": "Finish: {{date}}",
     "taskCount_one": "{{count}} item",
     "taskCount_other": "{{count}} items"
   },
@@ -46,8 +49,13 @@
     "notes": "Notes",
     "actions": "Actions",
     "notComputed": "—",
-    "notComputedHint": "Dates and links will be calculated in the next version of the app.",
+    "datesHint": "Calculated automatically from duration, predecessors and the calendar. Finish = last working day.",
+    "phaseDatesHint": "Phase dates are calculated from its tasks (grouping comes in the next version).",
     "phaseDurationHint": "A phase's duration is calculated from its tasks.",
+    "predecessorsHint": "Row numbers this task follows (it starts after they finish). E.g. 2; 5+3 = after row 2 and 3 working days after row 5.",
+    "phasePredecessorsHint": "A phase cannot have predecessors yet.",
+    "cycle": "Loop",
+    "cycleHint": "Dates cannot be calculated: the links form a loop (the task waits for itself). Fix the predecessors.",
     "delete": "Delete",
     "deleteRow": "Delete row {{number}}: {{name}}",
     "confirmDelete": "Really delete “{{name}}”? You can undo this with Undo (Ctrl+Z).",
@@ -66,6 +74,62 @@
   },
   "task": {
     "defaultName": "New task"
+  },
+  "notice": {
+    "close": "Close notice"
+  },
+  "predecessorError": {
+    "restored": "The original value was restored.",
+    "syntax": "“{{token}}” is not a valid predecessor entry. Write row numbers separated by semicolons, e.g. 2; 5+3.",
+    "unsupportedType": "“{{token}}” is not supported yet. For now a task can only follow the finish of another task, e.g. 3 or 3+2.",
+    "duplicate": "Row {{row}} is listed twice among the predecessors.",
+    "unknownRow": "Row {{row}} does not exist.",
+    "self": "A task cannot follow itself.",
+    "phase": "Row {{row}} is a phase. Linking to phases is not possible yet – link to its last task instead.",
+    "phaseSuccessor": "A phase cannot have predecessors yet.",
+    "cycle": "This link would create a loop {{path}} – the task would wait for itself."
+  },
+  "schedule": {
+    "noWorkingDays": "The calendar has no working day, so no dates can be calculated. Adjust it under Calendar."
+  },
+  "calendar": {
+    "title": "Project calendar",
+    "intro": "Dates are calculated in working days only. Weekends, holidays and shutdowns are skipped.",
+    "projectStart": "Project start",
+    "projectStartHint": "The first tasks start on the nearest working day from this date.",
+    "workingDays": "Working days of the week",
+    "atLeastOneDay": "At least one day of the week must be a working day.",
+    "czechHolidays": "Automatically include Czech public holidays (including Easter)",
+    "holidaysOverview": "Holidays in {{from}}–{{to}}",
+    "holidaysOverviewOne": "Holidays in {{year}}",
+    "holidayCounted": "Treat as day off: {{name}}, {{date}}",
+    "customTitle": "Custom days off and shutdowns",
+    "customIntro": "E.g. company holiday or production shutdown. For a single day, enter the same date in both fields.",
+    "customNone": "None yet.",
+    "customName": "Name",
+    "customFrom": "From",
+    "customTo": "To",
+    "customAdd": "Add days off",
+    "customRemove": "Remove {{name}}",
+    "customDefaultName": "Shutdown",
+    "customMissingDates": "Fill in both the from and to dates.",
+    "customEndBeforeStart": "The “to” date cannot be before the “from” date.",
+    "close": "Close"
+  },
+  "holiday": {
+    "newYear": "New Year's Day, Restoration Day of the Independent Czech State",
+    "goodFriday": "Good Friday",
+    "easterMonday": "Easter Monday",
+    "labourDay": "Labour Day",
+    "liberationDay": "Victory Day",
+    "cyrilMethodius": "Saints Cyril and Methodius Day",
+    "janHus": "Jan Hus Day",
+    "statehoodDay": "Czech Statehood Day",
+    "independenceDay": "Independent Czechoslovak State Day",
+    "freedomDay": "Struggle for Freedom and Democracy Day",
+    "christmasEve": "Christmas Eve",
+    "christmasDay": "Christmas Day",
+    "stStephensDay": "St. Stephen's Day"
   },
   "sample": {
     "confirmReplace": "Loading the sample project will replace the current plan. You can undo this with Undo (Ctrl+Z). Continue?",

@@ -4,8 +4,10 @@ import { useTranslation } from 'react-i18next'
 import { LANGUAGES } from '../i18n/languages'
 import { formatIsoDate } from '../i18n/format'
 import { createSampleProject } from '../samples/automatizace'
-import { projectStore, useProject } from '../store/useProject'
+import { projectStore, useProject, useSchedule } from '../store/useProject'
 import { applyTheme, loadThemePreference, saveThemePreference, THEME_PREFERENCES, watchSystemTheme, type ThemePreference } from './theme'
+import { CalendarDialog } from './CalendarDialog'
+import { useNotice } from './notice'
 import { TaskTable } from './TaskTable'
 
 /** Je kurzor v textovém poli? Tam necháme Ctrl+Z prohlížeči (vrací psaní v poli). */
@@ -19,6 +21,10 @@ export default function App() {
   const canUndo = useProject((s) => s.past.length > 0)
   const canRedo = useProject((s) => s.future.length > 0)
   const { addTask, undo, redo, loadProject } = projectStore.getState()
+  const { projectFinish, error: scheduleError } = useSchedule()
+  const notice = useNotice((s) => s.message)
+  const clearNotice = useNotice((s) => s.clear)
+  const [calendarOpen, setCalendarOpen] = useState(false)
 
   // --- Vzhled (světlý / tmavý) ---
   const [theme, setTheme] = useState<ThemePreference>(loadThemePreference)
@@ -28,6 +34,9 @@ export default function App() {
     if (theme !== 'system') return
     return watchSystemTheme(() => applyTheme('system'))
   }, [theme])
+
+  // Po každé úspěšné změně projektu staré upozornění zmizí.
+  useEffect(() => clearNotice(), [project, clearNotice])
 
   // --- Klávesové zkratky Zpět / Znovu ---
   useEffect(() => {
@@ -75,6 +84,12 @@ export default function App() {
               {' · '}
               {t('project.start', { date: formatIsoDate(project.startDate, i18n.language) })}
               {' · '}
+              {projectFinish && (
+                <>
+                  {t('project.finish', { date: formatIsoDate(projectFinish, i18n.language) })}
+                  {' · '}
+                </>
+              )}
               {t('project.taskCount', { count: project.tasks.length })}
             </p>
           </div>
@@ -112,8 +127,34 @@ export default function App() {
           <button type="button" className="btn-secondary" onClick={handleLoadSample} title={t('toolbar.loadSampleHint')}>
             {t('toolbar.loadSample')}
           </button>
+          <button type="button" className="btn-secondary" onClick={() => setCalendarOpen(true)} title={t('toolbar.calendarHint')}>
+            <span aria-hidden="true">📅</span> {t('toolbar.calendar')}
+          </button>
         </div>
       </header>
+
+      {/* Upozornění (chybný zápis, nespočitatelné termíny) – čtečka obrazovky ho přečte hned. */}
+      <div aria-live="assertive">
+        {(notice ?? (scheduleError ? t(`schedule.${scheduleError}`) : null)) && (
+          <div className="flex items-start justify-between gap-3 border-b border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100">
+            <p>
+              <span aria-hidden="true">⚠ </span>
+              {notice ?? t(`schedule.${scheduleError}`)}
+            </p>
+            {notice && (
+              <button
+                type="button"
+                onClick={clearNotice}
+                aria-label={t('notice.close')}
+                className="rounded px-2 hover:bg-amber-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 dark:hover:bg-amber-900"
+              >
+                <span aria-hidden="true">✕</span>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+      <CalendarDialog open={calendarOpen} onClose={() => setCalendarOpen(false)} />
 
       <main className="flex-1 overflow-auto">
         <TaskTable onAddTask={handleAddTask} onLoadSample={handleLoadSample} />

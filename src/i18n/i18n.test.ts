@@ -3,6 +3,7 @@ import { LANGUAGES } from './languages'
 import { formatIsoDate, formatNumber } from './format'
 import { createSampleProject } from '../samples/automatizace'
 import { ProjectSchema } from '../model/schema'
+import { schedule } from '../engine/schedule'
 
 /** Všechny klíče překladového souboru jako "a.b.c" (bez koncovek množného čísla _one/_few…). */
 function keysOf(value: unknown, prefix = ''): string[] {
@@ -47,5 +48,17 @@ describe('vzorový projekt', () => {
     const result = ProjectSchema.safeParse(createSampleProject(translate, language.code, '2027-01-04'))
     expect(result.success).toBe(true)
     expect(result.data?.tasks.length).toBeGreaterThanOrEqual(15)
+  })
+
+  it('má vazby bez kruhů a všechny činnosti dostanou termín', () => {
+    const translate = (key: string) => key
+    const project = createSampleProject(translate, 'cs', '2027-01-04')
+    const result = schedule(project)
+    expect(result.cycleTaskIds.size).toBe(0)
+    for (const task of project.tasks.filter((t) => t.kind !== 'phase')) {
+      expect(result.tasks.get(task.id)?.start).not.toBeNull()
+    }
+    // Délka celého projektu odpovídá zadání (6–9 měsíců).
+    expect(result.projectFinish! > '2027-07-01' && result.projectFinish! < '2027-10-31').toBe(true)
   })
 })

@@ -26,14 +26,16 @@ interface TextCellProps {
   /** Vrátí false, pokud hodnota není platná (pak se vrátí původní text). */
   onCommit: (value: string) => boolean | void
   className?: string
+  title?: string
 }
 
-export function TextCell({ value, label, onCommit, className = '' }: TextCellProps) {
+export function TextCell({ value, label, onCommit, className = '', title }: TextCellProps) {
   const [draft, setDraft] = useState<string | null>(null)
   return (
     <input
       type="text"
       aria-label={label}
+      title={title}
       className={`${inputClass} ${className}`}
       value={draft ?? value}
       onChange={(e) => setDraft(e.target.value)}

@@ -18,6 +18,8 @@
     "redoHint": "Obnovit vrácenou změnu (Ctrl+Y)",
     "loadSample": "Vzorový projekt",
     "loadSampleHint": "Načíst ukázkový projekt „Zavedení automatizace do výroby“",
+    "calendar": "Kalendář",
+    "calendarHint": "Začátek projektu, pracovní dny, svátky a odstávky",
     "language": "Jazyk",
     "theme": "Vzhled"
   },
@@ -29,6 +31,7 @@
   "project": {
     "defaultName": "Nový projekt",
     "start": "Začátek projektu: {{date}}",
+    "finish": "Konec: {{date}}",
     "taskCount_one": "{{count}} položka",
     "taskCount_few": "{{count}} položky",
     "taskCount_many": "{{count}} položky",
@@ -48,8 +51,13 @@
     "notes": "Poznámka",
     "actions": "Akce",
     "notComputed": "—",
-    "notComputedHint": "Termíny a vazby se začnou počítat v další verzi aplikace.",
+    "datesHint": "Spočítá se samo z délky, předchůdců a kalendáře. Konec = poslední pracovní den.",
+    "phaseDatesHint": "Termíny fáze se spočítají z jejích činností (seskupování přijde v další verzi).",
     "phaseDurationHint": "Délka fáze se spočítá z jejích činností.",
+    "predecessorsHint": "Čísla řádků, na které činnost navazuje (začne po jejich konci). Např. 2; 5+3 = po řádku 2 a 3 pracovní dny po řádku 5.",
+    "phasePredecessorsHint": "Fáze zatím nemůže mít předchůdce.",
+    "cycle": "Kruh",
+    "cycleHint": "Termín nelze spočítat: vazby tvoří kruh (činnost čeká sama na sebe). Opravte předchůdce.",
     "delete": "Smazat",
     "deleteRow": "Smazat řádek {{number}}: {{name}}",
     "confirmDelete": "Opravdu smazat „{{name}}“? Změnu lze vrátit tlačítkem Zpět (Ctrl+Z).",
@@ -68,6 +76,62 @@
   },
   "task": {
     "defaultName": "Nová činnost"
+  },
+  "notice": {
+    "close": "Zavřít upozornění"
+  },
+  "predecessorError": {
+    "restored": "Vrátila se původní hodnota.",
+    "syntax": "„{{token}}“ není platný zápis předchůdců. Pište čísla řádků oddělená středníkem, např. 2; 5+3.",
+    "unsupportedType": "Zápis „{{token}}“ zatím není podporovaný. Zatím lze navázat jen na konec činnosti, např. 3 nebo 3+2.",
+    "duplicate": "Řádek {{row}} je mezi předchůdci uvedený dvakrát.",
+    "unknownRow": "Řádek {{row}} neexistuje.",
+    "self": "Činnost nemůže navazovat sama na sebe.",
+    "phase": "Řádek {{row}} je fáze. Na fáze zatím nelze navazovat – navažte na její poslední činnost.",
+    "phaseSuccessor": "Fáze zatím nemůže mít předchůdce.",
+    "cycle": "Tato vazba by vytvořila kruh {{path}} – činnost by čekala sama na sebe."
+  },
+  "schedule": {
+    "noWorkingDays": "Kalendář nemá žádný pracovní den, takže nejde spočítat žádný termín. Upravte ho v nastavení Kalendář."
+  },
+  "calendar": {
+    "title": "Kalendář projektu",
+    "intro": "Termíny se počítají jen v pracovních dnech. Víkendy, svátky a odstávky se přeskakují.",
+    "projectStart": "Začátek projektu",
+    "projectStartHint": "První činnosti začnou nejbližší pracovní den od tohoto data.",
+    "workingDays": "Pracovní dny v týdnu",
+    "atLeastOneDay": "Aspoň jeden den v týdnu musí být pracovní.",
+    "czechHolidays": "Automaticky počítat české státní svátky (včetně Velikonoc)",
+    "holidaysOverview": "Svátky v letech {{from}}–{{to}}",
+    "holidaysOverviewOne": "Svátky v roce {{year}}",
+    "holidayCounted": "Počítat jako volno: {{name}}, {{date}}",
+    "customTitle": "Vlastní volné dny a odstávky",
+    "customIntro": "Např. podniková dovolená nebo odstávka výroby. Jeden den: vyplňte stejné datum od i do.",
+    "customNone": "Zatím žádné.",
+    "customName": "Název",
+    "customFrom": "Od",
+    "customTo": "Do",
+    "customAdd": "Přidat volno",
+    "customRemove": "Odebrat {{name}}",
+    "customDefaultName": "Odstávka",
+    "customMissingDates": "Vyplňte datum od i do.",
+    "customEndBeforeStart": "Datum „do“ nesmí být před datem „od“.",
+    "close": "Zavřít"
+  },
+  "holiday": {
+    "newYear": "Nový rok, Den obnovy samostatného českého státu",
+    "goodFriday": "Velký pátek",
+    "easterMonday": "Velikonoční pondělí",
+    "labourDay": "Svátek práce",
+    "liberationDay": "Den vítězství",
+    "cyrilMethodius": "Den slovanských věrozvěstů Cyrila a Metoděje",
+    "janHus": "Den upálení mistra Jana Husa",
+    "statehoodDay": "Den české státnosti",
+    "independenceDay": "Den vzniku samostatného československého státu",
+    "freedomDay": "Den boje za svobodu a demokracii",
+    "christmasEve": "Štědrý den",
+    "christmasDay": "1. svátek vánoční",
+    "stStephensDay": "2. svátek vánoční"
   },
   "sample": {
     "confirmReplace": "Načtením vzorového projektu se nahradí současný plán. Změnu lze vrátit tlačítkem Zpět (Ctrl+Z). Pokračovat?",

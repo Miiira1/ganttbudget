@@ -63,15 +63,21 @@ export const TaskSchema = z
     path: ['durationDays'],
   })
 
-export const HolidayRangeSchema = z.object({
-  start: IsoDateSchema,
-  end: IsoDateSchema,
-  name: z.string().max(200),
-})
+export const HolidayRangeSchema = z
+  .object({
+    start: IsoDateSchema,
+    end: IsoDateSchema,
+    name: z.string().max(200),
+  })
+  .refine((r) => r.start <= r.end, { message: 'rangeEndBeforeStart', path: ['end'] })
 
 export const CalendarSchema = z.object({
-  /** Pracovní dny v týdnu: 1 = pondělí … 7 = neděle. */
-  workingWeekdays: z.array(z.number().int().min(1).max(7)).max(7),
+  /** Pracovní dny v týdnu: 1 = pondělí … 7 = neděle. Aspoň jeden, bez opakování. */
+  workingWeekdays: z
+    .array(z.number().int().min(1).max(7))
+    .min(1)
+    .max(7)
+    .refine((days) => new Set(days).size === days.length, { message: 'duplicateWeekday' }),
   useCzechHolidays: z.boolean(),
   /** Vlastní volné dny a odstávky (fáze 2). */
   customHolidays: z.array(HolidayRangeSchema),

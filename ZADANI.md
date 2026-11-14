@@ -1,7 +1,7 @@
 # ZADÁNÍ: Aplikace pro Ganttovy diagramy s navázaným rozpočtem
 
 > Pracovní název: **GanttBudget** (změnitelný)
-> Verze zadání: 1.1 · Datum: 14. 11. 2026 (změny oproti 1.0 viz kap. 14)
+> Verze zadání: 1.2 · Datum: 14. 11. 2026 (změny viz kap. 14)
 > Dokument je zároveň vstupem pro Claude Code (vibe coding) a osnovou výukové case study.
 
 ---
@@ -98,7 +98,7 @@ Priorita: **M** = MVP (verze 1.0), **D** = další fáze (viz kap. 8).
 | K-04 | Možnost zvolit jinou sadu svátků než českou (struktura připravená na další země). | D |
 | K-05 | Kalendáře zdrojů: nepřítomnosti konkrétního zdroje (dovolená, nemoc). | D (fáze 6) |
 
-Státní svátky ČR k zakódování: 1. 1.; Velký pátek; Velikonoční pondělí; 1. 5.; 8. 5.; 5. 7.; 6. 7.; 28. 9.; 28. 10.; 17. 11.; 24. 12.; 25. 12.; 26. 12. (Claude Code má jejich seznam před zakódováním ověřit proti aktuální legislativě.)
+Státní svátky ČR k zakódování: 1. 1.; Velký pátek; Velikonoční pondělí; 1. 5.; 8. 5.; 5. 7.; 6. 7.; 28. 9.; 28. 10.; 17. 11.; 24. 12.; 25. 12.; 26. 12. (Claude Code má jejich seznam před zakódováním ověřit proti aktuální legislativě.) ✅ Ověřeno 14. 11. 2026 proti zákonu č. 245/2000 Sb. ve znění novely 59/2026 Sb. (ta přidala jen významný den 30. 3., který není dnem pracovního klidu).
 
 ### 4.4 Zdroje
 
@@ -209,7 +209,7 @@ Státní svátky ČR k zakódování: 1. 1.; Velký pátek; Velikonoční pondě
 | Stav a Undo/Redo | **Zustand** + vlastní historie změn | Malé, srozumitelné řešení; undo/redo jako součást stavu. **Struktura stavu s historií změn se navrhne už ve fázi 1**, aby se později nemusela přepisovat. |
 | Validace dat | **Zod** | Jedno schéma popisuje formát projektu: ověří import JSON/CSV/XLSX i výstup z AI a zároveň z něj vzniknou typy TypeScriptu |
 | Gantt graf | **Vlastní komponenta (SVG)** | Knihovny zdarma často neumí všechny čtyři typy vazeb ani tažení vazeb. Vlastní řešení dává plnou kontrolu a je dobrým cvičením. |
-| Datum a čas | **date-fns** | Spolehlivá práce s daty, žádné časové pásmo (ukládají se ISO dny `YYYY-MM-DD`) |
+| Datum a čas | **Vlastní funkce** (`src/engine/calendar.ts`) + vestavěné `Intl` | Práce s ISO dny `YYYY-MM-DD` bez časového pásma. Rozhodnuto ve fázi 2 (v1.2): pro výpočty stačí pár otestovaných funkcí, jedna závislost méně (N-13). date-fns lze přidat později, pokud by se vyplatila. |
 | i18n | **react-i18next** | Standard pro překlady, formáty čísel a data |
 | CSV / XLSX | **PapaParse**, **ExcelJS** | Osvědčené knihovny pro import i export. **SheetJS (`xlsx`) z npm nepoužívat**: verze na npm je zastaralá a má známé zranitelnosti. |
 | Grafy | **Recharts** (případně ECharts) | Dobrá integrace s Reactem, pokryje sloupcové, čárové, plošné grafy |
@@ -396,3 +396,4 @@ Technicky: build bez chyb, testy plánovacího jádra projdou, aplikace je nasaz
 |---|---|---|
 | 1.0 | 14. 11. 2026 | První verze |
 | 1.1 | 14. 11. 2026 | Fáze 4 rozdělena na 4a/4b/4c; návrh stavu s historií (Undo/Redo) přesunut do fáze 1; peníze jako celá čísla v nejmenší jednotce; ExcelJS místo SheetJS; přidána validace Zod; bezpečnostní požadavky N-10 až N-13; fáze 6 přejmenována (milníky jsou v MVP); sloupec zdrojů v F-01 přesunut do fáze 6; otevřené otázky 9 a 10 |
+| 1.2 | 14. 11. 2026 | Fáze 2: místo date-fns vlastní otestované funkce pro data; seznam svátků ověřen proti legislativě; pravidla výpočtu termínů (konec = poslední pracovní den, FS = další pracovní den po konci, milník na dni konce předchůdce); předchůdci se ve fázi 2 zadávají čísly řádků s prodlevou (`2; 5+3`), fáze zatím nemají vazby |

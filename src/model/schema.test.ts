@@ -61,6 +61,15 @@ describe('schéma projektu', () => {
     expect(ProjectSchema.safeParse({ ...validProject(), schemaVersion: 99 }).success).toBe(false)
   })
 
+  it('odmítne kalendář bez pracovních dnů a odstávku s koncem před začátkem', () => {
+    const noDays = validProject()
+    noDays.calendar.workingWeekdays = []
+    expect(ProjectSchema.safeParse(noDays).success).toBe(false)
+    const badRange = validProject()
+    badRange.calendar.customHolidays = [{ start: '2026-12-31', end: '2026-12-21', name: 'x' }]
+    expect(ProjectSchema.safeParse(badRange).success).toBe(false)
+  })
+
   it('odmítne nesmyslná data (ne objekt projektu)', () => {
     expect(ProjectSchema.safeParse('ahoj').success).toBe(false)
     expect(ProjectSchema.safeParse({}).success).toBe(false)
