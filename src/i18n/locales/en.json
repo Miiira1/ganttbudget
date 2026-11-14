@@ -1,0 +1,104 @@
+{
+  "meta": {
+    "languageName": "English",
+    "locale": "en-GB"
+  },
+  "app": {
+    "title": "GanttBudget",
+    "tagline": "Project plan and budget",
+    "privacy": "Your data stays on this computer only; nothing is sent to a server.",
+    "notSavedYet": "Saving to a file is not ready yet – the plan is lost when you reload the page."
+  },
+  "toolbar": {
+    "label": "Main tools",
+    "addTask": "Add task",
+    "undo": "Undo",
+    "undoHint": "Undo the last change (Ctrl+Z)",
+    "redo": "Redo",
+    "redoHint": "Redo the undone change (Ctrl+Y)",
+    "loadSample": "Sample project",
+    "loadSampleHint": "Load the sample project “Introducing production automation”",
+    "language": "Language",
+    "theme": "Appearance"
+  },
+  "theme": {
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "project": {
+    "defaultName": "New project",
+    "start": "Project start: {{date}}",
+    "taskCount_one": "{{count}} item",
+    "taskCount_other": "{{count}} items"
+  },
+  "table": {
+    "caption": "Project task list",
+    "rowNumber": "No.",
+    "name": "Name",
+    "kind": "Type",
+    "start": "Start",
+    "finish": "Finish",
+    "duration": "Duration (days)",
+    "durationHint": "Number of working days. A milestone has duration 0.",
+    "predecessors": "Predecessors",
+    "percentComplete": "% complete",
+    "notes": "Notes",
+    "actions": "Actions",
+    "notComputed": "—",
+    "notComputedHint": "Dates and links will be calculated in the next version of the app.",
+    "phaseDurationHint": "A phase's duration is calculated from its tasks.",
+    "delete": "Delete",
+    "deleteRow": "Delete row {{number}}: {{name}}",
+    "confirmDelete": "Really delete “{{name}}”? You can undo this with Undo (Ctrl+Z).",
+    "emptyTitle": "The project is empty",
+    "emptyText": "Start by adding your first task, or have a look at the sample project.",
+    "fieldLabel": "{{field}}, row {{number}}",
+    "invalidName": "The name cannot be empty – the original value was restored."
+  },
+  "kind": {
+    "task": "Task",
+    "phase": "Phase",
+    "milestone": "Milestone",
+    "taskHint": "Work that takes a certain number of days.",
+    "phaseHint": "A group of tasks (a project stage).",
+    "milestoneHint": "An important moment with no duration, e.g. signing a contract."
+  },
+  "task": {
+    "defaultName": "New task"
+  },
+  "sample": {
+    "confirmReplace": "Loading the sample project will replace the current plan. You can undo this with Undo (Ctrl+Z). Continue?",
+    "projectName": "Introducing production automation",
+    "tasks": {
+      "p1": "Analysis and feasibility study",
+      "t1a": "Analysis of current production",
+      "t1b": "Feasibility study and payback estimate",
+      "p2": "Supplier selection",
+      "t2a": "Preparation of tender documents",
+      "t2b": "Tender and bid evaluation",
+      "m2": "Contract signed with supplier",
+      "p3": "Design and engineering",
+      "t3a": "Concept design of the workcell",
+      "t3b": "Detailed mechanical and electrical design",
+      "p4": "Equipment manufacturing and delivery",
+      "t4a": "Manufacturing of the robotic workcell",
+      "t4b": "PLC and robot programming",
+      "m4": "FAT – factory acceptance test",
+      "p5": "Production hall preparation",
+      "t5a": "Floor and foundation works",
+      "t5b": "Electrical and compressed-air connections",
+      "t5c": "Safety fencing and markings",
+      "p6": "Installation and commissioning",
+      "t6a": "Assembly and wiring of equipment",
+      "t6b": "Start-up and tuning",
+      "m6": "SAT – site acceptance test",
+      "p7": "Operator training and trial run",
+      "t7a": "Operator and maintenance training",
+      "t7b": "Trial operation",
+      "p8": "Handover and evaluation",
+      "t8a": "Evaluation of the trial run",
+      "m8": "Handover to production"
+    }
+  }
+}

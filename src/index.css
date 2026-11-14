@@ -1,0 +1,44 @@
+/* Tailwind CSS – knihovna stylů. Třídy jako "p-2" nebo "text-sm" se píšou přímo do komponent. */
+@import 'tailwindcss';
+
+/* Tmavý režim se zapíná třídou "dark" na prvku <html> (řídí ji src/ui/theme.ts). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100;
+}
+
+/* Společný vzhled tlačítek. */
+@layer components {
+  .btn-primary,
+  .btn-secondary {
+    @apply inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 dark:focus-visible:ring-offset-slate-900;
+  }
+  .btn-primary {
+    @apply bg-blue-600 text-white hover:bg-blue-700 disabled:hover:bg-blue-600;
+  }
+  .btn-secondary {
+    @apply border border-slate-300 bg-white text-slate-800 hover:bg-slate-100 disabled:hover:bg-white dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 dark:disabled:hover:bg-slate-800;
+  }
+  .field-select {
+    @apply rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-600 dark:bg-slate-800;
+  }
+}
+
+/* Šipky v číselných polích zbytečně zabírají místo v úzkých buňkách tabulky. */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}

@@ -1,0 +1,106 @@
+{
+  "meta": {
+    "languageName": "Čeština",
+    "locale": "cs-CZ"
+  },
+  "app": {
+    "title": "GanttBudget",
+    "tagline": "Plán projektu a rozpočet",
+    "privacy": "Vaše data zůstávají jen v tomto počítači, nic se neposílá na server.",
+    "notSavedYet": "Ukládání do souboru zatím není hotové – po obnovení stránky se plán ztratí."
+  },
+  "toolbar": {
+    "label": "Hlavní nástroje",
+    "addTask": "Přidat činnost",
+    "undo": "Zpět",
+    "undoHint": "Vrátit poslední změnu (Ctrl+Z)",
+    "redo": "Znovu",
+    "redoHint": "Obnovit vrácenou změnu (Ctrl+Y)",
+    "loadSample": "Vzorový projekt",
+    "loadSampleHint": "Načíst ukázkový projekt „Zavedení automatizace do výroby“",
+    "language": "Jazyk",
+    "theme": "Vzhled"
+  },
+  "theme": {
+    "system": "Podle systému",
+    "light": "Světlý",
+    "dark": "Tmavý"
+  },
+  "project": {
+    "defaultName": "Nový projekt",
+    "start": "Začátek projektu: {{date}}",
+    "taskCount_one": "{{count}} položka",
+    "taskCount_few": "{{count}} položky",
+    "taskCount_many": "{{count}} položky",
+    "taskCount_other": "{{count}} položek"
+  },
+  "table": {
+    "caption": "Seznam činností projektu",
+    "rowNumber": "Č.",
+    "name": "Název",
+    "kind": "Typ",
+    "start": "Začátek",
+    "finish": "Konec",
+    "duration": "Délka (dny)",
+    "durationHint": "Počet pracovních dnů. Milník má délku 0.",
+    "predecessors": "Předchůdci",
+    "percentComplete": "% hotovo",
+    "notes": "Poznámka",
+    "actions": "Akce",
+    "notComputed": "—",
+    "notComputedHint": "Termíny a vazby se začnou počítat v další verzi aplikace.",
+    "phaseDurationHint": "Délka fáze se spočítá z jejích činností.",
+    "delete": "Smazat",
+    "deleteRow": "Smazat řádek {{number}}: {{name}}",
+    "confirmDelete": "Opravdu smazat „{{name}}“? Změnu lze vrátit tlačítkem Zpět (Ctrl+Z).",
+    "emptyTitle": "Projekt je zatím prázdný",
+    "emptyText": "Začněte přidáním první činnosti, nebo si prohlédněte vzorový projekt.",
+    "fieldLabel": "{{field}}, řádek {{number}}",
+    "invalidName": "Název nesmí být prázdný – vrátila se původní hodnota."
+  },
+  "kind": {
+    "task": "Činnost",
+    "phase": "Fáze",
+    "milestone": "Milník",
+    "taskHint": "Práce, která trvá určitý počet dnů.",
+    "phaseHint": "Skupina činností (etapa projektu).",
+    "milestoneHint": "Důležitý okamžik bez trvání, např. podpis smlouvy."
+  },
+  "task": {
+    "defaultName": "Nová činnost"
+  },
+  "sample": {
+    "confirmReplace": "Načtením vzorového projektu se nahradí současný plán. Změnu lze vrátit tlačítkem Zpět (Ctrl+Z). Pokračovat?",
+    "projectName": "Zavedení automatizace do výroby",
+    "tasks": {
+      "p1": "Analýza a studie proveditelnosti",
+      "t1a": "Analýza současného stavu výroby",
+      "t1b": "Studie proveditelnosti a odhad návratnosti",
+      "p2": "Výběr dodavatele",
+      "t2a": "Příprava zadávací dokumentace",
+      "t2b": "Výběrové řízení a hodnocení nabídek",
+      "m2": "Podpis smlouvy s dodavatelem",
+      "p3": "Projekt a konstrukce",
+      "t3a": "Koncepční návrh pracoviště",
+      "t3b": "Detailní konstrukce a elektroprojekt",
+      "p4": "Dodávka a výroba zařízení",
+      "t4a": "Výroba robotického pracoviště",
+      "t4b": "Programování PLC a robotů",
+      "m4": "FAT – přejímka u dodavatele",
+      "p5": "Příprava výrobní haly",
+      "t5a": "Úprava podlahy a základů",
+      "t5b": "Elektrické a pneumatické přípojky",
+      "t5c": "Bezpečnostní oplocení a značení",
+      "p6": "Instalace a uvedení do provozu",
+      "t6a": "Montáž a zapojení zařízení",
+      "t6b": "Oživení a seřízení",
+      "m6": "SAT – přejímka v závodě",
+      "p7": "Zaškolení obsluhy a zkušební provoz",
+      "t7a": "Zaškolení obsluhy a údržby",
+      "t7b": "Zkušební provoz",
+      "p8": "Předání do provozu a vyhodnocení",
+      "t8a": "Vyhodnocení zkušebního provozu",
+      "m8": "Předání do provozu"
+    }
+  }
+}

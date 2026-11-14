@@ -1,0 +1,23 @@
+# Nainstalované knihovny (vzniknou příkazem npm install)
+node_modules/
+
+# Výstup buildu
+dist/
+
+# Tajné údaje a lokální nastavení – nikdy do repozitáře
+.env
+.env.*
+
+# Logy a dočasné soubory
+*.log
+coverage/
+.vite/
+
+# Nastavení editoru a systému
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+
+# Lokální nastavení Claude Code
+.claude/settings.local.json
