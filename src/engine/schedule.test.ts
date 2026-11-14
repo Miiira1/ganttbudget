@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { schedule } from './schedule'
-import { createEmptyProject, createTask, type Project, type Task, type TaskKind } from '../model/schema'
+import { createEmptyProject, createTask, type DependencyType, type Project, type Task, type TaskKind } from '../model/schema'
 
 /** Pomocník: činnost s FS vazbami ve tvaru [id předchůdce, prodleva]. */
 function task(id: string, durationDays: number, preds: [string, number][] = [], kind: TaskKind = 'task'): Task {
@@ -107,6 +107,117 @@ describe('milníky', () => {
   it('milník po milníku na začátku projektu nespadne před začátek projektu', () => {
     const p = project([task('M1', 0, [], 'milestone'), task('M2', 0, [['M1', 0]], 'milestone')])
     expect(dates(p, 'M2')).toEqual(['2026-11-16', '2026-11-16'])
+  })
+})
+
+describe('typy vazeb SS, FF, SF (fáze 4c)', () => {
+  /** Činnost s vazbami libovolného typu: [předchůdce, typ, prodleva]. */
+  function typed(id: string, durationDays: number, deps: [string, DependencyType, number][], kind: TaskKind = 'task'): Task {
+    return {
+      ...createTask({ id, name: id, order: 0, kind, durationDays }),
+      dependencies: deps.map(([predecessorId, type, lagDays]) => ({ predecessorId, type, lagDays })),
+    }
+  }
+  // A: 3 dny od Po 16. 11. → 16., 18., 19. (17. 11. je svátek)
+  const A = () => task('A', 3)
+  // C: 1 den, začne nejdříve v pondělí 23. 11. (omezení) – pro SF potřebujeme pozdější začátek
+  const C = (): Task => ({ ...task('C', 1), constraintStart: '2026-11-23' })
+
+  describe('SS – začátek → začátek', () => {
+    it('následník začne v den začátku předchůdce', () => {
+      expect(dates(project([A(), typed('B', 2, [['A', 'SS', 0]])]), 'B')).toEqual(['2026-11-16', '2026-11-18'])
+    })
+
+    it('s prodlevou +2 pracovní dny (přes svátek)', () => {
+      expect(dates(project([A(), typed('B', 1, [['A', 'SS', 2]])]), 'B')).toEqual(['2026-11-19', '2026-11-19'])
+    })
+
+    it('s předstihem −1 den', () => {
+      // X: Po 16. → A (FS): St 18.–Pá 20. → B (SS−1): Po 16.
+      const p = project([task('X', 1), task('A', 3, [['X', 0]]), typed('B', 1, [['A', 'SS', -1]])])
+      expect(dates(p, 'B')).toEqual(['2026-11-16', '2026-11-16'])
+    })
+  })
+
+  describe('FF – konec → konec', () => {
+    it('následník skončí v den konce předchůdce', () => {
+      // A končí Čt 19. → B (2 dny) končí Čt 19., začne St 18.
+      expect(dates(project([A(), typed('B', 2, [['A', 'FF', 0]])]), 'B')).toEqual(['2026-11-18', '2026-11-19'])
+    })
+
+    it('s prodlevou +1 den', () => {
+      expect(dates(project([A(), typed('B', 2, [['A', 'FF', 1]])]), 'B')).toEqual(['2026-11-19', '2026-11-20'])
+    })
+
+    it('dlouhý následník nezačne před začátkem projektu (skončí pak později)', () => {
+      // B má 10 dní: aby skončil 19., musel by začít před projektem → začne 16. a skončí později
+      expect(dates(project([A(), typed('B', 10, [['A', 'FF', 0]])]), 'B')).toEqual(['2026-11-16', '2026-11-30'])
+    })
+  })
+
+  describe('SF – začátek → konec', () => {
+    it('následník skončí pracovní den před začátkem předchůdce', () => {
+      // C začíná Po 23. → B (2 dny) končí Pá 20., začne Čt 19.
+      expect(dates(project([C(), typed('B', 2, [['C', 'SF', 0]])]), 'B')).toEqual(['2026-11-19', '2026-11-20'])
+    })
+
+    it('s prodlevou +1 den', () => {
+      // hranice konce Pá 20. + 1 = Po 23. → B: Pá 20.–Po 23.
+      expect(dates(project([C(), typed('B', 2, [['C', 'SF', 1]])]), 'B')).toEqual(['2026-11-20', '2026-11-23'])
+    })
+  })
+
+  describe('milníky s novými typy', () => {
+    it('milník přes FF leží na konci předchůdce, jeho následník začne další pracovní den', () => {
+      const p = project([A(), typed('M', 0, [['A', 'FF', 0]], 'milestone'), task('S', 1, [['M', 0]])])
+      expect(dates(p, 'M')).toEqual(['2026-11-19', '2026-11-19'])
+      expect(dates(p, 'S')).toEqual(['2026-11-20', '2026-11-20'])
+    })
+
+    it('milník přes SS leží na začátku předchůdce, jeho následník začne týž den', () => {
+      const p = project([A(), typed('M', 0, [['A', 'SS', 0]], 'milestone'), task('S', 1, [['M', 0]])])
+      expect(dates(p, 'M')).toEqual(['2026-11-16', '2026-11-16'])
+      expect(dates(p, 'S')).toEqual(['2026-11-16', '2026-11-16'])
+    })
+
+    it('milník přes SF leží den před začátkem předchůdce, následník začne v den jeho začátku', () => {
+      const p = project([C(), typed('M', 0, [['C', 'SF', 0]], 'milestone'), task('S', 1, [['M', 0]])])
+      expect(dates(p, 'M')).toEqual(['2026-11-20', '2026-11-20'])
+      expect(dates(p, 'S')).toEqual(['2026-11-23', '2026-11-23'])
+    })
+
+    it('milník jako předchůdce SS a FF', () => {
+      const M = (): Task => ({ ...task('M', 0, [], 'milestone'), constraintStart: '2026-11-20' })
+      expect(dates(project([M(), typed('B', 2, [['M', 'SS', 0]])]), 'B')).toEqual(['2026-11-20', '2026-11-23'])
+      expect(dates(project([M(), typed('B', 2, [['M', 'FF', 0]])]), 'B')).toEqual(['2026-11-19', '2026-11-20'])
+    })
+  })
+
+  describe('kombinace', () => {
+    it('víc vazeb různých typů: platí nejpozdější hranice', () => {
+      // FS z A → Pá 20.; SS+5 z A → 16. + 5 prac. dní (18., 19., 20., 23., 24.) = Út 24. → vyhraje SS
+      const p = project([A(), typed('B', 1, [['A', 'FS', 0], ['A', 'SS', 5]])])
+      expect(dates(p, 'B')).toEqual(['2026-11-24', '2026-11-24'])
+    })
+
+    it('omezení dřív než vazba SS: platí vazba a jádro to oznámí', () => {
+      const p = project([A(), { ...typed('B', 1, [['A', 'SS', 5]]), constraintStart: '2026-11-18' }])
+      expect(dates(p, 'B')).toEqual(['2026-11-24', '2026-11-24'])
+      expect(schedule(p).constraintOverridden.has('B')).toBe(true)
+    })
+
+    it('posun předchůdce posune i následníky přes SS a FF', () => {
+      const p = project([{ ...A(), constraintStart: '2026-11-23' }, typed('B', 2, [['A', 'SS', 0]]), typed('C', 1, [['A', 'FF', 0]])])
+      // A: Po 23.–St 25. → B: 23.–24., C: končí 25.
+      expect(dates(p, 'B')).toEqual(['2026-11-23', '2026-11-24'])
+      expect(dates(p, 'C')).toEqual(['2026-11-25', '2026-11-25'])
+    })
+
+    it('kruh přes SS a FF se odhalí', () => {
+      const p = project([typed('A', 1, [['B', 'SS', 0]]), typed('B', 1, [['A', 'FF', 0]]), task('C', 1)])
+      expect([...schedule(p).cycleTaskIds].sort()).toEqual(['A', 'B'])
+      expect(dates(p, 'C')).toEqual(['2026-11-16', '2026-11-16'])
+    })
   })
 })
 
@@ -239,6 +350,31 @@ describe('chyby a celkové výsledky', () => {
     const copy = structuredClone(p)
     schedule(p)
     expect(p).toEqual(copy)
+  })
+
+  it('300 činností s vazbami všech typů spočítá do 100 ms (N-02, fáze 4c)', () => {
+    const types = ['FS', 'SS', 'FF', 'SF'] as const
+    // Každá činnost navazuje na předchozí (typ se střídá) a na tu o 5 řádků výš (FS s prodlevou).
+    const tasks: Task[] = Array.from({ length: 300 }, (_, i) => ({
+      ...createTask({ id: `T${i}`, name: `T${i}`, order: i, durationDays: 1 + (i % 7) }),
+      dependencies: [
+        ...(i > 0 ? [{ predecessorId: `T${i - 1}`, type: types[i % 4]!, lagDays: i % 3 }] : []),
+        ...(i > 4 ? [{ predecessorId: `T${i - 5}`, type: 'FS' as const, lagDays: 1 }] : []),
+      ],
+    }))
+    const p = project(tasks)
+    schedule(p) // zahřátí
+    // Nejrychlejší z pěti běhů (měří kód, ne náhodné vytížení počítače).
+    let best = Infinity
+    let result = schedule(p)
+    for (let i = 0; i < 5; i++) {
+      const t0 = performance.now()
+      result = schedule(p)
+      best = Math.min(best, performance.now() - t0)
+    }
+    expect(best).toBeLessThan(100)
+    expect(result.cycleTaskIds.size).toBe(0)
+    expect(result.tasks.get('T299')?.finish).not.toBeNull()
   })
 
   it('300 navazujících činností spočítá do 100 ms (N-02)', () => {

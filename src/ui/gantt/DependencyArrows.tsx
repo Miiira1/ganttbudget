@@ -29,7 +29,7 @@ export const DependencyArrows = memo(function DependencyArrows({ rows, bars }: D
       const title = t('gantt.dependency', {
         from: nameById.get(dep.predecessorId),
         to: task.name,
-        type: t(`gantt.dependencyType.${dep.type}`),
+        type: `${dep.type} – ${t(`gantt.dependencyType.${dep.type}`)}`,
         lag,
       })
       return [{ key: `${dep.predecessorId}-${task.id}-${dep.type}`, path: pointsToPath(dependencyPoints(from, to, dep.type)), title }]

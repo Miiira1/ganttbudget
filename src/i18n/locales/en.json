@@ -72,7 +72,7 @@
     "datesHint": "Calculated automatically from duration, predecessors and the calendar. Finish = last working day.",
     "phaseDatesHint": "A phase runs from the start of its first task to the finish of its last task – calculated automatically.",
     "phaseDurationHint": "Number of working days from the start to the finish of the phase. Calculated from its tasks.",
-    "predecessorsHint": "Row numbers this task follows (it starts after they finish). E.g. 2; 5+3 = after row 2 and 3 working days after row 5.",
+    "predecessorsHint": "Row numbers this task follows. E.g. 2; 5+3 = after the finish of row 2 and 3 working days after the finish of row 5. Dependency type after the number: FS (default, not written) = starts after finish, SS = starts with start, FF = finishes with finish, SF = finishes before start – e.g. 3SS+2.",
     "phasePredecessorsHint": "A phase cannot have predecessors yet.",
     "cycle": "Loop",
     "cycleHint": "Dates cannot be calculated: the links form a loop (the task waits for itself). Fix the predecessors.",
@@ -121,6 +121,7 @@
       "dragBar": "Drag a bar in the chart = move the task (sets “start no earlier than” 📌).",
       "dragEdge": "Drag the edge of a bar = change the start or finish (duration).",
       "dragRow": "Drag a row by ⠿ = move it elsewhere or into a phase.",
+      "drawLink": "Drag from the circle at the start / finish of a bar onto another task = draw a dependency (type FS, SS, FF, SF depending on where from and where to).",
       "pin": "Click 📌 = remove the “start no earlier than” constraint.",
       "collapse": "Click ▾ / ▸ = collapse or expand a phase."
     }
@@ -173,7 +174,18 @@
     "barPhase": "Phase {{name}}: {{range}}",
     "barMilestone": "Milestone {{name}}: {{date}}",
     "barConstraint": "Starts no earlier than {{date}} (constraint)",
-    "dragTaskHint": "Drag the bar to move it, drag its edges to change the start or finish. Esc cancels.",
+    "dragTaskHint": "Drag the bar to move it, its edges to change the start or finish, the circle next to the bar for a new dependency. Esc cancels.",
+    "linkHandle": "Drag onto another task to create a dependency. Left half of the target = to its start, right half = to its finish.",
+    "linkChooseTarget": "Drop onto another task (Esc = cancel)",
+    "linkInvalid": {
+      "syntax": "Invalid dependency",
+      "duplicate": "Dependency already exists",
+      "unknownRow": "Task does not exist",
+      "self": "A task cannot follow itself",
+      "phase": "Phases cannot be linked yet",
+      "phaseSuccessor": "A phase cannot have predecessors yet",
+      "cycle": "This would create a loop – the task would wait for itself"
+    },
     "dragMilestoneHint": "Drag the milestone to move it. Esc cancels.",
     "phaseNotDraggable": "A phase is calculated from its tasks – move or change its tasks instead.",
     "dragLabel": "{{range}} · {{duration}}",
@@ -183,7 +195,7 @@
       "FS": "starts after finish",
       "SS": "starts with start",
       "FF": "finishes with finish",
-      "SF": "finishes with start"
+      "SF": "finishes before start"
     },
     "lag": ", lag {{days}}",
     "lead": ", lead {{days}}",
@@ -195,8 +207,7 @@
   },
   "predecessorError": {
     "restored": "The original value was restored.",
-    "syntax": "“{{token}}” is not a valid predecessor entry. Write row numbers separated by semicolons, e.g. 2; 5+3.",
-    "unsupportedType": "“{{token}}” is not supported yet. For now a task can only follow the finish of another task, e.g. 3 or 3+2.",
+    "syntax": "“{{token}}” is not a valid predecessor entry. Write row numbers separated by semicolons, optionally with a dependency type (FS, SS, FF, SF) and lag, e.g. 2; 5+3; 6SS+2.",
     "duplicate": "Row {{row}} is listed twice among the predecessors.",
     "unknownRow": "Row {{row}} does not exist.",
     "self": "A task cannot follow itself.",
@@ -271,6 +282,7 @@
       "p6": "Installation and commissioning",
       "t6a": "Assembly and wiring of equipment",
       "t6b": "Start-up and tuning",
+      "t6c": "Interim manual production until trial run",
       "m6": "SAT – site acceptance test",
       "p7": "Operator training and trial run",
       "t7a": "Operator and maintenance training",

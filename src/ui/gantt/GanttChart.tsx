@@ -15,6 +15,7 @@ import { createTimeline, dayToX, headerRows, nonWorkingRuns, type NonWorkingRun,
 import { todayIso } from '../../model/dates'
 import { useProject, useSchedule } from '../../store/useProject'
 import { BarDragLayer } from './BarDragLayer'
+import { LinkDragLayer } from './LinkDragLayer'
 import { DependencyArrows } from './DependencyArrows'
 import { TaskBars } from './TaskBars'
 import { TimelineHeader } from './TimelineHeader'
@@ -192,6 +193,8 @@ export function GanttChart() {
 
         {/* Náhled při tažení úsečky (G-02) – nad vším ostatním. */}
         <BarDragLayer svgRef={svgRef} tl={tl} calendar={calendar} rows={rows} dates={dates} />
+        {/* Kreslení vazby tažením z koleček na koncích úseček (G-03). */}
+        <LinkDragLayer svgRef={svgRef} rows={rows} bars={bars} />
       </svg>
     </div>
   )

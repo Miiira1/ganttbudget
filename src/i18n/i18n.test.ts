@@ -70,6 +70,18 @@ describe('vzorový projekt', () => {
       expect(result.tasks.get(phase.id)?.start).not.toBeNull()
       expect(project.tasks.some((t) => t.parentId === phase.id)).toBe(true)
     }
+    // Od fáze 4c obsahuje všechny typy vazeb (ZADANI kap. 11).
+    expect(new Set(project.tasks.flatMap((t) => t.dependencies.map((d) => d.type)))).toEqual(new Set(['FS', 'SS', 'FF', 'SF']))
+    // Příprava haly začne 10 pracovních dnů po zahájení výroby zařízení (SS+10).
+    const hall = result.tasks.get('sample-t5a')!
+    const manufacturing = result.tasks.get('sample-t4a')!
+    expect(hall.start! > manufacturing.start!).toBe(true)
+    // Programování PLC skončí s výrobou zařízení (FF).
+    expect(result.tasks.get('sample-t4b')?.finish).toBe(manufacturing.finish)
+    // Náhradní ruční výroba skončí poslední pracovní den před zkušebním provozem (SF).
+    const manual = result.tasks.get('sample-t6c')!
+    const trial = result.tasks.get('sample-t7b')!
+    expect(manual.finish! < trial.start!).toBe(true)
     // Délka celého projektu odpovídá zadání (6–9 měsíců).
     expect(result.projectFinish! > '2027-07-01' && result.projectFinish! < '2027-10-31').toBe(true)
   })

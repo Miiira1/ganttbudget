@@ -62,7 +62,7 @@
     "datesHint": "Spočítá se samo z délky, předchůdců a kalendáře. Konec = poslední pracovní den.",
     "phaseDatesHint": "Fáze trvá od začátku své první do konce své poslední činnosti – spočítá se sama.",
     "phaseDurationHint": "Počet pracovních dnů od začátku do konce fáze. Spočítá se z jejích činností.",
-    "predecessorsHint": "Čísla řádků, na které činnost navazuje (začne po jejich konci). Např. 2; 5+3 = po řádku 2 a 3 pracovní dny po řádku 5.",
+    "predecessorsHint": "Čísla řádků, na které činnost navazuje. Např. 2; 5+3 = po konci řádku 2 a 3 pracovní dny po konci řádku 5. Typ vazby za číslem: FS (výchozí, nepíše se) = začne po konci, SS = začne se začátkem, FF = skončí s koncem, SF = skončí před začátkem – např. 3SS+2. Lze psát i česky KZ, ZZ, KK, ZK.",
     "phasePredecessorsHint": "Fáze zatím nemůže mít předchůdce.",
     "cycle": "Kruh",
     "cycleHint": "Termín nelze spočítat: vazby tvoří kruh (činnost čeká sama na sebe). Opravte předchůdce.",
@@ -125,6 +125,7 @@
       "dragBar": "Táhnout úsečku v grafu = posunout činnost (nastaví „začít nejdříve“ 📌).",
       "dragEdge": "Táhnout okraj úsečky = změnit začátek nebo konec (délku).",
       "dragRow": "Táhnout řádek za ⠿ = přesunout ho jinam nebo do fáze.",
+      "drawLink": "Táhnout z kolečka u začátku / konce úsečky na jinou činnost = nakreslit vazbu (typ FS, SS, FF, SF podle toho, odkud a kam).",
       "pin": "Kliknout na 📌 = zrušit omezení „začít nejdříve“.",
       "collapse": "Kliknout na ▾ / ▸ = sbalit nebo rozbalit fázi."
     }
@@ -179,7 +180,18 @@
     "barPhase": "Fáze {{name}}: {{range}}",
     "barMilestone": "Milník {{name}}: {{date}}",
     "barConstraint": "Začne nejdříve {{date}} (omezení)",
-    "dragTaskHint": "Táhněte úsečku pro posun, okraje pro změnu začátku nebo konce. Esc tažení zruší.",
+    "dragTaskHint": "Táhněte úsečku pro posun, okraje pro změnu začátku nebo konce, kolečko vedle úsečky pro novou vazbu. Esc tažení zruší.",
+    "linkHandle": "Táhněte na jinou činnost: vznikne vazba. Na levou polovinu cíle = do jeho začátku, na pravou = do jeho konce.",
+    "linkChooseTarget": "Pusťte na jinou činnost (Esc = zrušit)",
+    "linkInvalid": {
+      "syntax": "Neplatná vazba",
+      "duplicate": "Vazba už existuje",
+      "unknownRow": "Činnost neexistuje",
+      "self": "Činnost nemůže navazovat sama na sebe",
+      "phase": "Na fázi zatím nejde navázat",
+      "phaseSuccessor": "Fáze zatím nemůže mít předchůdce",
+      "cycle": "Vznikl by kruh – činnost by čekala sama na sebe"
+    },
     "dragMilestoneHint": "Táhněte milník pro posun. Esc tažení zruší.",
     "phaseNotDraggable": "Fáze se počítá ze svých činností – posuňte nebo změňte její činnosti.",
     "dragLabel": "{{range}} · {{duration}}",
@@ -189,7 +201,7 @@
       "FS": "začne po konci",
       "SS": "začne se začátkem",
       "FF": "skončí s koncem",
-      "SF": "skončí se začátkem"
+      "SF": "skončí před začátkem"
     },
     "lag": ", prodleva {{days}}",
     "lead": ", předstih {{days}}",
@@ -203,8 +215,7 @@
   },
   "predecessorError": {
     "restored": "Vrátila se původní hodnota.",
-    "syntax": "„{{token}}“ není platný zápis předchůdců. Pište čísla řádků oddělená středníkem, např. 2; 5+3.",
-    "unsupportedType": "Zápis „{{token}}“ zatím není podporovaný. Zatím lze navázat jen na konec činnosti, např. 3 nebo 3+2.",
+    "syntax": "„{{token}}“ není platný zápis předchůdců. Pište čísla řádků oddělená středníkem, případně s typem vazby (FS, SS, FF, SF) a prodlevou, např. 2; 5+3; 6SS+2.",
     "duplicate": "Řádek {{row}} je mezi předchůdci uvedený dvakrát.",
     "unknownRow": "Řádek {{row}} neexistuje.",
     "self": "Činnost nemůže navazovat sama na sebe.",
@@ -279,6 +290,7 @@
       "p6": "Instalace a uvedení do provozu",
       "t6a": "Montáž a zapojení zařízení",
       "t6b": "Oživení a seřízení",
+      "t6c": "Náhradní ruční výroba do zkušebního provozu",
       "m6": "SAT – přejímka v závodě",
       "p7": "Zaškolení obsluhy a zkušební provoz",
       "t7a": "Zaškolení obsluhy a údržby",

@@ -6,15 +6,17 @@
  *
  * Pravidla (stejná zvyklost jako v MS Projectu):
  *  - délka je v pracovních dnech, konec = poslední pracovní den činnosti,
- *  - vazba FS: následník začne další pracovní den po konci předchůdce (+ prodleva),
- *  - milník leží na dni konce předchůdce; bez předchůdců na začátku projektu,
+ *  - vazby (prodleva + / − posouvá hranici o pracovní dny):
+ *      FS: následník začne další pracovní den po konci předchůdce,
+ *      SS: následník začne nejdřív v den začátku předchůdce,
+ *      FF: následník skončí nejdřív v den konce předchůdce,
+ *      SF: následník skončí nejdřív pracovní den před začátkem předchůdce,
+ *  - milník leží na konci dne (FS, FF, SF) nebo na začátku dne (SS, omezení, začátek projektu),
  *  - fáze trvá od nejdřívějšího začátku do nejpozdějšího konce svých podřízených položek,
  *  - omezení „začít nejdříve k datu“ (fáze 4b): začátek = nejpozdější z (začátek projektu,
  *    vazby, omezení přichycené na pracovní den).
- *
- * Ve fázi 2 se počítají jen vazby FS. Typy SS, FF, SF přidá fáze 4c.
  */
-import type { Project, Task } from '../model/schema'
+import type { Dependency, Project, Task } from '../model/schema'
 import { createWorkCalendar, dayToIso, isoToDay, NoWorkingDaysError, type WorkCalendar } from './calendar'
 
 export interface ScheduledTask {
@@ -77,9 +79,9 @@ export function schedule(project: Project): ScheduleResult {
       children.set(t.parentId, list)
     }
   }
-  /** Platné vazby FS (předchůdce existuje; fáze jako následník se zatím nepodporuje). */
+  /** Platné vazby všech typů (předchůdce existuje; fáze jako následník se zatím nepodporuje). */
   const dependenciesOf = (t: Task) =>
-    t.kind === 'phase' ? [] : t.dependencies.filter((d) => d.type === 'FS' && byId.has(d.predecessorId) && d.predecessorId !== t.id)
+    t.kind === 'phase' ? [] : t.dependencies.filter((d) => byId.has(d.predecessorId) && d.predecessorId !== t.id)
 
   const successors = new Map<string, string[]>()
   const waitingFor = new Map<string, number>()
@@ -125,43 +127,82 @@ export function schedule(project: Project): ScheduleResult {
     throw error
   }
 
-  function computeTask(t: Task): Computed {
-    // Nejdřívější začátek podle vazeb (null = žádná vazba neomezuje).
-    let dependencyStart: number | null = null
-    for (const d of dependenciesOf(t)) {
-      const pred = computed.get(d.predecessorId)
-      if (!pred) continue // předchůdce bez termínu (prázdná fáze) neomezuje
-      const candidate = calendar.addWorkingDays(pred.successorStartDay, d.lagDays)
-      if (dependencyStart === null || candidate > dependencyStart) dependencyStart = candidate
+  /**
+   * Hranice, kterou vazba klade na následníka (podle typu, s prodlevou v pracovních dnech):
+   *  - 'start':  následník začne nejdřív v tento den (FS, SS),
+   *  - 'finish': následník skončí nejdřív v tento den (FF, SF).
+   * U FS je to další pracovní den po konci předchůdce, u SF pracovní den před jeho začátkem.
+   */
+  function boundOf(pred: Computed, type: Dependency['type'], lag: number): { kind: 'start' | 'finish'; day: number; type: Dependency['type'] } {
+    switch (type) {
+      case 'FS':
+        return { kind: 'start', day: calendar.addWorkingDays(pred.successorStartDay, lag), type }
+      case 'SS':
+        return { kind: 'start', day: calendar.addWorkingDays(pred.startDay, lag), type }
+      case 'FF':
+        return { kind: 'finish', day: calendar.addWorkingDays(pred.finishDay, lag), type }
+      case 'SF':
+        return { kind: 'finish', day: calendar.addWorkingDays(calendar.previousWorkingDay(pred.startDay - 1), lag), type }
     }
+  }
+
+  function computeTask(t: Task): Computed {
+    const bounds = dependenciesOf(t)
+      .map((d) => {
+        const pred = computed.get(d.predecessorId)
+        return pred ? boundOf(pred, d.type, d.lagDays) : null // předchůdce bez termínu neomezuje
+      })
+      .filter((b) => b !== null)
     // Omezení „začít nejdříve k datu“ (fáze 4b), přichycené na pracovní den.
     const constraintDay = t.constraintStart ? calendar.nextWorkingDay(isoToDay(t.constraintStart)) : null
+    if (t.kind === 'milestone' || t.durationDays === 0) return computeMilestone(t, bounds, constraintDay)
+
+    // Hranice konce (FF, SF) převedeme na hranici začátku podle délky činnosti.
+    const startFor = (b: { kind: 'start' | 'finish'; day: number }) =>
+      b.kind === 'start' ? b.day : calendar.addWorkingDays(b.day, -(t.durationDays - 1))
+    const dependencyStart = bounds.length > 0 ? Math.max(...bounds.map(startFor)) : null
 
     // Skutečný začátek = nejpozdější z: začátek projektu, vazby, omezení.
-    let earliestStart = projectStartDay
-    let drivenByDependency = false
-    if (dependencyStart !== null && dependencyStart >= earliestStart) {
-      earliestStart = dependencyStart
-      drivenByDependency = true
-    }
-    if (constraintDay !== null && constraintDay > earliestStart) {
-      earliestStart = constraintDay
-      drivenByDependency = false
-    } else if (constraintDay !== null && drivenByDependency && constraintDay < earliestStart) {
+    const start = Math.max(projectStartDay, dependencyStart ?? projectStartDay, constraintDay ?? projectStartDay)
+    if (constraintDay !== null && dependencyStart !== null && dependencyStart >= projectStartDay && constraintDay < dependencyStart) {
       constraintOverridden.add(t.id) // omezení je dřív, než dovolí vazba – platí vazba
     }
-    if (t.kind === 'milestone' || t.durationDays === 0) {
-      // Milník „leží“ na konci dne předchůdce, ale nikdy před začátkem projektu.
-      const day = drivenByDependency
-        ? Math.max(calendar.previousWorkingDay(earliestStart - 1), projectStartDay)
-        : earliestStart
-      return { startDay: day, finishDay: day, successorStartDay: earliestStart }
-    }
     return {
-      startDay: earliestStart,
-      finishDay: calendar.addWorkingDays(earliestStart, t.durationDays - 1),
-      successorStartDay: calendar.addWorkingDays(earliestStart, t.durationDays),
+      startDay: start,
+      finishDay: calendar.addWorkingDays(start, t.durationDays - 1),
+      successorStartDay: calendar.addWorkingDays(start, t.durationDays),
     }
+  }
+
+  /**
+   * Milník leží buď na KONCI dne (určuje ho konec předchůdce – FS, FF, SF), nebo na ZAČÁTKU dne
+   * (SS, omezení, začátek projektu). Podle toho jeho následník přes FS začne další pracovní den,
+   * nebo týž den. Kandidáti: [den milníku, kdy může začít jeho následník].
+   */
+  function computeMilestone(
+    t: Task,
+    bounds: { kind: 'start' | 'finish'; day: number; type: Dependency['type'] }[],
+    constraintDay: number | null,
+  ): Computed {
+    const fromDependencies: [number, number][] = bounds.map((b) => {
+      if (b.type === 'FS') return [calendar.previousWorkingDay(b.day - 1), b.day] // konec dne předchůdce
+      if (b.type === 'SS') return [b.day, b.day]
+      return [b.day, calendar.nextWorkingDay(b.day + 1)] // FF, SF: konec dne
+    })
+    const others: [number, number][] = [[projectStartDay, projectStartDay]]
+    if (constraintDay !== null) others.push([constraintDay, constraintDay])
+    // Vyhraje nejpozdější den milníku; při shodě pozdější začátek následníka.
+    const later = (a: [number, number], b: [number, number]) => (b[0] > a[0] || (b[0] === a[0] && b[1] > a[1]) ? b : a)
+    const winner = [...fromDependencies, ...others].reduce(later)
+    // Milník nikdy před začátkem projektu.
+    const day = Math.max(winner[0], projectStartDay)
+    const next = Math.max(winner[1], projectStartDay)
+
+    if (constraintDay !== null && fromDependencies.length > 0) {
+      const dependencyDay = fromDependencies.reduce(later)[0]
+      if (dependencyDay >= projectStartDay && constraintDay < dependencyDay) constraintOverridden.add(t.id)
+    }
+    return { startDay: day, finishDay: day, successorStartDay: next }
   }
 
   function computePhase(t: Task): Computed | null {

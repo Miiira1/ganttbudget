@@ -1,15 +1,15 @@
 /**
  * Vzorový projekt „Zavedení automatizace do výroby“ (ZADANI.md, kap. 11) – zjednodušená verze.
- * Názvy, typy, délky v pracovních dnech, vazby FS (s prodlevou) a od fáze 4a i hierarchie:
- * činnosti a milníky patří do fáze, která je v seznamu nad nimi.
+ * Názvy, typy, délky v pracovních dnech, vazby všech typů FS, SS, FF, SF (s prodlevou, fáze 4c)
+ * a hierarchie: činnosti a milníky patří do fáze, která je v seznamu nad nimi.
  * Další typy vazeb, zdroje a rozpočet se doplní v dalších fázích.
  *
  * Názvy jsou v překladových souborech (sample.tasks.*), aby šel projekt vytvořit v každém jazyce.
  */
-import { createEmptyProject, createTask, type Project, type TaskKind } from '../model/schema'
+import { createEmptyProject, createTask, type DependencyType, type Project, type TaskKind } from '../model/schema'
 
-/** [klíč, typ, délka v pracovních dnech, předchůdci jako [klíč, prodleva]] */
-type Row = [key: string, kind: TaskKind, durationDays: number, predecessors?: [string, number][]]
+/** [klíč, typ, délka v pracovních dnech, předchůdci jako [klíč, prodleva, typ vazby (výchozí FS)]] */
+type Row = [key: string, kind: TaskKind, durationDays: number, predecessors?: [string, number, DependencyType?][]]
 
 const ROWS: Row[] = [
   ['p1', 'phase', 0],
@@ -24,15 +24,19 @@ const ROWS: Row[] = [
   ['t3b', 'task', 25, [['t3a', 0]]],
   ['p4', 'phase', 0],
   ['t4a', 'task', 40, [['t3b', 0]]],
-  ['t4b', 'task', 20, [['t3b', 5]]], // programování začne týden po dokončení konstrukce
+  // Programování začne týden po dokončení konstrukce a skončí spolu s výrobou zařízení (FF).
+  ['t4b', 'task', 20, [['t3b', 5], ['t4a', 0, 'FF']]],
   ['m4', 'milestone', 0, [['t4a', 0], ['t4b', 0]]],
   ['p5', 'phase', 0],
-  ['t5a', 'task', 10, [['t3b', 10]]], // hala se připravuje souběžně s výrobou zařízení
+  // Hala se připravuje souběžně s výrobou: začne 10 pracovních dnů po jejím zahájení (SS+10).
+  ['t5a', 'task', 10, [['t4a', 10, 'SS']]],
   ['t5b', 'task', 8, [['t5a', 0]]],
   ['t5c', 'task', 5, [['t5b', 0]]],
   ['p6', 'phase', 0],
   ['t6a', 'task', 10, [['m4', 0], ['t5c', 0]]],
   ['t6b', 'task', 8, [['t6a', 0]]],
+  // Náhradní ruční výroba musí běžet, dokud nezačne zkušební provoz (SF).
+  ['t6c', 'task', 10, [['t7b', 0, 'SF']]],
   ['m6', 'milestone', 0, [['t6b', 0]]],
   ['p7', 'phase', 0],
   ['t7a', 'task', 5, [['m6', 0]]],
@@ -61,7 +65,7 @@ export function createSampleProject(translate: (key: string) => string, language
     return {
       ...createTask({ id: idOf(key), name: translate(`sample.tasks.${key}`), order, kind, durationDays }),
       parentId,
-      dependencies: predecessors.map(([pred, lagDays]) => ({ predecessorId: idOf(pred), type: 'FS' as const, lagDays })),
+      dependencies: predecessors.map(([pred, lagDays, type = 'FS']) => ({ predecessorId: idOf(pred), type, lagDays })),
     }
   })
   return project

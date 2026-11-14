@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import type { ScheduledTask } from '../../engine/schedule'
 import { formatIsoDate } from '../../i18n/format'
-import { BAR_HALF_HEIGHT, MILESTONE_HALF, type Bar } from '../../gantt/geometry'
+import { BAR_HALF_HEIGHT, MILESTONE_HALF, ROW_HEIGHT, type Bar } from '../../gantt/geometry'
 import type { Task } from '../../model/schema'
 
 /** Výška úsečky činnosti a sumární úsečky fáze (šipky dosedají na její hranu). */
@@ -39,6 +39,9 @@ function barTitle(task: Task, dates: { start: string; finish: string }, t: TFunc
       return `${t('gantt.barTask', { name: task.name, range, duration: t('gantt.workingDays', { count: task.durationDays }) })}${constraint}\n${t('gantt.dragTaskHint')}`
   }
 }
+
+/** Polovina výšky řádku – zóna najetí myší pokryje celý řádek. */
+const ROW_HALF = ROW_HEIGHT / 2
 
 /** Šířka úchytu pro změnu délky na okraji úsečky (px). */
 const EDGE_HANDLE = 6
@@ -112,6 +115,41 @@ function Shape({ bar }: { bar: Bar }) {
   }
 }
 
+/** Jak daleko od okraje úsečky je kolečko pro kreslení vazby a jak je velké. */
+const LINK_OFFSET = 10
+const LINK_RADIUS = 4.5
+
+/**
+ * Kolečka pro kreslení vazby (G-03) na začátku a konci úsečky – objeví se po najetí myší
+ * (zpracovává je LinkDragLayer.tsx). Neviditelná „zóna najetí“ kolem úsečky drží kolečka
+ * viditelná i ve chvíli, kdy myš z úsečky přejíždí na kolečko. Fáze kolečka nemá.
+ */
+function LinkHandles({ bar, taskId, label }: { bar: Bar; taskId: string; label: string }) {
+  if (bar.kind === 'phase') return null
+  const cy = bar.centerY
+  const xEnd = Math.max(bar.xEnd, bar.xStart + MIN_WIDTH)
+  const circle = (anchor: 'start' | 'end', cx: number) => (
+    <circle
+      cx={cx}
+      cy={cy}
+      r={LINK_RADIUS}
+      data-link-task={taskId}
+      data-link-anchor={anchor}
+      style={{ touchAction: 'none' }}
+      className="cursor-crosshair fill-white stroke-blue-600 opacity-0 transition-opacity group-hover:opacity-100 dark:fill-slate-900 dark:stroke-blue-300"
+      strokeWidth={1.5}
+    >
+      <title>{label}</title>
+    </circle>
+  )
+  return (
+    <>
+      {circle('start', bar.xStart - LINK_OFFSET)}
+      {circle('end', xEnd + LINK_OFFSET)}
+    </>
+  )
+}
+
 interface TaskBarsProps {
   rows: Task[]
   /** Úsečky spočítané funkcí layoutBars (jen řádky s termínem). */
@@ -127,11 +165,23 @@ export const TaskBars = memo(function TaskBars({ rows, bars, dates }: TaskBarsPr
         const d = dates.get(task.id)
         const bar = bars.get(task.id)
         if (!bar || !d?.start || !d.finish) return null
+        const hoverZone =
+          bar.kind === 'phase' ? null : (
+            <rect
+              x={bar.xStart - LINK_OFFSET - LINK_RADIUS - 2}
+              y={bar.centerY - ROW_HALF}
+              width={Math.max(bar.xEnd, bar.xStart + MIN_WIDTH) - bar.xStart + 2 * (LINK_OFFSET + LINK_RADIUS + 2)}
+              height={2 * ROW_HALF}
+              fill="transparent"
+            />
+          )
         return (
-          <g key={task.id} data-task-id={task.id}>
+          <g key={task.id} data-task-id={task.id} className="group">
             <title>{barTitle(task, { start: d.start, finish: d.finish }, t, i18n.language)}</title>
+            {hoverZone}
             <Shape bar={bar} />
             <DragHandles bar={bar} taskId={task.id} />
+            <LinkHandles bar={bar} taskId={task.id} label={t('gantt.linkHandle')} />
           </g>
         )
       })}
