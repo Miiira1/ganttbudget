@@ -40,5 +40,5 @@
 
 ## Prostředí
 - Windows 11, PowerShell 5.1 (bez `&&`; příkazy řetězit `;`). Node.js 24 LTS, npm 11, Git 2.56, VS Code.
-- Projekt: `C:\Users\mirek\Documents\Vibe-code\miro-project`. Git repozitář zatím není založen.
+- Projekt: `C:\Users\mirek\Documents\Vibe-code\miro-project`. Git repozitář je založen (větev `main`), na GitHubu zatím není.
 - Repozitář bude veřejný (GitHub Pages). Git už používá skrytou adresu `…@users.noreply.github.com`; nikdy ji neměň na skutečný e-mail.
