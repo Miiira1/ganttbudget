@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createEmptyProject, createTask, ProjectSchema, type Project } from './schema'
+import { createEmptyProject, createTask, ProjectSchema, type Project, type TaskKind } from './schema'
 import { isValidIsoDate, todayIso } from './dates'
 
 function validProject(): Project {
@@ -73,6 +73,66 @@ describe('schéma projektu', () => {
   it('odmítne nesmyslná data (ne objekt projektu)', () => {
     expect(ProjectSchema.safeParse('ahoj').success).toBe(false)
     expect(ProjectSchema.safeParse({}).success).toBe(false)
+  })
+})
+
+/** Kódy chyb, které schéma ohlásí (pro přehledné porovnání v testech). */
+function issueCodes(project: unknown): string[] {
+  const result = ProjectSchema.safeParse(project)
+  return result.success ? [] : result.error.issues.map((i) => i.message)
+}
+
+describe('schéma projektu – strom a vazby (fáze 5: soubor zvenku)', () => {
+  /** Projekt ze seznamu [id, nadřazená, typ]. */
+  function tree(items: [string, string | null, TaskKind][]): Project {
+    const project = createEmptyProject({ name: 'Test', language: 'cs', startDate: '2026-11-16' })
+    project.tasks = items.map(([id, parentId, kind], order) => ({ ...createTask({ id, name: id, order, kind }), parentId }))
+    return project
+  }
+
+  it('přijme platný strom fází', () => {
+    expect(issueCodes(tree([['F', null, 'phase'], ['A', 'F', 'task'], ['G', 'F', 'phase'], ['B', 'G', 'task']]))).toEqual([])
+  })
+
+  it('podřízené položky smí mít jen fáze', () => {
+    expect(issueCodes(tree([['A', null, 'task'], ['B', 'A', 'task']]))).toContain('parentNotPhase')
+  })
+
+  it('kruh v nadřazených (A pod B, B pod A)', () => {
+    expect(issueCodes(tree([['A', 'B', 'phase'], ['B', 'A', 'phase']]))).toContain('parentCycle')
+  })
+
+  it('nejvýš 6 úrovní', () => {
+    const items: [string, string | null, TaskKind][] = [
+      ['F1', null, 'phase'],
+      ['F2', 'F1', 'phase'],
+      ['F3', 'F2', 'phase'],
+      ['F4', 'F3', 'phase'],
+      ['F5', 'F4', 'phase'],
+      ['F6', 'F5', 'phase'],
+    ]
+    expect(issueCodes(tree(items))).toEqual([]) // 6 úrovní je v pořádku
+    expect(issueCodes(tree([...items, ['A', 'F6', 'task']]))).toContain('tooDeep')
+  })
+
+  it('vazba sama na sebe, dvakrát na stejnou činnost a vazby fází se odmítnou', () => {
+    const self = tree([['A', null, 'task']])
+    self.tasks[0]!.dependencies = [{ predecessorId: 'A', type: 'FS', lagDays: 0 }]
+    expect(issueCodes(self)).toContain('selfDependency')
+
+    const twice = tree([['A', null, 'task'], ['B', null, 'task']])
+    twice.tasks[1]!.dependencies = [
+      { predecessorId: 'A', type: 'FS', lagDays: 0 },
+      { predecessorId: 'A', type: 'SS', lagDays: 0 },
+    ]
+    expect(issueCodes(twice)).toContain('duplicateDependency')
+
+    const phase = tree([['F', null, 'phase'], ['A', null, 'task']])
+    phase.tasks[1]!.dependencies = [{ predecessorId: 'F', type: 'FS', lagDays: 0 }]
+    expect(issueCodes(phase)).toContain('phaseDependency')
+    phase.tasks[1]!.dependencies = []
+    phase.tasks[0]!.dependencies = [{ predecessorId: 'A', type: 'FS', lagDays: 0 }]
+    expect(issueCodes(phase)).toContain('phaseDependency')
   })
 })
 

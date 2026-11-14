@@ -195,6 +195,20 @@ describe('termíny z tažení a duplikování (fáze 4b)', () => {
   })
 })
 
+describe('obnovení ze zálohy (fáze 5)', () => {
+  it('nahradí projekt a smaže historii – Ctrl+Z nevrací na prázdný projekt', () => {
+    const store = newStore()
+    store.getState().addTask('A')
+    const restored = createEmptyProject({ name: 'Ze zálohy', language: 'cs', startDate: '2026-11-16' })
+    store.getState().resetProject(restored)
+    expect(store.getState().project).toBe(restored)
+    expect(store.getState().past).toHaveLength(0)
+    expect(store.getState().future).toHaveLength(0)
+    store.getState().undo()
+    expect(store.getState().project).toBe(restored)
+  })
+})
+
 describe('vazby, kalendář a začátek projektu', () => {
   it('nastaví vazby a jdou vrátit', () => {
     const store = newStore()
@@ -323,5 +337,22 @@ describe('historie změn (Zpět / Znovu)', () => {
     expect(store.getState().past).toHaveLength(HISTORY_LIMIT)
     for (let i = 0; i < HISTORY_LIMIT + 20; i++) store.getState().undo()
     expect(store.getState().project.tasks).toHaveLength(20)
+  })
+})
+
+describe('název projektu (kritérium 12.1)', () => {
+  it('přejmenuje projekt jedním krokem Zpět; mezery ořízne, prázdný a stejný název ignoruje', () => {
+    const store = newStore()
+    store.getState().renameProject('  Nová linka  ')
+    expect(store.getState().project.name).toBe('Nová linka')
+    expect(store.getState().past).toHaveLength(1)
+    store.getState().renameProject('   ')
+    store.getState().renameProject('Nová linka')
+    expect(store.getState().past).toHaveLength(1)
+    store.getState().renameProject('x'.repeat(250))
+    expect(store.getState().project.name).toHaveLength(200)
+    expect(ProjectSchema.safeParse(store.getState().project).success).toBe(true)
+    store.getState().undo()
+    expect(store.getState().project.name).toBe('Nová linka')
   })
 })

@@ -59,8 +59,12 @@ export interface ProjectState {
   updateCalendar: (patch: Partial<Calendar>) => void
   /** Změní datum začátku projektu ("YYYY-MM-DD"). */
   setProjectStart: (startDate: string) => void
+  /** Přejmenuje projekt (ořízne mezery, max. 200 znaků; prázdný název se ignoruje). */
+  renameProject: (name: string) => void
   /** Nahradí celý projekt (např. vzorovým). Lze vrátit přes Zpět. */
   loadProject: (project: Project) => void
+  /** Nahradí projekt a smaže historii (obnova ze zálohy po otevření aplikace – není co vracet). */
+  resetProject: (project: Project) => void
   undo: () => void
   redo: () => void
 }
@@ -209,6 +213,13 @@ export function createProjectStore(initialProject: Project) {
         commit({ ...project, startDate })
       },
 
+      renameProject(rawName) {
+        const { project } = get()
+        const name = rawName.trim().slice(0, 200).trim()
+        if (name === '' || name === project.name) return
+        commit({ ...project, name })
+      },
+
       deleteTask(id) {
         const { project } = get()
         if (!project.tasks.some((t) => t.id === id)) return
@@ -236,6 +247,10 @@ export function createProjectStore(initialProject: Project) {
 
       loadProject(next) {
         commit(next)
+      },
+
+      resetProject(next) {
+        set({ project: next, past: [], future: [] })
       },
 
       undo() {

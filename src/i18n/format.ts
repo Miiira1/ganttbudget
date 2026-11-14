@@ -44,6 +44,25 @@ export function formatMonth(year: number, month: number, languageCode: string, s
   }).format(new Date(Date.UTC(year, month - 1, 1)))
 }
 
+const dateTimeFormatters = new Map<string, Intl.DateTimeFormat>()
+
+/** Okamžik (ISO čas) → datum a čas v místním čase podle jazyka (cs: "14. 11. 2026 22:30"). */
+export function formatDateTime(isoTime: string, languageCode: string): string {
+  let formatter = dateTimeFormatters.get(languageCode)
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(localeFor(languageCode), {
+      day: 'numeric',
+      month: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    dateTimeFormatters.set(languageCode, formatter)
+  }
+  const date = new Date(isoTime)
+  return Number.isNaN(date.getTime()) ? isoTime : formatter.format(date)
+}
+
 /** Číslo podle jazyka (cs: "1 250,5", en: "1,250.5"). */
 export function formatNumber(value: number, languageCode: string): string {
   return new Intl.NumberFormat(localeFor(languageCode)).format(value)

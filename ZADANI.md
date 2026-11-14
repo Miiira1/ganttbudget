@@ -1,7 +1,7 @@
 # ZADÁNÍ: Aplikace pro Ganttovy diagramy s navázaným rozpočtem
 
 > Pracovní název: **GanttBudget** (změnitelný)
-> Verze zadání: 1.5 · Datum: 14. 11. 2026 (změny viz kap. 14)
+> Verze zadání: 1.6 · Datum: 14. 11. 2026 (změny viz kap. 14)
 > Dokument je zároveň vstupem pro Claude Code (vibe coding) a osnovou výukové case study.
 
 ---
@@ -291,7 +291,7 @@ Každá fáze je **samostatně funkční a ověřitelná**. Končí uložením d
 | **10** | Učení a přívětivost | Průvodce prvním projektem, vzorové projekty ze strojírenství, kontextová nápověda, kontrola kvality plánu. | U-01–04 |
 | **11** | Napojení na AI | Export pro AI, generování plánu z textu přes prompt a import JSON s validací. | AI-01–04 |
 | **12** | Myšlenková mapa | Editor mapy, převod na činnosti, import odsazeného textu. | MM-01–03 |
-| **13** | Doladění a export | Export do PDF/obrázku, import MS Project/GanttProject, dotyk, přístupnost, výkon. | I-05, I-06, G-09, K-04 |
+| **13** | Doladění a export | Export do PDF/obrázku, import MS Project/GanttProject, dotyk, přístupnost, výkon. Vytvoření nové činnosti tažením v prázdném místě grafu, ukládání sbalených fází, ochrana proti „nafouknutým“ souborům XLSX. | I-05, I-06, G-09, K-04 |
 
 > **Pravidlo pro začátečníka.** Fáze 0–5 stačí k použitelnému nástroji (MVP). Pokud by to bylo časově náročné, je to legitimní bod zastavení a nasazení. Fáze 6+ lze přidávat podle potřeby.
 
@@ -361,7 +361,7 @@ Má obsahovat všechny typy vazeb (včetně SS s prodlevou, např. příprava ha
 Student bez předchozí zkušenosti s PM dokáže **do 15 minut a bez návodu**:
 
 1. Vytvořit nový projekt a pojmenovat ho.
-2. Přidat tři fáze a do nich 10 činností (textem i tažením v grafu).
+2. Přidat tři fáze a do nich 10 činností textem a termíny upravit tažením v grafu.
 3. Propojit je vazbami různých typů a vidět automatický posun termínů.
 4. Nastavit podnikovou odstávku a vidět, že se plán přizpůsobí (a že české svátky se počítají samy).
 5. Přepnout jazyk do angličtiny a zpět.
@@ -400,3 +400,4 @@ Technicky: build bez chyb, testy plánovacího jádra projdou, aplikace je nasaz
 | 1.3 | 14. 11. 2026 | Fáze 4a – pravidla stromu: sloupec Č. (čísla řádků pro předchůdce, sbalením se nemění) + nový sloupec WBS; podřízené položky má jen fáze, max. 6 úrovní; odsazení pod obyčejnou činnost ji změní na fázi (její vazby se po potvrzení odeberou, fáze zatím vazby mít nesmí); předsazení přesune řádek za konec jeho fáze; Nahoru/Dolů jen mezi sourozenci, do jiné fáze předsazením nebo tažením (nad fází: horní třetina = před, prostředek = dovnitř, spodní třetina = za); zkratky Alt+Shift+šipky; fázi s činnostmi nejde změnit na činnost/milník; délka fáze = pracovní dny od jejího začátku do konce; sbalení fáze je jen volba zobrazení (mimo Zpět/Znovu, zatím se neukládá – řeší fáze 5) |
 | 1.4 | 14. 11. 2026 | Fáze 4b – tažení: posun úsečky přichytí začátek na nejbližší pracovní den a nastaví omezení „začít nejdříve k datu“; pravý okraj mění konec (délku, min. 1 den), levý okraj mění začátek a konec zůstane; milník se jen posouvá, fázi táhnout nejde; během tažení náhled s daty, Esc zruší, jedno tažení = jeden krok Zpět. Omezení: začátek = nejpozdější z (začátek projektu, vazby, omezení); když vyhraje vazba, aplikace to vysvětlí (otevřená otázka č. 1 uzavřena); ikona 📌 u činnosti, kliknutím se omezení zruší. Začátek a Konec jdou zadat v tabulce (Začátek = omezení, smazání ho zruší; Konec přepočítá délku). Zkratky (G-06): Ctrl+Enter nová činnost pod výběr, Ctrl+D duplikovat (fáze i s činnostmi), Ctrl+Delete smazat (jen mimo textové pole), Alt+Shift+šipky, Ctrl+Z/Y, F1 přehled. Výkon: krok tažení < 3 ms; puštění, které posune všech 300 řádků, cca 0,4 s – zrychlení (např. pole data až po kliknutí) ve fázi 13 |
 | 1.5 | 14. 11. 2026 | Fáze 4c – typy vazeb: FS = následník začne další pracovní den po konci předchůdce; SS = začne nejdřív v den začátku předchůdce; FF = skončí nejdřív v den konce předchůdce; SF = skončí nejdřív pracovní den před začátkem předchůdce; prodleva i předstih v pracovních dnech; více vazeb a omezení – platí nejpozdější hranice; milník leží na konci dne (FS, FF, SF) nebo na začátku dne (SS, omezení, začátek projektu). Zápis: `3SS+2`, zobrazení vždy FS/SS/FF/SF (výchozí FS se nepíše), lze psát i česky KZ/ZZ/KK/ZK; mezi dvěma činnostmi nejvýš jedna vazba; fáze zatím vazby nemají. Kreslení v grafu: z koleček u začátku / konce úsečky, levá polovina cíle = do začátku, pravá = do konce; kruh a fáze se odmítnou s vysvětlením, existující vazba se nahradí novým typem. Vzorový projekt obsahuje všechny typy (úprava podlahy SS+10, programování PLC FF, nová činnost „Náhradní ruční výroba do zkušebního provozu“ SF) |
+| 1.6 | 14. 11. 2026 | Fáze 5 – ukládání a výměna dat: projekt se ukládá jako `název.ganttbudget.json` (čitelný JSON se `schemaVersion`, limit 5 MB; soubor z novější verze → srozumitelná hláška); kontrola souboru navíc hlídá podřízené jen pod fází, kruh v nadřazených, hloubku max. 6, vazby na sebe / na fázi / duplicitní. Uložit v Chrome/Edge přímo do souboru, jinde stažením; „● neuloženo“ a varování před zahozením změn. Záloha v IndexedDB 1 s po změně, po otevření se obnoví sama (také ověřená schématem). Export XLSX (ExcelJS, načtený až při použití) a CSV (UTF-8 s BOM, středník, CRLF) se sloupci Č., WBS, Úroveň, Název, Typ, Začátek, Konec, Délka, Předchůdci, Začít nejdříve, % hotovo, Poznámka; hierarchie se při importu bere ze sloupce Úroveň (Excel mění WBS „1.2“ v CSV na datum). Ochrana proti CSV injection: apostrof před `= + - @`, tabulátor a CR, import ho odstraní. Import nahradí činnosti (název a kalendář zůstanou) po náhledu, jeden krok Zpět; jakákoli chyba (s číslem řádku) import celý zablokuje; limit 5 MB / 5 000 řádků; české i anglické hlavičky a typy; vzorce z XLSX se nespouštějí. Název projektu jde změnit kliknutím v záhlaví. Kritérium 12.2 upraveno (činnosti textem, termíny tažením); tvorba činnosti tažením v grafu, ukládání sbalených fází a ochrana proti „nafouknutým“ XLSX přesunuty do fáze 13. Nasazení: GitHub Actions (testy + build + Pages), Dependabot jednou týdně |

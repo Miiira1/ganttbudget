@@ -44,5 +44,8 @@ export default defineConfig({
   build: {
     // Malé obrázky se nesmí vkládat jako inline data do CSS/JS mimo pravidla CSP.
     assetsInlineLimit: 0,
+    // Knihovna ExcelJS (export/import XLSX) má cca 0,9 MB. Je v samostatném souboru, který se
+    // stáhne až při prvním použití XLSX – proto vyšší limit, ať build zbytečně nevaruje.
+    chunkSizeWarningLimit: 1000,
   },
 })

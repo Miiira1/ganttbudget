@@ -7,6 +7,9 @@ import { useTranslation } from 'react-i18next'
 
 /** [klávesy, klíč popisu] – klávesy jsou stejné ve všech jazycích. */
 const KEYBOARD: [keys: string[], description: string][] = [
+  [['Ctrl', 'S'], 'save'],
+  [['Ctrl', 'Shift', 'S'], 'saveAs'],
+  [['Ctrl', 'O'], 'open'],
   [['Ctrl', 'Enter'], 'addTask'],
   [['Ctrl', 'D'], 'duplicate'],
   [['Ctrl', 'Delete'], 'delete'],

@@ -7,7 +7,101 @@
     "title": "GanttBudget",
     "tagline": "Project plan and budget",
     "privacy": "Your data stays on this computer only; nothing is sent to a server.",
-    "notSavedYet": "Saving to a file is not ready yet – the plan is lost when you reload the page."
+    "notSavedYet": "Your project is continuously backed up in this browser; to be safe, save it to a file (Ctrl+S)."
+  },
+  "import": {
+    "title": "Import tasks",
+    "summary_one": "The file is fine: {{count}} item.",
+    "summary_other": "The file is fine: {{count}} items.",
+    "more": "… and {{count}} more",
+    "replaceWarning": "The import will replace all current tasks ({{count}}). The project name and calendar stay. You can undo the import with Undo (Ctrl+Z).",
+    "errorsIntro_one": "The file cannot be imported – it contains {{count}} error:",
+    "errorsIntro_other": "The file cannot be imported – it contains {{count}} errors:",
+    "rowError": "Row {{row}}: {{message}}",
+    "moreErrors": "… and {{count}} more errors",
+    "nothingChanged": "Fix the file (e.g. in Excel) and import it again. Nothing in the project has changed.",
+    "cancel": "Cancel",
+    "confirm": "Replace tasks",
+    "error": {
+      "tooLarge": "The file is too large (over 5 MB). Nothing has changed.",
+      "unreadable": "The file cannot be read – it is damaged or not an Excel / CSV table. Nothing has changed.",
+      "unsupported": "Only .xlsx and .csv files can be imported. Nothing has changed.",
+      "empty": "The table contains no tasks (the first row must be a header with a Name column).",
+      "missingName": "The first row (table header) has no “Name” column.",
+      "tooManyRows": "The table has more than 5,000 rows – the app cannot handle that many tasks.",
+      "invalid": "The table data did not pass the check.",
+      "emptyName": "the name is missing.",
+      "nameTooLong": "the name is longer than 200 characters.",
+      "notesTooLong": "the note is longer than 5,000 characters.",
+      "badKind": "unknown type (allowed: Task, Phase, Milestone).",
+      "badLevel": "invalid level (a whole number 1–6, at most 1 more than the previous row).",
+      "badDuration": "the duration must be a whole number of days (0–10,000).",
+      "badPercent": "% complete must be a whole number 0–100.",
+      "badDate": "invalid “Start no earlier than” date (use e.g. 2026-11-18).",
+      "badNumber": "the row number (No.) must be a positive whole number.",
+      "duplicateNumber": "another row already has the same row number (No.).",
+      "badPredecessors": "invalid predecessors (correct e.g. 3, 3SS+2, 5FF).",
+      "unknownPredecessor": "a predecessor refers to a row number that is not in the table.",
+      "selfDependency": "a task cannot be its own predecessor.",
+      "phaseDependency": "a phase cannot have a link (nor be a predecessor).",
+      "parentNotPhase": "sub-items can only be under a phase (check the Level and Type columns).",
+      "cycle": "the links form a loop (the task waits for itself through other tasks)."
+    }
+  },
+  "export": {
+    "csvType": "CSV table",
+    "xlsxType": "Excel workbook",
+    "failed": "The export failed. Please try again.",
+    "columns": {
+      "number": "No.",
+      "wbs": "WBS",
+      "level": "Level",
+      "name": "Name",
+      "kind": "Type",
+      "start": "Start",
+      "finish": "Finish",
+      "duration": "Duration (days)",
+      "predecessors": "Predecessors",
+      "constraint": "Start no earlier than",
+      "percent": "% complete",
+      "notes": "Notes"
+    }
+  },
+  "autosave": {
+    "restored": "Your unfinished project was restored from the browser backup ({{date}}).",
+    "corrupted": "The browser backup of your unfinished project is damaged, so it was not used. If you have the project saved in a file, open it via File → Open."
+  },
+  "file": {
+    "menu": "File",
+    "new": "New project",
+    "newHint": "Start with an empty project (asks first if there are unsaved changes)",
+    "open": "Open…",
+    "openHint": "Open a project from a .json file",
+    "save": "Save",
+    "saveHint": "Save the project to a file (asks where the first time)",
+    "saveAs": "Save as…",
+    "saveAsHint": "Save the project to a new file",
+    "exportXlsx": "Export to Excel (XLSX)…",
+    "exportXlsxHint": "Save the task list as an Excel workbook (recommended for editing in Excel)",
+    "exportCsv": "Export to CSV…",
+    "exportCsvHint": "Save the task list as CSV (for other programs; Excel may convert some values to dates)",
+    "fileType": "GanttBudget project",
+    "fileNameHint": "The file the project is saved to",
+    "unsaved": "unsaved",
+    "unsavedHint": "The project has changes that are not saved in the file. Save it with File → Save (Ctrl+S).",
+    "confirmDiscard": "The project has unsaved changes. Continue anyway? You can still undo them (Ctrl+Z), but they are not saved in the file.",
+    "import": "Import from Excel / CSV…",
+    "importHint": "Replace the tasks with a table from an .xlsx or .csv file (you will see a preview first)",
+    "error": {
+      "tooLarge": "The file is too large (over 5 MB) – it is probably not a GanttBudget project. Nothing has changed.",
+      "notJson": "The file cannot be read – it is damaged or not a project file (.json). Nothing has changed.",
+      "notProject": "This file is not a GanttBudget project. Nothing has changed.",
+      "newerVersion": "The file is from a newer version of the app (format {{version}}). Please update the app. Nothing has changed.",
+      "invalid_one": "The project file contains invalid data ({{count}} problem, e.g. in “{{where}}”). It was probably edited by hand or damaged. Nothing has changed.",
+      "invalid_other": "The project file contains invalid data ({{count}} problems, e.g. in “{{where}}”). It was probably edited by hand or damaged. Nothing has changed.",
+      "saveFailed": "The project could not be saved (the file may be open elsewhere or permission is missing). Try Save as…",
+      "openFailed": "The file could not be opened. Please try again."
+    }
   },
   "toolbar": {
     "label": "Main tools",
@@ -35,7 +129,9 @@
     "start": "Project start: {{date}}",
     "finish": "Finish: {{date}}",
     "taskCount_one": "{{count}} item",
-    "taskCount_other": "{{count}} items"
+    "taskCount_other": "{{count}} items",
+    "nameLabel": "Project name",
+    "renameHint": "Click to rename the project"
   },
   "table": {
     "caption": "Project task list",
@@ -105,6 +201,9 @@
     "mouse": "Mouse",
     "close": "Close",
     "items": {
+      "save": "Save the project to a file",
+      "saveAs": "Save the project to a new file",
+      "open": "Open a project from a file",
       "addTask": "New task below the selected row",
       "duplicate": "Duplicate the selected row (a phase with its tasks)",
       "delete": "Delete the selected row (outside a text field – in a field Ctrl+Delete deletes a word)",

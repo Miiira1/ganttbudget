@@ -1,0 +1,19 @@
+# Dependabot (N-13): jednou týdně zkontroluje nové verze knihoven a nástrojů GitHub Actions
+# a navrhne je jako pull request. Nic se nesloučí samo – každou aktualizaci je potřeba
+# zkontrolovat (projdou testy?) a sloučit ručně. Bezpečnostní opravy hlásí GitHub i mimo plán.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # Drobné aktualizace (opravy a nové funkce bez nekompatibilních změn) v jednom PR.
+      drobne:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

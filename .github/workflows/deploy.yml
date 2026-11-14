@@ -1,0 +1,60 @@
+# Automatické nasazení na GitHub Pages (N-13).
+#
+# Po každém push do větve main GitHub na svém počítači:
+#   1. stáhne kód a nainstaluje knihovny přesně podle package-lock.json (npm ci),
+#   2. spustí testy a build – když cokoli selže, nic se nenasadí,
+#   3. nahraje složku dist/ na GitHub Pages.
+# U pull requestů se jen spustí testy a build (bez nasazení).
+# Ručně jde spustit v záložce Actions → „Nasazení na GitHub Pages“ → Run workflow.
+name: Nasazení na GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Nejmenší možná oprávnění; nasazovací krok si přidá jen to, co potřebuje.
+permissions:
+  contents: read
+
+# Běží vždy jen jedno nasazení; novější push to starší nepřeruší uprostřed.
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Testy a build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Příprava webu pro Pages
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    name: Nasazení
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write # nahrát web na GitHub Pages
+      id-token: write # ověřit, že nasazení přichází z tohoto repozitáře
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

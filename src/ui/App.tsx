@@ -16,6 +16,11 @@ import { StructureToolbar } from './StructureToolbar'
 import { runStructureCommand, STRUCTURE_COMMANDS, STRUCTURE_SHORTCUTS } from './structureCommands'
 import { useSelectedId, useViewState } from './viewState'
 import { ShortcutsDialog } from './ShortcutsDialog'
+import { FileMenu } from './FileMenu'
+import { ImportDialog } from './ImportDialog'
+import { ProjectName } from './ProjectName'
+import { isDirty, openProject, saveProject, useFileState } from '../io/fileActions'
+import { startAutosave } from '../io/autosaveRunner'
 import { deleteSelected, duplicateSelected } from './structureCommands'
 
 /** Je kurzor v textovém poli? Tam necháme Ctrl+Z prohlížeči (vrací psaní v poli). */
@@ -32,8 +37,11 @@ export default function App() {
   const { projectFinish, error: scheduleError } = useSchedule()
   const notice = useNotice((s) => s.message)
   const clearNotice = useNotice((s) => s.clear)
+  const isInfo = useNotice((s) => s.kind === 'info') && notice !== null
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const fileName = useFileState((s) => s.fileName)
+  const dirty = useFileState((s) => s.savedProject) !== project
   const selectedId = useSelectedId(project)
   const selectRow = useViewState((s) => s.select)
 
@@ -61,6 +69,15 @@ export default function App() {
         return
       }
       const ctrl = (event.ctrlKey || event.metaKey) && !event.altKey
+      // Ctrl+S (Uložit), Ctrl+Shift+S (Uložit jako), Ctrl+O (Otevřít) – fungují i v poli tabulky;
+      // rozepsaný text v poli se nejdřív potvrdí (opuštěním pole), aby se uložil také.
+      if (ctrl && (event.key.toLowerCase() === 's' || (event.key.toLowerCase() === 'o' && !event.shiftKey))) {
+        event.preventDefault() // jinak by prohlížeč ukládal / otevíral stránku
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+        if (event.key.toLowerCase() === 'o') void openProject(i18n.t)
+        else void saveProject(i18n.t, event.shiftKey)
+        return
+      }
       // Ctrl+Enter a Ctrl+D fungují i v poli tabulky (při psaní se nepoužívají).
       if (ctrl && !event.shiftKey && event.key === 'Enter') {
         event.preventDefault()
@@ -101,6 +118,23 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [i18n])
 
+  // Automatická záloha v prohlížeči: po otevření obnoví rozpracovaný projekt, pak průběžně zálohuje (I-02).
+  useEffect(() => {
+    void startAutosave(i18n.t, i18n.language)
+  }, [i18n])
+
+  // Zavření záložky s neuloženými změnami → prohlížeč se zeptá (N-08).
+  // (Text otázky určuje prohlížeč, vlastní text už prohlížeče nezobrazují.)
+  useEffect(() => {
+    function onBeforeUnload(event: BeforeUnloadEvent) {
+      if (!isDirty()) return
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [])
+
   function handleAddTask() {
     // Nová činnost přijde pod vybraný řádek (na stejnou úroveň) a sama se vybere.
     const id = addTask(t('task.defaultName'), 'task', selectedId)
@@ -129,7 +163,14 @@ export default function App() {
               {t('app.title')} <span className="text-sm font-normal text-slate-500 dark:text-slate-400">· {t('app.tagline')}</span>
             </h1>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              <span className="font-medium text-slate-800 dark:text-slate-200">{project.name}</span>
+              <ProjectName />
+              {fileName && <span title={t('file.fileNameHint')}> ({fileName})</span>}
+              {dirty && (
+                <span className="ml-1 font-medium text-amber-700 dark:text-amber-400" title={t('file.unsavedHint')}>
+                  <span aria-hidden="true">● </span>
+                  {t('file.unsaved')}
+                </span>
+              )}
               {' · '}
               {t('project.start', { date: formatIsoDate(project.startDate, i18n.language) })}
               {' · '}
@@ -164,6 +205,7 @@ export default function App() {
           </label>
         </div>
         <div role="toolbar" aria-label={t('toolbar.label')} className="mt-2 flex flex-wrap gap-2">
+          <FileMenu />
           <button type="button" className="btn-primary" onClick={handleAddTask}>
             <span aria-hidden="true">＋</span> {t('toolbar.addTask')}
           </button>
@@ -194,9 +236,15 @@ export default function App() {
       {/* Upozornění (chybný zápis, nespočitatelné termíny) – čtečka obrazovky ho přečte hned. */}
       <div aria-live="assertive">
         {(notice ?? (scheduleError ? t(`schedule.${scheduleError}`) : null)) && (
-          <div className="flex items-start justify-between gap-3 border-b border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100">
+          <div
+            className={`flex items-start justify-between gap-3 border-b px-4 py-2 text-sm ${
+              isInfo
+                ? 'border-blue-300 bg-blue-50 text-blue-900 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-100'
+                : 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100'
+            }`}
+          >
             <p>
-              <span aria-hidden="true">⚠ </span>
+              <span aria-hidden="true">{isInfo ? 'ℹ ' : '⚠ '}</span>
               {notice ?? t(`schedule.${scheduleError}`)}
             </p>
             {notice && (
@@ -214,6 +262,7 @@ export default function App() {
       </div>
       <CalendarDialog open={calendarOpen} onClose={() => setCalendarOpen(false)} />
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <ImportDialog />
 
       {project.tasks.length === 0 ? (
         // Prázdný projekt: jen uvítání přes celou šířku, graf by byl prázdný.

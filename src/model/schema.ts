@@ -85,6 +85,9 @@ export const CalendarSchema = z.object({
   removedHolidays: z.array(IsoDateSchema),
 })
 
+/** Nejvíc úrovní stromu fází (F-03) – stejné číslo jako MAX_DEPTH v hierarchy.ts. */
+export const MAX_TREE_DEPTH = 6
+
 /**
  * Části, které přijdou v pozdějších fázích (zdroje 6, rozpočet 7, baseline 9).
  * Zatím musí být prázdné – z.never() nepustí žádnou položku. Upřesní se v dané fázi.
@@ -116,18 +119,42 @@ export const ProjectSchema = z
       }
       ids.add(task.id)
     })
+    const byId = new Map(project.tasks.map((t) => [t.id, t]))
     project.tasks.forEach((task, index) => {
       if (task.parentId !== null && !ids.has(task.parentId)) {
         ctx.addIssue({ code: 'custom', message: 'unknownParent', path: ['tasks', index, 'parentId'] })
       }
-      task.dependencies.forEach((dep, depIndex) => {
-        if (!ids.has(dep.predecessorId)) {
-          ctx.addIssue({
-            code: 'custom',
-            message: 'unknownPredecessor',
-            path: ['tasks', index, 'dependencies', depIndex, 'predecessorId'],
-          })
+      // Strom (fáze 5 – soubor zvenku): podřízené má jen fáze, žádný kruh, nejvýš MAX_TREE_DEPTH úrovní.
+      const parent = task.parentId !== null ? byId.get(task.parentId) : undefined
+      if (parent && parent.kind !== 'phase') {
+        ctx.addIssue({ code: 'custom', message: 'parentNotPhase', path: ['tasks', index, 'parentId'] })
+      }
+      const chain = new Set<string>([task.id])
+      let depth = 0
+      for (let p = parent; p; p = p.parentId !== null ? byId.get(p.parentId) : undefined) {
+        if (chain.has(p.id)) {
+          ctx.addIssue({ code: 'custom', message: 'parentCycle', path: ['tasks', index, 'parentId'] })
+          break
         }
+        chain.add(p.id)
+        depth++
+      }
+      if (depth >= MAX_TREE_DEPTH) {
+        ctx.addIssue({ code: 'custom', message: 'tooDeep', path: ['tasks', index, 'parentId'] })
+      }
+
+      const seen = new Set<string>()
+      task.dependencies.forEach((dep, depIndex) => {
+        const path = ['tasks', index, 'dependencies', depIndex, 'predecessorId']
+        const predecessor = byId.get(dep.predecessorId)
+        if (!predecessor) ctx.addIssue({ code: 'custom', message: 'unknownPredecessor', path })
+        else if (dep.predecessorId === task.id) ctx.addIssue({ code: 'custom', message: 'selfDependency', path })
+        else if (predecessor.kind === 'phase' || task.kind === 'phase') {
+          // Fáze zatím vazby nemají (ani jako předchůdce, ani jako následník).
+          ctx.addIssue({ code: 'custom', message: 'phaseDependency', path })
+        }
+        if (seen.has(dep.predecessorId)) ctx.addIssue({ code: 'custom', message: 'duplicateDependency', path })
+        seen.add(dep.predecessorId)
       })
     })
   })

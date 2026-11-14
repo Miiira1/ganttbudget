@@ -11,10 +11,10 @@
  *
  * Pravidla: podřízené položky má jen fáze; nejvýš MAX_DEPTH úrovní.
  */
-import type { Project, Task } from './schema'
+import { MAX_TREE_DEPTH, type Project, type Task } from './schema'
 
-/** Nejvíc úrovní stromu (F-03). */
-export const MAX_DEPTH = 6
+/** Nejvíc úrovní stromu (F-03) – hlídá ho i schéma při načtení souboru. */
+export const MAX_DEPTH = MAX_TREE_DEPTH
 
 export type HierarchyError =
   | 'notFound'
