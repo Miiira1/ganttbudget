@@ -6,6 +6,7 @@
  * ani částečně – výsledkem je buď celý platný projekt, nebo chyba se srozumitelným kódem.
  * Testy: projectFile.test.ts.
  */
+import { createDefaultCategories } from '../model/defaultCategories'
 import { ProjectSchema, SCHEMA_VERSION, type Project } from '../model/schema'
 
 /** Nejdelší soubor, který aplikace přečte (znaky ≈ bajty; 5 MB je pro 5 000 činností víc než dost). */
@@ -50,12 +51,43 @@ export function parseProjectFile(text: string): { ok: true; project: Project } |
   if (typeof version !== 'number') return { ok: false, error: { code: 'notProject' } }
   if (version > SCHEMA_VERSION) return { ok: false, error: { code: 'newerVersion', version } }
 
-  const result = ProjectSchema.safeParse(data)
+  const result = ProjectSchema.safeParse(version < SCHEMA_VERSION ? migrate(data as Record<string, unknown>, version) : data)
   if (!result.success) {
     const issues = result.error.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message }))
     return { ok: false, error: { code: 'invalid', issues } }
   }
   return { ok: true, project: result.data }
+}
+
+/**
+ * Převod staršího formátu na aktuální (výsledek se pak ověří schématem jako každý jiný soubor).
+ *  - 1 → 2 (fáze 6a): pryč resources, costItems a Task.assignments (byly vždy prázdné);
+ *    přibydou výchozí kategorie nákladů podle jazyka projektu, prázdné číselníky a Task.lines.
+ */
+function migrate(data: Record<string, unknown>, version: number): unknown {
+  let current = data
+  if (version <= 1) {
+    const { resources, costItems, ...rest } = current
+    void [resources, costItems]
+    const tasks = Array.isArray(rest.tasks) ? rest.tasks : []
+    current = {
+      ...rest,
+      schemaVersion: 2,
+      costCategories: createDefaultCategories(typeof rest.language === 'string' ? rest.language : 'en'),
+      departments: [],
+      professions: [],
+      workers: [],
+      machines: [],
+      materials: [],
+      tasks: tasks.map((task: unknown) => {
+        if (typeof task !== 'object' || task === null) return task
+        const { assignments, ...taskRest } = task as Record<string, unknown>
+        void assignments
+        return { ...taskRest, lines: [] }
+      }),
+    }
+  }
+  return current
 }
 
 /** Název souboru z názvu projektu – bez znaků, které Windows v názvu souboru nepovolí. */

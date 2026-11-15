@@ -26,7 +26,7 @@ const KEYBOARD: [keys: string[], description: string][] = [
 ]
 
 /** Ovládání myší – jen popisy. */
-const MOUSE = ['multiSelect', 'dragGroup', 'zoom', 'dragBar', 'dragEdge', 'drawLink', 'dragRow', 'resizeColumn', 'pin', 'collapse']
+const MOUSE = ['multiSelect', 'dragGroup', 'zoom', 'dragBar', 'dragEdge', 'drawLink', 'dragRow', 'resizeColumn', 'pin', 'collapse', 'resourceTabs', 'rate']
 
 export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useTranslation()

@@ -107,7 +107,11 @@
       "invalid_other": "Soubor projektu obsahuje neplatná data ({{count}} problémů, např. v části „{{where}}“). Byl nejspíš upraven ručně nebo poškozen. Nic se nezměnilo.",
       "saveFailed": "Projekt se nepodařilo uložit (možná je soubor otevřený jinde nebo chybí oprávnění). Zkuste Uložit jako…",
       "openFailed": "Soubor se nepodařilo otevřít. Zkuste to znovu."
-    }
+    },
+    "exportLibrary": "Exportovat knihovnu zdrojů…",
+    "exportLibraryHint": "Uložit databázi zdrojů (profese, pracovníci, střediska, stroje, materiály, kategorie) do souboru pro jiné projekty",
+    "importLibrary": "Načíst knihovnu zdrojů…",
+    "importLibraryHint": "Doplnit databázi zdrojů ze souboru knihovny (nové se přidají, změněné aktualizují, nic se nesmaže)"
   },
   "toolbar": {
     "label": "Hlavní nástroje",
@@ -242,7 +246,9 @@
       "collapse": "Kliknout na ▾ / ▸ = sbalit nebo rozbalit fázi.",
       "zoom": "Ctrl + kolečko nebo roztažení / sevření dvou prstů na touchpadu nad grafem = podrobnější / hrubší časová osa (den pod kurzorem zůstane na místě).",
       "multiSelect": "Ctrl + klik na řádek nebo úsečku = přidat ho do výběru / odebrat; Shift + klik = vybrat souvislý rozsah. Tlačítka, zkratky i tažení pak pracují se všemi vybranými.",
-      "dragGroup": "Táhnout jednu z vybraných úseček = posunout všechny vybrané o stejný počet pracovních dnů; táhnout ⠿ u vybraného řádku = přesunout celý výběr."
+      "dragGroup": "Táhnout jednu z vybraných úseček = posunout všechny vybrané o stejný počet pracovních dnů; táhnout ⠿ u vybraného řádku = přesunout celý výběr.",
+      "resourceTabs": "Zdroje: táhnout záložku (Profese, Pracovníci…) = změnit pořadí záložek; na vybrané záložce totéž Alt+Shift+← / →.",
+      "rate": "Zdroje: kliknout na hodinovou sazbu (✎) = nastavit ji ručně, kalkulací nebo podle profese."
     }
   },
   "structure": {
@@ -426,6 +432,248 @@
       "p8": "Předání do provozu a vyhodnocení",
       "t8a": "Vyhodnocení zkušebního provozu",
       "m8": "Předání do provozu"
+    },
+    "resources": {
+      "departments": {
+        "pm": "Řízení projektů",
+        "eng": "Konstrukce a vývoj",
+        "maint": "Údržba a elektro",
+        "prod": "Výroba"
+      },
+      "professions": {
+        "pm": "Projektový manažer",
+        "designer": "Konstruktér",
+        "plc": "Programátor PLC",
+        "electrician": "Elektrikář (externí)",
+        "fitter": "Montér",
+        "operator": "Operátor výroby"
+      },
+      "machines": {
+        "crane": "Mobilní jeřáb 25 t",
+        "platform": "Pracovní plošina",
+        "welder": "Svářecí invertor"
+      },
+      "materials": {
+        "cablePower": "Silový kabel 5×2,5 mm²",
+        "cableSignal": "Stíněný signálový kabel 4×0,75",
+        "tray": "Kabelový žlab 100×60",
+        "sensor": "Indukční snímač M18",
+        "lightCurtain": "Bezpečnostní světelná závora",
+        "cabinet": "Rozvaděč 800×600",
+        "fasteners": "Spojovací materiál",
+        "profile": "Hliníkový konstrukční profil",
+        "cylinder": "Pneumatický válec"
+      },
+      "units": {
+        "m": "m",
+        "pcs": "ks",
+        "set": "sada"
+      }
+    }
+  },
+  "resources": {
+    "defaultCategories": {
+      "material": "Materiál",
+      "labor": "Mzdy",
+      "services": "Služby",
+      "investment": "Investice",
+      "overhead": "Režie",
+      "reserve": "Rezerva"
+    },
+    "tabsLabel": "Databáze zdrojů",
+    "tabs": {
+      "costCategories": "Kategorie nákladů",
+      "professions": "Profese",
+      "workers": "Pracovníci",
+      "machines": "Stroje a zařízení",
+      "materials": "Materiály a díly",
+      "departments": "Střediska"
+    },
+    "intro": {
+      "materials": "Materiály a díly s jednotkovou cenou. Na činnosti se později zadá jen spotřebované množství – cena se vezme odsud (změna ceny se propíše všude).",
+      "costCategories": "Kategorie, do kterých se třídí náklady (např. pro rozpočet a grafy). Kategorii, kterou něco používá, nejde smazat.",
+      "professions": "Profese (role) s hodinovou sazbou – ruční, nebo spočítanou z mzdy, odvodů, režie a produktivních hodin. Pracovník bez vlastní sazby převezme sazbu své profese.",
+      "workers": "Konkrétní lidé. Každý patří k profesi; sazbu může mít vlastní (ruční nebo kalkulaci), jinak platí sazba profese.",
+      "machines": "Stroje a zařízení s hodinovou nebo denní sazbou (pronájem, provoz, odpisy). Kalkulace sazby stroje přibude později – zatím se zadává ručně.",
+      "departments": "Organizační jednotky (střediska, oddělení). Pracovníka lze zařadit do střediska – v analytice pak půjde sledovat náklady a vytížení po střediscích."
+    },
+    "add": {
+      "materials": "Přidat materiál",
+      "costCategories": "Přidat kategorii",
+      "professions": "Přidat profesi",
+      "workers": "Přidat pracovníka",
+      "machines": "Přidat stroj",
+      "departments": "Přidat středisko"
+    },
+    "newName": {
+      "materials": "Nový materiál",
+      "costCategories": "Nová kategorie",
+      "professions": "Nová profese",
+      "workers": "Nový pracovník",
+      "machines": "Nový stroj",
+      "departments": "Nové středisko"
+    },
+    "empty": {
+      "materials": "Zatím žádné materiály.",
+      "costCategories": "Zatím žádné kategorie.",
+      "professions": "Zatím žádné profese.",
+      "workers": "Zatím žádní pracovníci.",
+      "workersNoProfession": "Zatím žádní pracovníci. Nejdřív přidejte aspoň jednu profesi.",
+      "machines": "Zatím žádné stroje.",
+      "departments": "Zatím žádná střediska."
+    },
+    "defaultUnit": "ks",
+    "columns": {
+      "name": "Název",
+      "code": "Kód",
+      "unit": "Jednotka",
+      "unitPrice": "Cena za jednotku ({{currency}})",
+      "category": "Kategorie",
+      "supplier": "Dodavatel",
+      "usage": "Použito",
+      "capacity": "Hodin / den",
+      "rate": "Hodinová sazba",
+      "workers": "Pracovníků",
+      "workerName": "Jméno",
+      "profession": "Profese",
+      "machineRate": "Sazba ({{currency}})",
+      "rateUnit": "Za",
+      "department": "Středisko"
+    },
+    "usageCount_one": "{{count}} položka",
+    "usageCount_few": "{{count}} položky",
+    "usageCount_many": "{{count}} položek",
+    "usageCount_other": "{{count}} položek",
+    "fieldLabel": "{{field}} – {{name}}",
+    "delete": "Smazat",
+    "deleteLabel": "Smazat „{{name}}“",
+    "confirmDelete": "Opravdu smazat „{{name}}“? Změnu lze vrátit tlačítkem Zpět (Ctrl+Z).",
+    "error": {
+      "emptyName": "Název nesmí být prázdný.",
+      "duplicateName": "Název „{{name}}“ už v seznamu je. Zvolte jiný.",
+      "tooLong": "Text je moc dlouhý (nejvýš {{max}} znaků).",
+      "requiredShort": "Údaj je povinný (nejvýš {{max}} znaků).",
+      "invalidMoney": "Částka není platná. Zadejte kladné číslo s nejvýš 2 desetinnými místy, např. 1 234,50.",
+      "noCategory": "Nejdřív přidejte aspoň jednu kategorii nákladů.",
+      "invalidCapacity": "Hodin za den musí být 0,5 až 24 (po půlhodinách).",
+      "noProfession": "Nejdřív přidejte aspoň jednu profesi – každý pracovník k nějaké patří.",
+      "professionInUse_one": "Profesi „{{name}}“ má {{count}} pracovník ({{examples}}). Nejdřív mu nastavte jinou profesi.",
+      "professionInUse_few": "Profesi „{{name}}“ mají {{count}} pracovníci ({{examples}}). Nejdřív jim nastavte jinou profesi.",
+      "professionInUse_many": "Profesi „{{name}}“ má {{count}} pracovníků (např. {{examples}}). Nejdřív jim nastavte jinou profesi.",
+      "professionInUse_other": "Profesi „{{name}}“ má {{count}} pracovníků (např. {{examples}}). Nejdřív jim nastavte jinou profesi.",
+      "departmentInUse_one": "Do střediska „{{name}}“ patří {{count}} pracovník ({{examples}}). Nejdřív ho zařaďte jinam.",
+      "departmentInUse_few": "Do střediska „{{name}}“ patří {{count}} pracovníci ({{examples}}). Nejdřív je zařaďte jinam.",
+      "departmentInUse_many": "Do střediska „{{name}}“ patří {{count}} pracovníků (např. {{examples}}). Nejdřív je zařaďte jinam.",
+      "departmentInUse_other": "Do střediska „{{name}}“ patří {{count}} pracovníků (např. {{examples}}). Nejdřív je zařaďte jinam."
+    },
+    "rateHint": "Nastavit hodinovou sazbu (ručně, kalkulací nebo podle profese)",
+    "rateSource": {
+      "manual": "ručně",
+      "calc": "kalkulace",
+      "profession": "podle profese"
+    },
+    "noRate": "nezadáno",
+    "rateUnit": {
+      "hour": "hodinu",
+      "day": "den"
+    },
+    "deleteCategory": {
+      "title": "Smazat kategorii „{{name}}“",
+      "usage_one": "Kategorii používá {{count}} položka: {{examples}}.",
+      "usage_few": "Kategorii používají {{count}} položky: {{examples}}.",
+      "usage_many": "Kategorii používá {{count}} položek, např. {{examples}}.",
+      "usage_other": "Kategorii používá {{count}} položek, např. {{examples}}.",
+      "moveTo": "Přesunout je do kategorie",
+      "noOther": "Jiná kategorie neexistuje – nejdřív nějakou přidejte.",
+      "undo": "Smazání i přesun jdou vrátit tlačítkem Zpět (Ctrl+Z).",
+      "confirm": "Přesunout a smazat"
+    },
+    "noDepartment": "— bez střediska —",
+    "tabMoveHint": "Pořadí záložek změníte tažením myší nebo klávesami Alt+Shift+← / →",
+    "resetTabOrder": "Výchozí pořadí",
+    "resetTabOrderHint": "Vrátit záložky do původního pořadí"
+  },
+  "view": {
+    "label": "Pohled",
+    "plan": "Plán",
+    "planHint": "Tabulka činností a Ganttův diagram",
+    "resources": "Zdroje",
+    "resourcesHint": "Databáze profesí, pracovníků, strojů, materiálů a kategorií nákladů"
+  },
+  "rate": {
+    "title": "Hodinová sazba – {{name}}",
+    "modeLabel": "Způsob určení sazby",
+    "mode": {
+      "manual": "Ruční sazba",
+      "calc": "Kalkulace",
+      "profession": "Podle profese"
+    },
+    "professionRate": "Platí sazba profese „{{profession}}“: {{rate}} / h.",
+    "professionNoRate": "Profese „{{profession}}“ zatím sazbu nemá. Nastavte ji u profese, nebo zde zvolte ruční sazbu či kalkulaci.",
+    "fields": {
+      "manualRate": "Sazba",
+      "monthlyWage": "Hrubá mzda za měsíc",
+      "contributionsPct": "Odvody zaměstnavatele",
+      "overheadMode": "Režie",
+      "overheadValue": "Výše režie",
+      "vacationDays": "Dovolená",
+      "sickDays": "Nemoc a jiné absence",
+      "hoursPerDay": "Pracovní doba za den",
+      "productivityPct": "Produktivní část doby"
+    },
+    "overhead": {
+      "percent": "% z mzdy",
+      "annual": "částka za rok"
+    },
+    "perHour": "{{currency}} / h",
+    "perYear": "{{currency}}/rok",
+    "days": "dní",
+    "daysCount_one": "{{count}} den",
+    "daysCount_few": "{{count}} dny",
+    "daysCount_many": "{{count}} dní",
+    "daysCount_other": "{{count}} dní",
+    "steps": {
+      "title": "Výpočet",
+      "annualWage": "Roční mzda (× 12)",
+      "contributions": "odvody",
+      "overhead": "režie",
+      "annualCost": "Roční náklady",
+      "fund": "Fond pracovních dnů {{year}}",
+      "absence": "dovolená a nemoc",
+      "hoursAndProductivity": "hodiny a produktivita",
+      "productiveHours": "Produktivní hodiny",
+      "rate": "Hodinová sazba",
+      "note": "Fond = pracovní dny v roce začátku projektu podle kalendáře projektu (bez víkendů, svátků a odstávek)."
+    },
+    "error": {
+      "invalidFields": "Některé pole nejde přečíst – opravte zvýrazněné hodnoty.",
+      "noProductiveHours": "Po odečtení dovolené a nemoci nezbývají žádné produktivní hodiny.",
+      "fixFields": "Sazbu nejde uložit – opravte zvýrazněné údaje."
+    },
+    "save": "Uložit",
+    "cancel": "Zrušit"
+  },
+  "library": {
+    "fileType": "Knihovna zdrojů GanttBudget",
+    "title": "Načíst knihovnu zdrojů",
+    "catalog": "Seznam",
+    "added": "Nové",
+    "changed": "Změněné",
+    "unchanged": "Beze změny",
+    "explain": "Nové položky se přidají, u změněných (stejný název) se převezmou hodnoty z knihovny. Nic se nesmaže. Lze vrátit tlačítkem Zpět (Ctrl+Z).",
+    "nothingToDo": "Projekt už obsahuje všechno z této knihovny – není co načíst.",
+    "currencyMismatch": "Ceny v knihovně jsou v měně {{library}}, projekt používá {{project}}. Takovou knihovnu nejde načíst (ceny by nesouhlasily).",
+    "confirm": "Načíst do projektu",
+    "error": {
+      "tooLarge": "Soubor je příliš velký (víc než 5 MB). Nic se nezměnilo.",
+      "notJson": "Soubor se nedá přečíst – je poškozený nebo to není soubor knihovny. Nic se nezměnilo.",
+      "notLibrary": "Tento soubor není knihovna zdrojů GanttBudget (projekt se otevírá přes Soubor → Otevřít). Nic se nezměnilo.",
+      "newerVersion": "Knihovna je z novější verze aplikace (formát {{version}}). Aktualizujte aplikaci. Nic se nezměnilo.",
+      "invalid_one": "Knihovna obsahuje neplatná data ({{count}} problém, např. v části „{{where}}“). Nic se nezměnilo.",
+      "invalid_few": "Knihovna obsahuje neplatná data ({{count}} problémy, např. v části „{{where}}“). Nic se nezměnilo.",
+      "invalid_many": "Knihovna obsahuje neplatná data ({{count}} problémů, např. v části „{{where}}“). Nic se nezměnilo.",
+      "invalid_other": "Knihovna obsahuje neplatná data ({{count}} problémů, např. v části „{{where}}“). Nic se nezměnilo.",
+      "saveFailed": "Knihovnu se nepodařilo uložit. Zkuste to znovu."
     }
   }
 }

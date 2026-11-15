@@ -407,6 +407,67 @@ describe('termíny více činností najednou (posun skupiny úseček)', () => {
   })
 })
 
+describe('databáze zdrojů (fáze 6a)', () => {
+  const material = { id: 'x1', name: 'Kabel', unit: 'm', unitPrice: 3_250, categoryId: 'cat-material' }
+
+  it('přidat, upravit a smazat položku = vždy jeden krok Zpět', () => {
+    const store = newStore()
+    store.getState().addCatalogItem('materials', material)
+    store.getState().updateCatalogItem('materials', 'x1', { unitPrice: 4_000, code: 'K-1' })
+    expect(store.getState().project.materials[0]).toMatchObject({ unitPrice: 4_000, code: 'K-1' })
+    store.getState().deleteCatalogItem('materials', 'x1')
+    expect(store.getState().project.materials).toEqual([])
+    expect(store.getState().past).toHaveLength(3)
+    store.getState().undo()
+    expect(store.getState().project.materials[0]!.unitPrice).toBe(4_000)
+  })
+
+  it('beze změny se nic nezapíše; undefined nepovinnou hodnotu odstraní', () => {
+    const store = newStore()
+    store.getState().addCatalogItem('materials', { ...material, code: 'K-1' })
+    store.getState().updateCatalogItem('materials', 'x1', { unitPrice: 3_250 })
+    store.getState().updateCatalogItem('materials', 'nic', { unitPrice: 1 })
+    expect(store.getState().past).toHaveLength(1)
+    store.getState().updateCatalogItem('materials', 'x1', { code: undefined })
+    expect('code' in store.getState().project.materials[0]!).toBe(false)
+    expect(ProjectSchema.safeParse(store.getState().project).success).toBe(true)
+  })
+
+  it('smazat používanou kategorii s náhradou = jeden krok Zpět; položky přejdou do náhradní', () => {
+    const store = newStore()
+    store.getState().addCatalogItem('materials', material) // kategorie cat-material
+    store.getState().addCatalogItem('machines', { id: 'm1', name: 'Jeřáb', categoryId: 'cat-material', rate: 100, rateUnit: 'hour', capacityPerDay: 8 })
+    const before = store.getState().past.length
+    store.getState().deleteCategory('cat-material', 'cat-services')
+    const { project } = store.getState()
+    expect(project.costCategories.some((c) => c.id === 'cat-material')).toBe(false)
+    expect([project.materials[0]!.categoryId, project.machines[0]!.categoryId]).toEqual(['cat-services', 'cat-services'])
+    expect(store.getState().past.length - before).toBe(1)
+    expect(ProjectSchema.safeParse(project).success).toBe(true)
+    store.getState().undo()
+    expect(store.getState().project.materials[0]!.categoryId).toBe('cat-material')
+  })
+
+  it('náhradou nesmí být mazaná ani neexistující kategorie', () => {
+    const store = newStore()
+    store.getState().addCatalogItem('materials', material)
+    store.getState().deleteCategory('cat-material', 'cat-material')
+    store.getState().deleteCategory('cat-material', 'nic')
+    expect(store.getState().project.costCategories.some((c) => c.id === 'cat-material')).toBe(true)
+    store.getState().deleteCategory('cat-reserve', null) // nepoužívaná jde smazat bez náhrady
+    expect(store.getState().project.costCategories.some((c) => c.id === 'cat-reserve')).toBe(false)
+    store.getState().deleteCategory('cat-material', null) // používaná bez náhrady ne
+    expect(store.getState().project.costCategories.some((c) => c.id === 'cat-material')).toBe(true)
+  })
+
+  it('kategorie: přidat, přejmenovat', () => {
+    const store = newStore()
+    store.getState().addCatalogItem('costCategories', { id: 'c7', name: 'Doprava' })
+    store.getState().updateCatalogItem('costCategories', 'c7', { name: 'Logistika' })
+    expect(store.getState().project.costCategories.at(-1)).toEqual({ id: 'c7', name: 'Logistika' })
+  })
+})
+
 describe('název projektu (kritérium 12.1)', () => {
   it('přejmenuje projekt jedním krokem Zpět; mezery ořízne, prázdný a stejný název ignoruje', () => {
     const store = newStore()

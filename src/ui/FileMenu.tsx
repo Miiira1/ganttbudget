@@ -7,8 +7,9 @@ import { useTranslation } from 'react-i18next'
 import { newProject, openProject, saveProject } from '../io/fileActions'
 import { exportCsv, exportXlsx } from '../io/exportActions'
 import { startImport } from '../io/importActions'
+import { exportLibrary, startLibraryImport } from '../io/libraryActions'
 
-type Item = { id: 'new' | 'open' | 'save' | 'saveAs' | 'exportXlsx' | 'exportCsv' | 'import'; shortcut?: string; separatorBefore?: boolean }
+type Item = { id: 'new' | 'open' | 'save' | 'saveAs' | 'exportXlsx' | 'exportCsv' | 'import' | 'exportLibrary' | 'importLibrary'; shortcut?: string; separatorBefore?: boolean }
 const ITEMS: Item[] = [
   { id: 'new' },
   { id: 'open', shortcut: 'Ctrl+O' },
@@ -17,6 +18,8 @@ const ITEMS: Item[] = [
   { id: 'exportXlsx', separatorBefore: true },
   { id: 'exportCsv' },
   { id: 'import', separatorBefore: true },
+  { id: 'exportLibrary', separatorBefore: true },
+  { id: 'importLibrary' },
 ]
 
 export function FileMenu() {
@@ -46,6 +49,8 @@ export function FileMenu() {
     else if (id === 'exportXlsx') void exportXlsx(t, i18n.language)
     else if (id === 'exportCsv') void exportCsv(t)
     else if (id === 'import') startImport(t)
+    else if (id === 'exportLibrary') void exportLibrary(t)
+    else if (id === 'importLibrary') startLibraryImport(t)
     else void saveProject(t, id === 'saveAs')
   }
 

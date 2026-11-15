@@ -2,10 +2,14 @@
  * Vzorový projekt „Zavedení automatizace do výroby“ (ZADANI.md, kap. 11) – zjednodušená verze.
  * Názvy, typy, délky v pracovních dnech, vazby všech typů FS, SS, FF, SF (s prodlevou, fáze 4c)
  * a hierarchie: činnosti a milníky patří do fáze, která je v seznamu nad nimi.
- * Další typy vazeb, zdroje a rozpočet se doplní v dalších fázích.
+ * Obsahuje i vzorovou databázi zdrojů (fáze 6a): střediska, profese a pracovníky se sazbami
+ * (ruční, kalkulace, podle profese), stroje a materiály. Řádky zdrojů na činnostech přijdou ve fázi 6b.
  *
- * Názvy jsou v překladových souborech (sample.tasks.*), aby šel projekt vytvořit v každém jazyce.
+ * Názvy jsou v překladových souborech (sample.tasks.*, sample.resources.*), aby šel projekt
+ * vytvořit v každém jazyce. Jména lidí jsou smyšlená. Peníze v haléřích.
  */
+import { defaultCategoryId } from '../model/defaultCategories'
+import { createDefaultRateCalc, type RateCalc } from '../model/rates'
 import { createEmptyProject, createTask, type DependencyType, type Project, type TaskKind } from '../model/schema'
 
 /** [klíč, typ, délka v pracovních dnech, předchůdci jako [klíč, prodleva, typ vazby (výchozí FS)]] */
@@ -48,6 +52,71 @@ const ROWS: Row[] = [
 
 const idOf = (key: string) => `sample-${key}`
 
+/** Kalkulace sazby: hrubá měsíční mzda v Kč a režie v % z mzdy. */
+const calc = (monthlyWageKc: number, overheadPct: number): RateCalc => ({
+  ...createDefaultRateCalc(),
+  monthlyWage: monthlyWageKc * 100,
+  overheadMode: 'percent',
+  overheadValue: overheadPct,
+})
+
+/** Vzorová databáze zdrojů. */
+function addSampleResources(project: Project, translate: (key: string) => string): void {
+  const name = (key: string) => translate(`sample.resources.${key}`)
+  const labor = defaultCategoryId('labor')
+  project.departments = [
+    { id: 'sample-d-pm', name: name('departments.pm'), code: '100' },
+    { id: 'sample-d-eng', name: name('departments.eng'), code: '210' },
+    { id: 'sample-d-maint', name: name('departments.maint'), code: '310' },
+    { id: 'sample-d-prod', name: name('departments.prod'), code: '400' },
+  ]
+  project.professions = [
+    { id: 'sample-pr-pm', name: name('professions.pm'), categoryId: labor, capacityPerDay: 8, rateCalc: calc(75_000, 15) },
+    { id: 'sample-pr-designer', name: name('professions.designer'), categoryId: labor, capacityPerDay: 8, rateCalc: calc(62_000, 15) },
+    { id: 'sample-pr-plc', name: name('professions.plc'), categoryId: labor, capacityPerDay: 8, rateCalc: calc(68_000, 15) },
+    // Externí elektrikáři – fakturovaná hodinová sazba dodavatele.
+    { id: 'sample-pr-electrician', name: name('professions.electrician'), categoryId: defaultCategoryId('services'), capacityPerDay: 8, manualRate: 52_000 },
+    { id: 'sample-pr-fitter', name: name('professions.fitter'), categoryId: labor, capacityPerDay: 8, rateCalc: calc(42_000, 10) },
+    { id: 'sample-pr-operator', name: name('professions.operator'), categoryId: labor, capacityPerDay: 8, rateCalc: calc(38_000, 10) },
+  ]
+  project.workers = [
+    { id: 'sample-w1', name: 'Jana Dvořáková', professionId: 'sample-pr-pm', departmentId: 'sample-d-pm', capacityPerDay: 8 },
+    { id: 'sample-w2', name: 'Petr Svoboda', professionId: 'sample-pr-designer', departmentId: 'sample-d-eng', capacityPerDay: 8, rateCalc: calc(66_000, 15) },
+    { id: 'sample-w3', name: 'Lukáš Černý', professionId: 'sample-pr-plc', departmentId: 'sample-d-eng', capacityPerDay: 8 },
+    { id: 'sample-w4', name: 'Tomáš Procházka', professionId: 'sample-pr-electrician', departmentId: 'sample-d-maint', capacityPerDay: 8 },
+    { id: 'sample-w5', name: 'Martin Kučera', professionId: 'sample-pr-fitter', departmentId: 'sample-d-maint', capacityPerDay: 8 },
+    { id: 'sample-w6', name: 'Pavel Veselý', professionId: 'sample-pr-fitter', departmentId: 'sample-d-prod', capacityPerDay: 6 },
+    { id: 'sample-w7', name: 'Eva Horáková', professionId: 'sample-pr-operator', departmentId: 'sample-d-prod', capacityPerDay: 8, manualRate: 33_000 },
+  ]
+  const services = defaultCategoryId('services')
+  project.machines = [
+    { id: 'sample-m-crane', name: name('machines.crane'), categoryId: services, rate: 180_000, rateUnit: 'hour', capacityPerDay: 8 },
+    { id: 'sample-m-platform', name: name('machines.platform'), categoryId: services, rate: 250_000, rateUnit: 'day', capacityPerDay: 8 },
+    { id: 'sample-m-welder', name: name('machines.welder'), categoryId: services, rate: 15_000, rateUnit: 'hour', capacityPerDay: 8 },
+  ]
+  const material = defaultCategoryId('material')
+  /** [klíč, jednotka, cena v Kč, kód] */
+  const MATERIALS: [string, string, number, string?][] = [
+    ['cablePower', 'm', 65, 'CYKY-J 5x2,5'],
+    ['cableSignal', 'm', 38.5],
+    ['tray', 'm', 245],
+    ['sensor', 'pcs', 1_290, 'IS-M18'],
+    ['lightCurtain', 'pcs', 18_900],
+    ['cabinet', 'pcs', 32_500],
+    ['fasteners', 'set', 1_850],
+    ['profile', 'm', 420, '45x45'],
+    ['cylinder', 'pcs', 3_450],
+  ]
+  project.materials = MATERIALS.map(([key, unit, priceKc, code]) => ({
+    id: `sample-x-${key}`,
+    name: name(`materials.${key}`),
+    unit: name(`units.${unit}`),
+    unitPrice: Math.round(priceKc * 100),
+    categoryId: material,
+    ...(code ? { code } : {}),
+  }))
+}
+
 /**
  * @param translate funkce překladu (t z i18next) – vrací text podle klíče
  * @param language jazyk obsahu projektu
@@ -68,5 +137,6 @@ export function createSampleProject(translate: (key: string) => string, language
       dependencies: predecessors.map(([pred, lagDays, type = 'FS']) => ({ predecessorId: idOf(pred), type, lagDays })),
     }
   })
+  addSampleResources(project, translate)
   return project
 }

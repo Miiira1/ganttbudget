@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { createEmptyProject, createTask, ProjectSchema, type Project, type TaskKind } from './schema'
+import { createEmptyProject, createTask, ProjectSchema, SCHEMA_VERSION, type Project, type TaskKind } from './schema'
+import { createDefaultRateCalc } from './rates'
 import { isValidIsoDate, todayIso } from './dates'
 
 function validProject(): Project {
@@ -146,5 +147,114 @@ describe('data', () => {
 
   it('dnešek vrací ve formátu YYYY-MM-DD', () => {
     expect(todayIso(new Date(2026, 0, 5))).toBe('2026-01-05')
+  })
+})
+
+describe('databáze zdrojů (fáze 6a, formát v2)', () => {
+  /** Projekt s vyplněnými číselníky. */
+  function withCatalogs(): Project {
+    const project = validProject()
+    project.professions = [
+      { id: 'p1', name: 'Programátor PLC', categoryId: 'cat-labor', capacityPerDay: 8, rateCalc: { ...createDefaultRateCalc(), monthlyWage: 6_000_000 } },
+      { id: 'p2', name: 'Elektrikář', categoryId: 'cat-labor', capacityPerDay: 8, manualRate: 45_000 },
+    ]
+    project.workers = [
+      { id: 'w1', name: 'Jan Novák', professionId: 'p1', capacityPerDay: 8 },
+      { id: 'w2', name: 'Eva Malá', professionId: 'p2', capacityPerDay: 6, manualRate: 50_000 },
+    ]
+    project.machines = [{ id: 'm1', name: 'Jeřáb', categoryId: 'cat-services', rate: 150_000, rateUnit: 'hour', capacityPerDay: 8 }]
+    project.materials = [
+      { id: 'x1', name: 'Kabel CYKY 3×2,5', unit: 'm', unitPrice: 3_250, categoryId: 'cat-material' },
+      { id: 'x2', name: 'Čidlo', unit: 'ks', unitPrice: 189_900, categoryId: 'cat-material', code: 'SNS-01', supplier: 'Elektro s.r.o.' },
+    ]
+    return project
+  }
+  const issues = (project: Project) => {
+    const result = ProjectSchema.safeParse(project)
+    return result.success ? [] : result.error.issues.map((i) => i.message)
+  }
+
+  it('verze formátu je 2', () => {
+    expect(SCHEMA_VERSION).toBe(2)
+  })
+
+  it('nový projekt má výchozí kategorie nákladů podle jazyka a prázdné číselníky', () => {
+    const cs = createEmptyProject({ name: 'Nový', language: 'cs' })
+    expect(cs.costCategories.map((c) => c.name)).toEqual(['Materiál', 'Mzdy', 'Služby', 'Investice', 'Režie', 'Rezerva'])
+    expect(createEmptyProject({ name: 'New', language: 'en' }).costCategories.map((c) => c.name)).toEqual([
+      'Material',
+      'Labour',
+      'Services',
+      'Investment',
+      'Overhead',
+      'Reserve',
+    ])
+    expect(createEmptyProject({ name: 'Nový', language: 'de' }).costCategories[0]!.name).toBe('Material') // neznámý jazyk → anglicky
+    expect([cs.professions, cs.workers, cs.machines, cs.materials]).toEqual([[], [], [], []])
+    expect(createTask({ id: 'a', name: 'A', order: 0 }).lines).toEqual([])
+  })
+
+  it('přijme platné číselníky', () => {
+    expect(issues(withCatalogs())).toEqual([])
+  })
+
+  it('odkazy musí vést na existující profesi a kategorii', () => {
+    const p = withCatalogs()
+    p.workers[0]!.professionId = 'nic'
+    p.materials[0]!.categoryId = 'nic'
+    p.machines[0]!.categoryId = 'nic'
+    p.professions[1]!.categoryId = 'nic'
+    expect(issues(p).sort()).toEqual(['unknownCategory', 'unknownCategory', 'unknownCategory', 'unknownProfession'])
+  })
+
+  it('názvy v jednom číselníku jsou jedinečné (bez ohledu na velikost písmen a mezery), ID také', () => {
+    const p = withCatalogs()
+    p.materials[1]!.name = '  kabel cyky 3×2,5 '
+    p.workers[1]!.id = 'w1'
+    expect(issues(p).sort()).toEqual(['duplicateId', 'duplicateName'])
+    const q = withCatalogs()
+    q.materials[0]!.name = 'Elektrikář' // stejný název v JINÉM číselníku nevadí
+    expect(issues(q)).toEqual([])
+  })
+
+  it('peníze jsou celá nezáporná čísla, kapacita 0,5–24 h', () => {
+    for (const change of [
+      (p: Project) => (p.materials[0]!.unitPrice = -1),
+      (p: Project) => (p.materials[0]!.unitPrice = 10.5),
+      (p: Project) => (p.professions[1]!.manualRate = -100),
+      (p: Project) => (p.machines[0]!.rate = 1.5),
+      (p: Project) => (p.workers[0]!.capacityPerDay = 0),
+      (p: Project) => (p.workers[0]!.capacityPerDay = 25),
+      (p: Project) => (p.professions[0]!.rateCalc!.monthlyWage = 100.5),
+      (p: Project) => (p.professions[0]!.rateCalc!.productivityPct = 150),
+      (p: Project) => (p.materials[0]!.unit = ''),
+    ]) {
+      const p = withCatalogs()
+      change(p)
+      expect(ProjectSchema.safeParse(p).success).toBe(false)
+    }
+  })
+
+  it('střediska: pracovník smí mít středisko jen z číselníku; bez střediska je také v pořádku', () => {
+    const p = withCatalogs()
+    p.departments = [{ id: 'd1', name: 'Výroba', code: '120' }]
+    p.workers[0]!.departmentId = 'd1'
+    expect(issues(p)).toEqual([])
+    p.workers[1]!.departmentId = 'nic'
+    p.departments.push({ id: 'd2', name: ' výroba ' })
+    expect(issues(p).sort()).toEqual(['duplicateName', 'unknownDepartment'])
+  })
+
+  it('soubor bez číselníku středisek (rozpracovaná verze 2) se přečte s prázdným seznamem', () => {
+    const { departments, ...withoutDepartments } = withCatalogs()
+    void departments
+    const result = ProjectSchema.safeParse(withoutDepartments)
+    expect(result.success && result.data.departments).toEqual([])
+  })
+
+  it('řádky zdrojů na činnosti zatím musí být prázdné (přijdou ve fázi 6b)', () => {
+    const p = withCatalogs()
+    ;(p.tasks[0]!.lines as unknown[]) = [{ kind: 'labor' }]
+    expect(ProjectSchema.safeParse(p).success).toBe(false)
   })
 })

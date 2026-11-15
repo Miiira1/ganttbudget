@@ -7,12 +7,14 @@
  *  2. Typy TypeScriptu – typy Project, Task… vznikají přímo ze schématu, takže nemůžou
  *     se schématem „rozjet“.
  *
- * Při každé nezpětně slučitelné změně formátu se zvýší SCHEMA_VERSION.
+ * Při každé nezpětně slučitelné změně formátu se zvýší SCHEMA_VERSION a starší soubory
+ * převede io/projectFile.ts (verze 1 → 2: databáze zdrojů, fáze 6a).
  */
 import { z } from 'zod'
 import { isValidIsoDate, todayIso } from './dates'
+import { createDefaultCategories } from './defaultCategories'
 
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
 
 /** Den "YYYY-MM-DD". */
 export const IsoDateSchema = z.string().refine(isValidIsoDate, { message: 'invalidDate' })
@@ -29,12 +31,6 @@ export const DependencySchema = z.object({
 
 /** task = činnost, phase = fáze (sumární řádek), milestone = milník (délka 0). */
 export const TaskKindSchema = z.enum(['task', 'phase', 'milestone'])
-
-export const AssignmentSchema = z.object({
-  resourceId: z.string().min(1),
-  /** Podíl úvazku 0–1 (0,5 = 50 %). Používá se od fáze 6. */
-  share: z.number().min(0).max(1),
-})
 
 export const TaskSchema = z
   .object({
@@ -56,7 +52,8 @@ export const TaskSchema = z
       .string()
       .regex(/^#[0-9a-fA-F]{6}$/)
       .optional(),
-    assignments: z.array(AssignmentSchema),
+    /** Řádky zdrojů a nákladů činnosti (fáze 6b) – zatím musí být prázdné. */
+    lines: z.array(z.never()),
   })
   .refine((t) => t.kind !== 'milestone' || t.durationDays === 0, {
     message: 'milestoneDuration',
@@ -89,10 +86,143 @@ export const CalendarSchema = z.object({
 export const MAX_TREE_DEPTH = 6
 
 /**
- * Části, které přijdou v pozdějších fázích (zdroje 6, rozpočet 7, baseline 9).
+ * Části, které přijdou v pozdějších fázích (baseline 9).
  * Zatím musí být prázdné – z.never() nepustí žádnou položku. Upřesní se v dané fázi.
  */
 const futureList = z.array(z.never())
+
+// ---------------------------------------------------------------------------
+// Databáze (číselníky) zdrojů – fáze 6a (Z-01, Z-04, R-03). Peníze = celá čísla v haléřích.
+// ---------------------------------------------------------------------------
+
+const IdSchema = z.string().min(1).max(100)
+const NameSchema = z.string().trim().min(1).max(200)
+/** Částka v haléřích: celé nezáporné číslo, nejvýš 10 miliard Kč. */
+export const MoneySchema = z.number().int().min(0).max(1_000_000_000_000)
+/** Kapacita v hodinách za den (0,5–24). */
+const CapacitySchema = z.number().min(0.5).max(24)
+const PercentSchema = z.number().min(0).max(100)
+
+export const CategorySchema = z.object({ id: IdSchema, name: NameSchema })
+
+/** Kalkulace hodinové sazby (Z-04) – výpočet v model/rates.ts. */
+export const RateCalcSchema = z.object({
+  monthlyWage: MoneySchema,
+  contributionsPct: PercentSchema,
+  overheadMode: z.enum(['annual', 'percent']),
+  /** Režie: haléře za rok (annual), nebo % z mzdy (percent, 0–1000). */
+  overheadValue: z.number().min(0).max(1_000_000_000_000),
+  vacationDays: z.number().int().min(0).max(366),
+  sickDays: z.number().int().min(0).max(366),
+  hoursPerDay: CapacitySchema,
+  productivityPct: PercentSchema,
+})
+
+export const ProfessionSchema = z.object({
+  id: IdSchema,
+  name: NameSchema,
+  categoryId: IdSchema,
+  capacityPerDay: CapacitySchema,
+  rateCalc: RateCalcSchema.optional(),
+  /** Ruční hodinová sazba (haléře) – má přednost před kalkulací. */
+  manualRate: MoneySchema.optional(),
+})
+
+/** Organizační jednotka / středisko – dimenze pro analytiku (náklady a vytížení po střediscích). */
+export const DepartmentSchema = z.object({
+  id: IdSchema,
+  name: NameSchema,
+  code: z.string().max(50).optional(),
+})
+
+export const WorkerSchema = z.object({
+  id: IdSchema,
+  name: NameSchema,
+  professionId: IdSchema,
+  /** Středisko (nepovinné). */
+  departmentId: IdSchema.optional(),
+  capacityPerDay: CapacitySchema,
+  /** Bez vlastní sazby platí sazba profese. */
+  rateCalc: RateCalcSchema.optional(),
+  manualRate: MoneySchema.optional(),
+})
+
+export const MachineSchema = z.object({
+  id: IdSchema,
+  name: NameSchema,
+  categoryId: IdSchema,
+  /** Sazba v haléřích za hodinu nebo za den. */
+  rate: MoneySchema,
+  rateUnit: z.enum(['hour', 'day']),
+  capacityPerDay: CapacitySchema,
+})
+
+export const MaterialSchema = z.object({
+  id: IdSchema,
+  name: NameSchema,
+  /** Jednotka (ks, kg, m…). */
+  unit: z.string().trim().min(1).max(20),
+  /** Cena za jednotku v haléřích. */
+  unitPrice: MoneySchema,
+  categoryId: IdSchema,
+  code: z.string().max(50).optional(),
+  supplier: z.string().max(200).optional(),
+})
+
+/** Číselníky projektu (stejný tvar má i soubor knihovny). */
+export const CATALOG_KEYS = ['costCategories', 'departments', 'professions', 'workers', 'machines', 'materials'] as const
+export type CatalogKey = (typeof CATALOG_KEYS)[number]
+
+/** Porovnání názvů v číselníku: bez ohledu na velikost písmen a okrajové mezery. */
+export const nameKey = (name: string) => name.trim().toLocaleLowerCase('cs')
+
+/**
+ * Kontrola číselníků: jedinečná ID a názvy v každém číselníku, odkazy na existující
+ * profese a kategorie. Používá ji schéma projektu i soubor knihovny.
+ */
+export function checkCatalogs(
+  data: {
+    costCategories: { id: string; name: string }[]
+    departments: { id: string; name: string }[]
+    professions: { id: string; name: string; categoryId: string }[]
+    workers: { id: string; name: string; professionId: string; departmentId?: string }[]
+    machines: { id: string; name: string; categoryId: string }[]
+    materials: { id: string; name: string; categoryId: string }[]
+  },
+  ctx: z.RefinementCtx,
+): void {
+  for (const key of CATALOG_KEYS) {
+    const ids = new Set<string>()
+    const names = new Set<string>()
+    data[key].forEach((item, index) => {
+      if (ids.has(item.id)) ctx.addIssue({ code: 'custom', message: 'duplicateId', path: [key, index, 'id'] })
+      if (names.has(nameKey(item.name))) ctx.addIssue({ code: 'custom', message: 'duplicateName', path: [key, index, 'name'] })
+      ids.add(item.id)
+      names.add(nameKey(item.name))
+    })
+  }
+  const categories = new Set(data.costCategories.map((c) => c.id))
+  const professions = new Set(data.professions.map((p) => p.id))
+  for (const key of ['professions', 'machines', 'materials'] as const) {
+    data[key].forEach((item, index) => {
+      if (!categories.has(item.categoryId)) {
+        ctx.addIssue({ code: 'custom', message: 'unknownCategory', path: [key, index, 'categoryId'] })
+      }
+    })
+  }
+  const departments = new Set(data.departments.map((d) => d.id))
+  data.workers.forEach((worker, index) => {
+    if (!professions.has(worker.professionId)) {
+      ctx.addIssue({ code: 'custom', message: 'unknownProfession', path: ['workers', index, 'professionId'] })
+    }
+    if (worker.departmentId !== undefined && !departments.has(worker.departmentId)) {
+      ctx.addIssue({ code: 'custom', message: 'unknownDepartment', path: ['workers', index, 'departmentId'] })
+    }
+  })
+}
+
+/** Nejvíc položek v jednom číselníku. */
+export const MAX_CATALOG_ITEMS = 2000
 
 export const ProjectSchema = z
   .object({
@@ -105,12 +235,17 @@ export const ProjectSchema = z
     language: z.string().min(2).max(10),
     calendar: CalendarSchema,
     tasks: z.array(TaskSchema).max(5000),
-    resources: futureList,
-    costCategories: futureList,
-    costItems: futureList,
+    costCategories: z.array(CategorySchema).max(MAX_CATALOG_ITEMS),
+    /** Střediska přibyla až během fáze 6a – rozpracované soubory verze 2 je nemají, proto výchozí []. */
+    departments: z.array(DepartmentSchema).max(MAX_CATALOG_ITEMS).default([]),
+    professions: z.array(ProfessionSchema).max(MAX_CATALOG_ITEMS),
+    workers: z.array(WorkerSchema).max(MAX_CATALOG_ITEMS),
+    machines: z.array(MachineSchema).max(MAX_CATALOG_ITEMS),
+    materials: z.array(MaterialSchema).max(MAX_CATALOG_ITEMS),
     baselines: futureList,
   })
   .superRefine((project, ctx) => {
+    checkCatalogs(project, ctx)
     // Každá činnost musí mít jedinečné ID a odkazy musí mířit na existující činnosti.
     const ids = new Set<string>()
     project.tasks.forEach((task, index) => {
@@ -165,6 +300,13 @@ export type TaskKind = z.infer<typeof TaskKindSchema>
 export type Task = z.infer<typeof TaskSchema>
 export type Calendar = z.infer<typeof CalendarSchema>
 export type Project = z.infer<typeof ProjectSchema>
+export type Category = z.infer<typeof CategorySchema>
+export type RateCalcData = z.infer<typeof RateCalcSchema>
+export type Profession = z.infer<typeof ProfessionSchema>
+export type Worker = z.infer<typeof WorkerSchema>
+export type Department = z.infer<typeof DepartmentSchema>
+export type Machine = z.infer<typeof MachineSchema>
+export type Material = z.infer<typeof MaterialSchema>
 
 export const TASK_KINDS: TaskKind[] = ['task', 'phase', 'milestone']
 
@@ -187,9 +329,12 @@ export function createEmptyProject(options: { name: string; language: string; st
     language: options.language,
     calendar: createDefaultCalendar(),
     tasks: [],
-    resources: [],
-    costCategories: [],
-    costItems: [],
+    costCategories: createDefaultCategories(options.language),
+    departments: [],
+    professions: [],
+    workers: [],
+    machines: [],
+    materials: [],
     baselines: [],
   }
 }
@@ -207,6 +352,6 @@ export function createTask(options: { id: string; name: string; order: number; k
     dependencies: [],
     percentComplete: 0,
     notes: '',
-    assignments: [],
+    lines: [],
   }
 }

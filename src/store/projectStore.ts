@@ -26,7 +26,8 @@ import {
   type HierarchyError,
   type HierarchyResult,
 } from '../model/hierarchy'
-import { createTask, type Calendar, type Dependency, type Project, type Task, type TaskKind } from '../model/schema'
+import type { CatalogItem } from '../model/catalogs'
+import { createTask, type Calendar, type CatalogKey, type Dependency, type Project, type Task, type TaskKind } from '../model/schema'
 
 /** Kolik kroků zpět si aplikace pamatuje. */
 export const HISTORY_LIMIT = 100
@@ -81,6 +82,19 @@ export interface ProjectState {
   updateCalendar: (patch: Partial<Calendar>) => void
   /** Změní datum začátku projektu ("YYYY-MM-DD"). */
   setProjectStart: (startDate: string) => void
+  /**
+   * Databáze zdrojů (fáze 6a): přidat / upravit / smazat položku číselníku – vždy jeden krok Zpět.
+   * Hodnota undefined v úpravě nepovinný údaj odstraní. Pravidla mazání (používaná profese,
+   * kategorie) hlídá UI před voláním (model/catalogs.ts).
+   */
+  addCatalogItem: <K extends CatalogKey>(key: K, item: CatalogItem<K>) => void
+  updateCatalogItem: <K extends CatalogKey>(key: K, id: string, patch: Partial<CatalogItem<K>>) => void
+  deleteCatalogItem: (key: CatalogKey, id: string) => void
+  /**
+   * Smaže kategorii nákladů; položky, které ji používají, přejdou do kategorie `replacementId`
+   * (jeden krok Zpět). Používanou kategorii bez platné náhrady nesmaže.
+   */
+  deleteCategory: (id: string, replacementId: string | null) => void
   /** Přejmenuje projekt (ořízne mezery, max. 200 znaků; prázdný název se ignoruje). */
   renameProject: (name: string) => void
   /** Nahradí celý projekt (např. vzorovým). Lze vrátit přes Zpět. */
@@ -260,6 +274,50 @@ export function createProjectStore(initialProject: Project) {
         const { project } = get()
         if (startDate === project.startDate) return
         commit({ ...project, startDate })
+      },
+
+      addCatalogItem(key, item) {
+        const { project } = get()
+        commit({ ...project, [key]: [...project[key], item] })
+      },
+
+      updateCatalogItem(key, id, patch) {
+        const { project } = get()
+        const list = project[key] as CatalogItem<typeof key>[]
+        const index = list.findIndex((x) => x.id === id)
+        const current = list[index]
+        if (!current) return
+        const next: Record<string, unknown> = { ...current }
+        for (const [field, value] of Object.entries(patch)) {
+          if (value === undefined) delete next[field]
+          else next[field] = value
+        }
+        if (JSON.stringify(next) === JSON.stringify(current)) return
+        commit({ ...project, [key]: list.map((x, i) => (i === index ? next : x)) })
+      },
+
+      deleteCatalogItem(key, id) {
+        const { project } = get()
+        const list = project[key] as { id: string }[]
+        if (!list.some((x) => x.id === id)) return
+        commit({ ...project, [key]: list.filter((x) => x.id !== id) })
+      },
+
+      deleteCategory(id, replacementId) {
+        const { project } = get()
+        if (!project.costCategories.some((c) => c.id === id)) return
+        const used = [...project.professions, ...project.machines, ...project.materials].some((x) => x.categoryId === id)
+        const replacementOk = replacementId !== null && replacementId !== id && project.costCategories.some((c) => c.id === replacementId)
+        if (used && !replacementOk) return
+        const move = <T extends { categoryId: string }>(items: T[]): T[] =>
+          items.map((x) => (x.categoryId === id ? { ...x, categoryId: replacementId as string } : x))
+        commit({
+          ...project,
+          costCategories: project.costCategories.filter((c) => c.id !== id),
+          professions: move(project.professions),
+          machines: move(project.machines),
+          materials: move(project.materials),
+        })
       },
 
       renameProject(rawName) {

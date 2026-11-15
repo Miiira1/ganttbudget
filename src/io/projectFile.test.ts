@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { createSampleProject } from '../samples/automatizace'
+import { translateCs } from '../samples/translateForTests'
 import { SCHEMA_VERSION } from '../model/schema'
 import { fileNameFor, MAX_FILE_CHARS, parseProjectFile, serializeProject } from './projectFile'
 
 /** Vzorový projekt s „přeloženými“ názvy = klíči (překlady tu nepotřebujeme). */
-const sample = () => createSampleProject((key) => key, 'cs', '2026-11-16')
+const sample = () => createSampleProject(translateCs, 'cs', '2026-11-16')
 
 describe('soubor projektu (JSON)', () => {
   it('uložit → načíst vrátí přesně stejný projekt', () => {
@@ -17,8 +18,47 @@ describe('soubor projektu (JSON)', () => {
 
   it('uložený soubor je čitelný a obsahuje verzi formátu', () => {
     const text = serializeProject(sample())
-    expect(text.startsWith('{\n  "schemaVersion": 1,')).toBe(true)
+    expect(text.startsWith('{\n  "schemaVersion": 2,')).toBe(true)
     expect(text.endsWith('\n')).toBe(true)
+  })
+
+  describe('starší soubor (formát 1 z fáze 5) se převede sám', () => {
+    /** Projekt ve tvaru formátu 1: bez číselníků, s assignments a prázdnými resources / costItems. */
+    function asVersion1(language = 'cs') {
+      const { professions, workers, machines, materials, ...rest } = { ...sample(), language }
+      void [professions, workers, machines, materials]
+      return {
+        ...rest,
+        schemaVersion: 1,
+        resources: [],
+        costCategories: [],
+        costItems: [],
+        tasks: rest.tasks.map(({ lines, ...task }) => (void lines, { ...task, assignments: [] })),
+      }
+    }
+
+    it('formát 1 → 2: výchozí kategorie podle jazyka, prázdné číselníky, činnosti beze změny', () => {
+      const old = asVersion1()
+      const result = parseProjectFile(JSON.stringify(old))
+      if (!result.ok) throw new Error(JSON.stringify(result.error))
+      expect(result.project.schemaVersion).toBe(2)
+      expect(result.project.costCategories.map((c) => c.name)).toEqual(['Materiál', 'Mzdy', 'Služby', 'Investice', 'Režie', 'Rezerva'])
+      expect([result.project.professions, result.project.workers, result.project.machines, result.project.materials]).toEqual([[], [], [], []])
+      expect(result.project.tasks).toEqual(sample().tasks)
+      expect('resources' in result.project || 'costItems' in result.project).toBe(false)
+    })
+
+    it('anglický projekt dostane anglické kategorie', () => {
+      const result = parseProjectFile(JSON.stringify(asVersion1('en')))
+      expect(result.ok && result.project.costCategories[0]!.name).toBe('Material')
+    })
+
+    it('neplatný soubor formátu 1 se po převodu odmítne s místem chyby', () => {
+      const old = asVersion1()
+      old.tasks[0]!.name = ''
+      const result = parseProjectFile(JSON.stringify(old))
+      expect(result.ok === false && result.error.code === 'invalid' && result.error.issues[0]!.path).toBe('tasks.0.name')
+    })
   })
 
   it('poškozený JSON', () => {

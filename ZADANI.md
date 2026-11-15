@@ -1,7 +1,7 @@
 # ZADÁNÍ: Aplikace pro Ganttovy diagramy s navázaným rozpočtem
 
 > Pracovní název: **GanttBudget** (změnitelný)
-> Verze zadání: 1.8 · Datum: 15. 11. 2026 (změny viz kap. 14)
+> Verze zadání: 1.9 · Datum: 15. 11. 2026 (změny viz kap. 14)
 > Dokument je zároveň vstupem pro Claude Code (vibe coding) a osnovou výukové case study.
 
 ---
@@ -105,7 +105,7 @@ Státní svátky ČR k zakódování: 1. 1.; Velký pátek; Velikonoční pondě
 
 | ID | Požadavek | Prio |
 |---|---|---|
-| Z-01 | **Databáze (číselníky) zdrojů v projektu**: **profese** (sazba, kapacita h/den, kategorie nákladů), **pracovníci** (jméno, profese, vlastní nebo zděděná sazba, kapacita h/den, nepřítomnosti), **stroje a zařízení** (sazba Kč/h nebo Kč/den, kapacita h/den), **materiály a díly** (jednotka, jednotková cena, kategorie, volitelně kód/dodavatel). Samostatná obrazovka „Zdroje“. Položku použitou na činnostech nejde smazat bez varování. | D (fáze 6a) |
+| Z-01 | **Databáze (číselníky) zdrojů v projektu**: **profese** (sazba, kapacita h/den, kategorie nákladů), **pracovníci** (jméno, profese, vlastní nebo zděděná sazba, kapacita h/den, nepřítomnosti), **stroje a zařízení** (sazba Kč/h nebo Kč/den, kapacita h/den), **materiály a díly** (jednotka, jednotková cena, kategorie, volitelně kód/dodavatel), **střediska** (kód, název; pracovník volitelně patří do střediska – dimenze pro analytiku A-01 a A-04). Samostatná obrazovka „Zdroje“; pořadí jejích podzáložek si uživatel může změnit (tažením nebo Alt+Shift+←/→, pamatuje si ho prohlížeč). Položku použitou na činnostech nejde smazat bez varování. | D (fáze 6a) |
 | Z-02 | Přiřazení zdroje k činnosti jako **řádek činnosti**: člověk = profese a volitelně konkrétní pracovník (sazba pracovníka, jinak profese) + % zapojení; stroj + % využití. Hodiny = délka činnosti × kapacita h/den × %. **Délka činnosti se zdroji nemění** (žádné automatické přeplánování). | D (fáze 6b) |
 | Z-03 | Detekce přetížení zdroje (varování + histogram vytížení). | D (fáze 6c) |
 | Z-04 | **Kalkulace hodinové sazby** profese nebo pracovníka: (hrubá mzda × 12 + odvody zaměstnavatele, výchozí 33,8 % + přidělená režie Kč/rok nebo % ze mzdy) ÷ produktivní hodiny ((pracovní dny roku dle kalendáře − dovolená − nemoc) × h/den × produktivita %). Výpočet je vidět krok po kroku; ruční sazba ho přepíše. Peníze v haléřích. | D (fáze 6a) |
@@ -236,6 +236,7 @@ Project
   calendar: Calendar
   tasks: Task[]            // plochý seznam, hierarchie přes parentId + pořadí
   // číselníky (databáze) – součást projektu, exportovatelné jako knihovna (.ganttbudget-lib.json)
+  departments: Department[]
   professions: Profession[]
   workers: Worker[]
   machines: Machine[]
@@ -263,7 +264,8 @@ RateCalc     monthlyWage, employerContribPct (33,8), overhead (Kč/rok | % ze mz
              vacationDays, sickDays, hoursPerDay, productivityPct
              // sazba = roční náklady ÷ produktivní hodiny (Z-04)
 Profession   id, name, categoryId, rateCalc?, manualRate?, capacityPerDay
-Worker       id, name, professionId, rateCalc?, manualRate?, capacityPerDay, absences[]
+Department   id, name, code?                       // středisko
+Worker       id, name, professionId, departmentId?, rateCalc?, manualRate?, capacityPerDay, absences[]
              // sazba: ruční > vlastní kalkulace > sazba profese
 Machine      id, name, rate, rateUnit (hour|day), capacityPerDay, categoryId
 Material     id, name, unit, unitPrice, categoryId, code?, supplier?
@@ -277,6 +279,10 @@ TaskLine     id, categoryId?, tags[], note?, + podle typu:
 
 Baseline     id, name, savedAt, snapshot (termíny a náklady)
 ```
+
+**Verze souborů.** Projekt `schemaVersion: 2` (fáze 6a); soubor ve formátu 1 (fáze 5) se při otevření
+i obnově zálohy sám převede (výchozí kategorie podle jazyka projektu, prázdné číselníky) a ověří schématem.
+Knihovna zdrojů `.ganttbudget-lib.json`: `{ kind: "ganttbudget-library", libraryVersion: 1, currency, číselníky }`.
 
 **Plánovací jádro (engine).** Čistá funkce `schedule(project) → vypočtené termíny`:
 
@@ -422,3 +428,4 @@ Technicky: build bez chyb, testy plánovacího jádra projdou, aplikace je nasaz
 | 1.6 | 14. 11. 2026 | Fáze 5 – ukládání a výměna dat: projekt se ukládá jako `název.ganttbudget.json` (čitelný JSON se `schemaVersion`, limit 5 MB; soubor z novější verze → srozumitelná hláška); kontrola souboru navíc hlídá podřízené jen pod fází, kruh v nadřazených, hloubku max. 6, vazby na sebe / na fázi / duplicitní. Uložit v Chrome/Edge přímo do souboru, jinde stažením; „● neuloženo“ a varování před zahozením změn. Záloha v IndexedDB 1 s po změně, po otevření se obnoví sama (také ověřená schématem). Export XLSX (ExcelJS, načtený až při použití) a CSV (UTF-8 s BOM, středník, CRLF) se sloupci Č., WBS, Úroveň, Název, Typ, Začátek, Konec, Délka, Předchůdci, Začít nejdříve, % hotovo, Poznámka; hierarchie se při importu bere ze sloupce Úroveň (Excel mění WBS „1.2“ v CSV na datum). Ochrana proti CSV injection: apostrof před `= + - @`, tabulátor a CR, import ho odstraní. Import nahradí činnosti (název a kalendář zůstanou) po náhledu, jeden krok Zpět; jakákoli chyba (s číslem řádku) import celý zablokuje; limit 5 MB / 5 000 řádků; české i anglické hlavičky a typy; vzorce z XLSX se nespouštějí. Název projektu jde změnit kliknutím v záhlaví. Kritérium 12.2 upraveno (činnosti textem, termíny tažením); tvorba činnosti tažením v grafu, ukládání sbalených fází a ochrana proti „nafouknutým“ XLSX přesunuty do fáze 13. Nasazení: GitHub Actions (testy + build + Pages), Dependabot jednou týdně |
 | 1.7 | 14. 11. 2026 | Doplněk po fázi 5 – hromadný výběr (nový požadavek F-11): Ctrl+klik / Shift+klik v tabulce i na úsečkách, Esc zruší, počet vybraných v liště. S vybranou fází jdou i její položky. Hromadné akce: Odsadit (souvislý blok pod řádek nad prvním, nesouvislé každý pod řádek nad sebou), Předsadit (pořadí zůstane), Nahoru/Dolů (blok o jedno místo), Duplikovat (kopie souvislého bloku za blok), Smazat (jedno potvrzení s počtem položek), přetažení řádků za ⠿ (celý výběr ve stejném pořadí) a posun úseček (tažená se přichytí na pracovní den, ostatní o stejný počet pracovních dnů, každá dostane omezení „začít nejdříve“; okraje jen u jedné úsečky, fáze se neposouvají). Každá akce = jeden krok Zpět; když nejde u jednoho řádku, nezmění se nic. Výkon: puštění 300 úseček ≈ 0,3 s, krok náhledu ≈ 70 ms – zrychlení ve fázi 13 |
 | 1.8 | 15. 11. 2026 | Zdroje a náklady – architektura před fází 6: číselníky (databáze) v projektu – profese, pracovníci, stroje, materiály a díly, kategorie; exportovatelné jako knihovna `.ganttbudget-lib.json` (Z-05). Kalkulace hodinové sazby z mzdy, odvodů, režie a produktivních hodin, s ruční sazbou navíc (Z-04). Na činnosti jeden seznam řádků `Task.lines` (člověk, stroj, materiál, jednorázový, průběžný náklad) místo `assignments` + `CostItem`; člověk = profese a volitelně pracovník (sazba pracovníka, jinak profese); cena materiálu z databáze se propíše, na řádku jde přepsat; délka činnosti se zdroji nemění. Fáze 6 rozdělena na 6a (databáze zdrojů), 6b (zdroje a náklady na činnostech), 6c (kritická cesta a vytížení); fáze 7 zúžena na rozpočet v čase |
+| 1.9 | 15. 11. 2026 | Fáze 6a – databáze zdrojů: nový číselník **střediska** (kód, název; Worker.departmentId volitelně) jako dimenze pro analytiku; pořadí podzáložek Zdrojů lze měnit (tažení, Alt+Shift+←/→, pamatuje si prohlížeč, „Výchozí pořadí“). Pravidla: názvy v číselníku jedinečné (bez ohledu na velikost písmen); používanou kategorii jde smazat jen s přesunem položek do náhradní; profesi ani středisko s pracovníky smazat nejde. Kalkulace sazby – výchozí odvody 33,8 %, dovolená 25 dní, nemoc 5 dní, 8 h/den, produktivita 85 %, režie % z mzdy nebo Kč/rok; fond = pracovní dny roku začátku projektu podle kalendáře projektu. Knihovna: párování podle názvů, odkazy se přemapují podle názvů, jiná měna se odmítne, náhled nové/změněné/beze změny, jeden krok Zpět. Formát projektu v2 s převodem v1. Vzorový projekt má vzorovou databázi |

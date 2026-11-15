@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createSampleProject } from '../samples/automatizace'
+import { translateCs } from '../samples/translateForTests'
 import { schedule } from '../engine/schedule'
 import { depthMap, treeOrder } from '../model/hierarchy'
 import { formatPredecessors } from '../model/predecessors'
@@ -13,7 +14,7 @@ import { readXlsx } from './xlsxImport'
 
 /** Vzorový projekt s omezením, poznámkami (i „vzorcem“) a všemi typy vazeb. */
 function sample(): Project {
-  const project = createSampleProject((key) => key, 'cs', '2026-11-16')
+  const project = createSampleProject(translateCs, 'cs', '2026-11-16')
   const t1a = project.tasks.find((t) => t.id === 'sample-t1a')!
   t1a.constraintStart = '2026-11-18'
   t1a.notes = '=1+1 a „uvozovky“; středník'

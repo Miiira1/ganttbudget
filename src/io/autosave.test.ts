@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { createSampleProject } from '../samples/automatizace'
+import { translateCs } from '../samples/translateForTests'
 import { createEmptyProject } from '../model/schema'
 import { fromBackup, shouldRestore, toBackup } from './autosave'
 
-const sample = () => createSampleProject((key) => key, 'cs', '2026-11-16')
+const sample = () => createSampleProject(translateCs, 'cs', '2026-11-16')
 const now = new Date('2026-11-14T21:30:00Z')
 
 describe('automatická záloha v prohlížeči', () => {

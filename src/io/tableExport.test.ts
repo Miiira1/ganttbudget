@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import ExcelJS from 'exceljs'
 import { createSampleProject } from '../samples/automatizace'
+import { translateCs } from '../samples/translateForTests'
 import { schedule } from '../engine/schedule'
 import { buildExportTable, EXPORT_COLUMNS, protectText, toCsv } from './tableExport'
 import { toXlsx } from './xlsxExport'
 
 const sample = () => {
-  const project = createSampleProject((key) => key, 'cs', '2026-11-16')
+  const project = createSampleProject(translateCs, 'cs', '2026-11-16')
   project.tasks.find((t) => t.id === 'sample-t1a')!.constraintStart = '2026-11-18'
   project.tasks.find((t) => t.id === 'sample-t1a')!.notes = '=1+1'
   return project
@@ -43,7 +44,7 @@ describe('export činností – data tabulky', () => {
       number: 1,
       wbs: '1',
       level: 1,
-      name: 'sample.tasks.p1',
+      name: translateCs('sample.tasks.p1'),
       kind: '[phase]',
       start: '2026-11-18',
       finish: '2026-12-22',

@@ -101,7 +101,11 @@
       "invalid_other": "The project file contains invalid data ({{count}} problems, e.g. in “{{where}}”). It was probably edited by hand or damaged. Nothing has changed.",
       "saveFailed": "The project could not be saved (the file may be open elsewhere or permission is missing). Try Save as…",
       "openFailed": "The file could not be opened. Please try again."
-    }
+    },
+    "exportLibrary": "Export resource library…",
+    "exportLibraryHint": "Save the resource database (professions, workers, departments, machines, materials, categories) to a file for other projects",
+    "importLibrary": "Load resource library…",
+    "importLibraryHint": "Add to the resource database from a library file (new items are added, changed ones updated, nothing is deleted)"
   },
   "toolbar": {
     "label": "Main tools",
@@ -230,7 +234,9 @@
       "collapse": "Click ▾ / ▸ = collapse or expand a phase.",
       "zoom": "Ctrl + mouse wheel or spreading / pinching two fingers on the touchpad over the chart = more / less detailed timeline (the day under the pointer stays in place).",
       "multiSelect": "Ctrl + click a row or bar = add it to / remove it from the selection; Shift + click = select a continuous range. Buttons, shortcuts and dragging then work with all selected rows.",
-      "dragGroup": "Drag one of the selected bars = move all selected by the same number of working days; drag ⠿ of a selected row = move the whole selection."
+      "dragGroup": "Drag one of the selected bars = move all selected by the same number of working days; drag ⠿ of a selected row = move the whole selection.",
+      "resourceTabs": "Resources: drag a tab (Professions, Workers…) = change the tab order; on the selected tab the same with Alt+Shift+← / →.",
+      "rate": "Resources: click an hourly rate (✎) = set it manually, by calculation or from the profession."
     }
   },
   "structure": {
@@ -404,6 +410,236 @@
       "p8": "Handover and evaluation",
       "t8a": "Evaluation of the trial run",
       "m8": "Handover to production"
+    },
+    "resources": {
+      "departments": {
+        "pm": "Project management",
+        "eng": "Engineering",
+        "maint": "Maintenance and electrical",
+        "prod": "Production"
+      },
+      "professions": {
+        "pm": "Project manager",
+        "designer": "Design engineer",
+        "plc": "PLC programmer",
+        "electrician": "Electrician (external)",
+        "fitter": "Fitter",
+        "operator": "Production operator"
+      },
+      "machines": {
+        "crane": "Mobile crane 25 t",
+        "platform": "Aerial work platform",
+        "welder": "Welding inverter"
+      },
+      "materials": {
+        "cablePower": "Power cable 5×2.5 mm²",
+        "cableSignal": "Shielded signal cable 4×0.75",
+        "tray": "Cable tray 100×60",
+        "sensor": "Inductive sensor M18",
+        "lightCurtain": "Safety light curtain",
+        "cabinet": "Control cabinet 800×600",
+        "fasteners": "Fasteners",
+        "profile": "Aluminium structural profile",
+        "cylinder": "Pneumatic cylinder"
+      },
+      "units": {
+        "m": "m",
+        "pcs": "pcs",
+        "set": "set"
+      }
+    }
+  },
+  "resources": {
+    "defaultCategories": {
+      "material": "Material",
+      "labor": "Labour",
+      "services": "Services",
+      "investment": "Investment",
+      "overhead": "Overhead",
+      "reserve": "Reserve"
+    },
+    "tabsLabel": "Resource database",
+    "tabs": {
+      "costCategories": "Cost categories",
+      "professions": "Professions",
+      "workers": "Workers",
+      "machines": "Machines and equipment",
+      "materials": "Materials and parts",
+      "departments": "Departments"
+    },
+    "intro": {
+      "materials": "Materials and parts with a unit price. On a task you will later enter only the quantity used – the price comes from here (a price change applies everywhere).",
+      "costCategories": "Categories used to sort costs (e.g. for the budget and charts). A category that is in use cannot be deleted.",
+      "professions": "Professions (roles) with an hourly rate – entered manually, or calculated from the wage, contributions, overhead and productive hours. A worker without their own rate takes the rate of their profession.",
+      "workers": "Specific people. Each belongs to a profession; they may have their own rate (manual or calculated), otherwise the profession rate applies.",
+      "machines": "Machines and equipment with an hourly or daily rate (rental, operation, depreciation). A rate calculation for machines will come later – for now the rate is entered manually.",
+      "departments": "Organisational units (departments, cost centres). A worker can be assigned to a department – analytics will then show costs and workload per department."
+    },
+    "add": {
+      "materials": "Add material",
+      "costCategories": "Add category",
+      "professions": "Add profession",
+      "workers": "Add worker",
+      "machines": "Add machine",
+      "departments": "Add department"
+    },
+    "newName": {
+      "materials": "New material",
+      "costCategories": "New category",
+      "professions": "New profession",
+      "workers": "New worker",
+      "machines": "New machine",
+      "departments": "New department"
+    },
+    "empty": {
+      "materials": "No materials yet.",
+      "costCategories": "No categories yet.",
+      "professions": "No professions yet.",
+      "workers": "No workers yet.",
+      "workersNoProfession": "No workers yet. First add at least one profession.",
+      "machines": "No machines yet.",
+      "departments": "No departments yet."
+    },
+    "defaultUnit": "pcs",
+    "columns": {
+      "name": "Name",
+      "code": "Code",
+      "unit": "Unit",
+      "unitPrice": "Unit price ({{currency}})",
+      "category": "Category",
+      "supplier": "Supplier",
+      "usage": "Used by",
+      "capacity": "Hours / day",
+      "rate": "Hourly rate",
+      "workers": "Workers",
+      "workerName": "Name",
+      "profession": "Profession",
+      "machineRate": "Rate ({{currency}})",
+      "rateUnit": "Per",
+      "department": "Department"
+    },
+    "usageCount_one": "{{count}} item",
+    "usageCount_other": "{{count}} items",
+    "fieldLabel": "{{field}} – {{name}}",
+    "delete": "Delete",
+    "deleteLabel": "Delete “{{name}}”",
+    "confirmDelete": "Really delete “{{name}}”? You can undo this with Undo (Ctrl+Z).",
+    "error": {
+      "emptyName": "The name must not be empty.",
+      "duplicateName": "The name “{{name}}” is already in the list. Choose another one.",
+      "tooLong": "The text is too long (at most {{max}} characters).",
+      "requiredShort": "This value is required (at most {{max}} characters).",
+      "invalidMoney": "The amount is not valid. Enter a positive number with at most 2 decimal places, e.g. 1,234.50.",
+      "noCategory": "First add at least one cost category.",
+      "invalidCapacity": "Hours per day must be 0.5 to 24 (in half hours).",
+      "noProfession": "First add at least one profession – every worker belongs to one.",
+      "professionInUse_one": "Profession “{{name}}” is used by {{count}} worker ({{examples}}). First give them another profession.",
+      "professionInUse_other": "Profession “{{name}}” is used by {{count}} workers (e.g. {{examples}}). First give them another profession.",
+      "departmentInUse_one": "Department “{{name}}” has {{count}} worker ({{examples}}). First move them elsewhere.",
+      "departmentInUse_other": "Department “{{name}}” has {{count}} workers (e.g. {{examples}}). First move them elsewhere."
+    },
+    "rateHint": "Set the hourly rate (manually, by calculation or from the profession)",
+    "rateSource": {
+      "manual": "manual",
+      "calc": "calculated",
+      "profession": "from profession"
+    },
+    "noRate": "not set",
+    "rateUnit": {
+      "hour": "hour",
+      "day": "day"
+    },
+    "deleteCategory": {
+      "title": "Delete category “{{name}}”",
+      "usage_one": "The category is used by {{count}} item: {{examples}}.",
+      "usage_other": "The category is used by {{count}} items, e.g. {{examples}}.",
+      "moveTo": "Move them to category",
+      "noOther": "There is no other category – add one first.",
+      "undo": "Both the deletion and the move can be undone with Undo (Ctrl+Z).",
+      "confirm": "Move and delete"
+    },
+    "noDepartment": "— no department —",
+    "tabMoveHint": "Change the tab order by dragging with the mouse or with Alt+Shift+← / →",
+    "resetTabOrder": "Default order",
+    "resetTabOrderHint": "Put the tabs back in their original order"
+  },
+  "view": {
+    "label": "View",
+    "plan": "Plan",
+    "planHint": "Task table and Gantt chart",
+    "resources": "Resources",
+    "resourcesHint": "Database of professions, workers, machines, materials and cost categories"
+  },
+  "rate": {
+    "title": "Hourly rate – {{name}}",
+    "modeLabel": "How the rate is set",
+    "mode": {
+      "manual": "Manual rate",
+      "calc": "Calculation",
+      "profession": "From profession"
+    },
+    "professionRate": "The rate of profession “{{profession}}” applies: {{rate}} / h.",
+    "professionNoRate": "Profession “{{profession}}” has no rate yet. Set it on the profession, or choose a manual rate or calculation here.",
+    "fields": {
+      "manualRate": "Rate",
+      "monthlyWage": "Gross monthly wage",
+      "contributionsPct": "Employer contributions",
+      "overheadMode": "Overhead",
+      "overheadValue": "Overhead amount",
+      "vacationDays": "Vacation",
+      "sickDays": "Sick leave and other absence",
+      "hoursPerDay": "Working hours per day",
+      "productivityPct": "Productive share of time"
+    },
+    "overhead": {
+      "percent": "% of wage",
+      "annual": "amount per year"
+    },
+    "perHour": "{{currency}} / h",
+    "perYear": "{{currency}}/year",
+    "days": "days",
+    "daysCount_one": "{{count}} day",
+    "daysCount_other": "{{count}} days",
+    "steps": {
+      "title": "Calculation",
+      "annualWage": "Annual wage (× 12)",
+      "contributions": "contributions",
+      "overhead": "overhead",
+      "annualCost": "Annual cost",
+      "fund": "Working days in {{year}}",
+      "absence": "vacation and sick leave",
+      "hoursAndProductivity": "hours and productivity",
+      "productiveHours": "Productive hours",
+      "rate": "Hourly rate",
+      "note": "Working days = working days in the project start year according to the project calendar (without weekends, holidays and shutdowns)."
+    },
+    "error": {
+      "invalidFields": "Some fields cannot be read – fix the highlighted values.",
+      "noProductiveHours": "After vacation and sick leave there are no productive hours left.",
+      "fixFields": "The rate cannot be saved – fix the highlighted values."
+    },
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "library": {
+    "fileType": "GanttBudget resource library",
+    "title": "Load resource library",
+    "catalog": "List",
+    "added": "New",
+    "changed": "Changed",
+    "unchanged": "Unchanged",
+    "explain": "New items are added; changed ones (same name) take the values from the library. Nothing is deleted. You can undo this with Undo (Ctrl+Z).",
+    "nothingToDo": "The project already contains everything from this library – nothing to load.",
+    "currencyMismatch": "Prices in the library are in {{library}}, the project uses {{project}}. Such a library cannot be loaded (the prices would not match).",
+    "confirm": "Load into project",
+    "error": {
+      "tooLarge": "The file is too large (over 5 MB). Nothing has changed.",
+      "notJson": "The file cannot be read – it is damaged or not a library file. Nothing has changed.",
+      "notLibrary": "This file is not a GanttBudget resource library (open projects via File → Open). Nothing has changed.",
+      "newerVersion": "The library is from a newer version of the app (format {{version}}). Please update the app. Nothing has changed.",
+      "invalid_one": "The library contains invalid data ({{count}} problem, e.g. in “{{where}}”). Nothing has changed.",
+      "invalid_other": "The library contains invalid data ({{count}} problems, e.g. in “{{where}}”). Nothing has changed.",
+      "saveFailed": "The library could not be saved. Please try again."
     }
   }
 }

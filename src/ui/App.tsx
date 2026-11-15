@@ -18,10 +18,18 @@ import { useSelectedId, useViewState } from './viewState'
 import { ShortcutsDialog } from './ShortcutsDialog'
 import { FileMenu } from './FileMenu'
 import { ImportDialog } from './ImportDialog'
+import { LibraryDialog } from './resources/LibraryDialog'
 import { ProjectName } from './ProjectName'
 import { isDirty, openProject, saveProject, useFileState } from '../io/fileActions'
 import { startAutosave } from '../io/autosaveRunner'
 import { deleteSelected, duplicateSelected } from './structureCommands'
+import { ResourcesView } from './resources/ResourcesView'
+import { PlanIcon, ResourcesIcon } from './icons'
+import { loadPreference, savePreference } from './preferences'
+
+/** Hlavní pohledy: Plán (tabulka + graf) a Zdroje (databáze, fáze 6a). */
+const VIEWS = ['plan', 'resources'] as const
+type View = (typeof VIEWS)[number]
 
 /** Je kurzor v textovém poli? Tam necháme Ctrl+Z prohlížeči (vrací psaní v poli). */
 function isEditingField(target: EventTarget | null): boolean {
@@ -44,6 +52,15 @@ export default function App() {
   const dirty = useFileState((s) => s.savedProject) !== project
   const selectedId = useSelectedId(project)
   const selectRow = useViewState((s) => s.select)
+
+  // --- Pohled Plán / Zdroje (pamatuje si ho prohlížeč) ---
+  const [view, setViewState] = useState<View>(() => (loadPreference('view') === 'resources' ? 'resources' : 'plan'))
+  const setView = (next: View) => {
+    setViewState(next)
+    savePreference('view', next)
+  }
+  const viewRef = useRef(view)
+  viewRef.current = view
 
   // --- Vzhled (světlý / tmavý) ---
   const [theme, setTheme] = useState<ThemePreference>(loadThemePreference)
@@ -83,25 +100,27 @@ export default function App() {
         else void saveProject(i18n.t, event.shiftKey)
         return
       }
+      // Zkratky pro řádky plánu platí jen v pohledu Plán (ve Zdrojích by měnily skrytou tabulku).
+      const inPlan = viewRef.current === 'plan'
       // Ctrl+Enter a Ctrl+D fungují i v poli tabulky (při psaní se nepoužívají).
-      if (ctrl && !event.shiftKey && event.key === 'Enter') {
+      if (inPlan && ctrl && !event.shiftKey && event.key === 'Enter') {
         event.preventDefault()
         addTaskRef.current()
         return
       }
-      if (ctrl && !event.shiftKey && event.key.toLowerCase() === 'd') {
+      if (inPlan && ctrl && !event.shiftKey && event.key.toLowerCase() === 'd') {
         event.preventDefault() // jinak by prohlížeč přidal záložku
         duplicateSelected(i18n.t)
         return
       }
       // Ctrl+Delete jen mimo textové pole – v poli maže slovo za kurzorem.
-      if (ctrl && !event.shiftKey && event.key === 'Delete' && !isEditingField(event.target)) {
+      if (inPlan && ctrl && !event.shiftKey && event.key === 'Delete' && !isEditingField(event.target)) {
         event.preventDefault()
         deleteSelected(i18n.t)
         return
       }
       // Alt+Shift+šipky fungují i v poli tabulky – při psaní se tahle kombinace nepoužívá.
-      if (event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey) {
+      if (inPlan && event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey) {
         const command = STRUCTURE_COMMANDS.find((c) => STRUCTURE_SHORTCUTS[c] === event.key)
         if (command) {
           event.preventDefault()
@@ -210,10 +229,29 @@ export default function App() {
           </label>
         </div>
         <div role="toolbar" aria-label={t('toolbar.label')} className="mt-2 flex flex-wrap gap-2">
+          <div role="group" aria-label={t('view.label')} className="flex rounded-md border border-slate-300 p-0.5 dark:border-slate-600">
+            {VIEWS.map((id) => (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={view === id}
+                onClick={() => setView(id)}
+                title={t(`view.${id}Hint`)}
+                className={`inline-flex items-center gap-1.5 rounded px-3 py-1 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                  view === id ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+                }`}
+              >
+                {id === 'plan' ? <PlanIcon /> : <ResourcesIcon />}
+                {t(`view.${id}`)}
+              </button>
+            ))}
+          </div>
           <FileMenu />
-          <button type="button" className="btn-primary" onClick={handleAddTask}>
-            <span aria-hidden="true">＋</span> {t('toolbar.addTask')}
-          </button>
+          {view === 'plan' && (
+            <button type="button" className="btn-primary" onClick={handleAddTask}>
+              <span aria-hidden="true">＋</span> {t('toolbar.addTask')}
+            </button>
+          )}
           <button type="button" className="btn-secondary" onClick={undo} disabled={!canUndo} title={t('toolbar.undoHint')}>
             <span aria-hidden="true">↶</span> {t('toolbar.undo')}
           </button>
@@ -229,8 +267,8 @@ export default function App() {
           <button type="button" className="btn-secondary" onClick={() => setShortcutsOpen(true)} title={t('toolbar.shortcutsHint')}>
             <span aria-hidden="true">⌨</span> {t('toolbar.shortcuts')}
           </button>
-          {project.tasks.length > 0 && <StructureToolbar />}
-          {project.tasks.length > 0 && (
+          {view === 'plan' && project.tasks.length > 0 && <StructureToolbar />}
+          {view === 'plan' && project.tasks.length > 0 && (
             <div className="ml-auto">
               <ZoomSwitch />
             </div>
@@ -268,8 +306,13 @@ export default function App() {
       <CalendarDialog open={calendarOpen} onClose={() => setCalendarOpen(false)} />
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <ImportDialog />
+      <LibraryDialog />
 
-      {project.tasks.length === 0 ? (
+      {view === 'resources' ? (
+        <main className="min-h-0 flex-1">
+          <ResourcesView />
+        </main>
+      ) : project.tasks.length === 0 ? (
         // Prázdný projekt: jen uvítání přes celou šířku, graf by byl prázdný.
         <main className="flex-1 overflow-auto">
           <TaskTable onAddTask={handleAddTask} onLoadSample={handleLoadSample} />

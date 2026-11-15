@@ -345,7 +345,7 @@ export function duplicateMany(
       name,
       parentId: isRoot ? task.parentId : (newIds.get(task.parentId as string) ?? task.parentId),
       dependencies: task.dependencies.map((d) => ({ ...d, predecessorId: newIds.get(d.predecessorId) ?? d.predecessorId })),
-      assignments: task.assignments.map((a) => ({ ...a })),
+      lines: [...task.lines],
     }
   })
 
