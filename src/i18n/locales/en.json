@@ -46,7 +46,9 @@
       "phaseDependency": "a phase cannot have a link (nor be a predecessor).",
       "parentNotPhase": "sub-items can only be under a phase (check the Level and Type columns).",
       "cycle": "the links form a loop (the task waits for itself through other tasks)."
-    }
+    },
+    "linesWarning_one": "{{count}} resource and cost line of the current tasks will also be lost (the table does not contain it).",
+    "linesWarning_other": "{{count}} resource and cost lines of the current tasks will also be lost (the table does not contain them)."
   },
   "export": {
     "csvType": "CSV table",
@@ -135,7 +137,9 @@
     "taskCount_one": "{{count}} item",
     "taskCount_other": "{{count}} items",
     "nameLabel": "Project name",
-    "renameHint": "Click to rename the project"
+    "renameHint": "Click to rename the project",
+    "cost": "Cost: {{amount}}",
+    "costHint": "Total cost of all tasks and phases in the project"
   },
   "table": {
     "caption": "Project task list",
@@ -186,7 +190,18 @@
     "fieldLabel": "{{field}}, row {{number}}",
     "invalidName": "The name cannot be empty – the original value was restored.",
     "confirmDeleteMany_one": "Really delete {{count}} item (the selected rows including items in selected phases)? You can undo this with Undo (Ctrl+Z).",
-    "confirmDeleteMany_other": "Really delete {{count}} items (the selected rows including items in selected phases)? You can undo this with Undo (Ctrl+Z)."
+    "confirmDeleteMany_other": "Really delete {{count}} items (the selected rows including items in selected phases)? You can undo this with Undo (Ctrl+Z).",
+    "cost": "Cost",
+    "costHint": "Cost of the item from the resources and costs in the Task detail panel; for a phase including its sub-items. Hover to see the breakdown.",
+    "costWithChildren": "Including sub-items",
+    "costParts": {
+      "labor": "Labour",
+      "machines": "Machines",
+      "material": "Material",
+      "other": "Other"
+    },
+    "confirmMilestoneLines_one": "A milestone may only have a one-off cost and material. {{count}} resource line will be removed. Continue? (Ctrl+Z undoes it.)",
+    "confirmMilestoneLines_other": "A milestone may only have a one-off cost and material. {{count}} resource lines will be removed. Continue? (Ctrl+Z undoes it.)"
   },
   "kind": {
     "task": "Task",
@@ -236,7 +251,8 @@
       "multiSelect": "Ctrl + click a row or bar = add it to / remove it from the selection; Shift + click = select a continuous range. Buttons, shortcuts and dragging then work with all selected rows.",
       "dragGroup": "Drag one of the selected bars = move all selected by the same number of working days; drag ⠿ of a selected row = move the whole selection.",
       "resourceTabs": "Resources: drag a tab (Professions, Workers…) = change the tab order; on the selected tab the same with Alt+Shift+← / →.",
-      "rate": "Resources: click an hourly rate (✎) = set it manually, by calculation or from the profession."
+      "rate": "Resources: click an hourly rate (✎) = set it manually, by calculation or from the profession.",
+      "detailPanel": "Task detail (below the plan): click a task = show its resources and costs; drag the separator above the panel (or ↑ ↓) = change the height; ▾ = collapse."
     }
   },
   "structure": {
@@ -447,6 +463,16 @@
         "pcs": "pcs",
         "set": "set"
       }
+    },
+    "lines": {
+      "consultant": "External consultant for the tender",
+      "deposit": "Deposit to the cell supplier (30 %)",
+      "travel": "Travel to the FAT acceptance",
+      "floor": "Floor construction work (contractor)",
+      "container": "Storage container rental",
+      "training": "Operator training (supplier)",
+      "support": "Supplier service support",
+      "finalPayment": "Final payment to the cell supplier (70 %)"
     }
   },
   "resources": {
@@ -536,7 +562,9 @@
       "professionInUse_one": "Profession “{{name}}” is used by {{count}} worker ({{examples}}). First give them another profession.",
       "professionInUse_other": "Profession “{{name}}” is used by {{count}} workers (e.g. {{examples}}). First give them another profession.",
       "departmentInUse_one": "Department “{{name}}” has {{count}} worker ({{examples}}). First move them elsewhere.",
-      "departmentInUse_other": "Department “{{name}}” has {{count}} workers (e.g. {{examples}}). First move them elsewhere."
+      "departmentInUse_other": "Department “{{name}}” has {{count}} workers (e.g. {{examples}}). First move them elsewhere.",
+      "usedOnTasks_one": "“{{name}}” is used on {{count}} task ({{examples}}). First remove or replace it there (Task detail panel).",
+      "usedOnTasks_other": "“{{name}}” is used on {{count}} tasks (e.g. {{examples}}). First remove or replace it there (Task detail panel)."
     },
     "rateHint": "Set the hourly rate (manually, by calculation or from the profession)",
     "rateSource": {
@@ -640,6 +668,79 @@
       "invalid_one": "The library contains invalid data ({{count}} problem, e.g. in “{{where}}”). Nothing has changed.",
       "invalid_other": "The library contains invalid data ({{count}} problems, e.g. in “{{where}}”). Nothing has changed.",
       "saveFailed": "The library could not be saved. Please try again."
+    }
+  },
+  "detail": {
+    "title": "Task detail",
+    "splitter": "Height of the Task detail panel",
+    "splitterHint": "Drag up / down, or use the ↑ ↓ arrows",
+    "collapse": "Collapse the Task detail panel",
+    "expand": "Expand the Task detail panel",
+    "noSelection": "Click a task in the plan – here you will see and add its resources and costs.",
+    "days_one": "{{count}} working day",
+    "days_other": "{{count}} working days",
+    "cost": "Cost",
+    "costWithChildren": "with sub-items {{amount}}",
+    "addLabel": "Add line",
+    "addHint": {
+      "labor": "Add a person (a profession or a specific worker) with % involvement",
+      "machine": "Add a machine or equipment with % utilisation",
+      "material": "Add a material or part from the database (quantity × price)",
+      "oneTime": "Add a one-off cost (e.g. a deposit, a licence) at the start, at the end or on a date",
+      "recurring": "Add a recurring cost (e.g. rent) per day, week or month for the duration of the task"
+    },
+    "notForMilestone": "A milestone has zero duration – it may only have a one-off cost and material.",
+    "kind": {
+      "labor": "Person",
+      "machine": "Machine",
+      "material": "Material",
+      "oneTime": "One-off",
+      "recurring": "Recurring"
+    },
+    "empty": "No resources or costs yet. Add them with the buttons at the top right.",
+    "caption": "Resources and costs – {{name}}",
+    "columns": {
+      "kind": "Type",
+      "resource": "Resource / item",
+      "amount": "Quantity",
+      "hours": "Hours",
+      "category": "Category",
+      "cost": "Cost",
+      "note": "Note"
+    },
+    "fieldLabel": "{{field}} – {{kind}}",
+    "anyWorker": "— anyone in the profession —",
+    "deleteLine": "Delete line {{kind}}",
+    "deleteLineHint": "Delete the line (Ctrl+Z undoes it)",
+    "warning": {
+      "noRate": "The hourly rate is missing – set it on the profession or worker (Resources)."
+    },
+    "error": {
+      "noProfession": "The resource database has no profession yet. Add one in Resources → Professions.",
+      "noMachine": "The resource database has no machine yet. Add one in Resources → Machines and equipment.",
+      "invalidShare": "Involvement must be 1 to 100 %.",
+      "noMaterial": "The resource database has no material yet. Add one in Resources → Materials and parts.",
+      "invalidQuantity": "The quantity must be a positive number with at most 3 decimal places."
+    },
+    "newName": {
+      "oneTime": "One-off cost",
+      "recurring": "Recurring cost"
+    },
+    "name": "Name",
+    "priceOverride": "Own price",
+    "priceOverrideHint": "Empty = price from the database ({{price}}). Enter a number to override the price for this line only.",
+    "when": "When",
+    "date": "Date",
+    "timing": {
+      "start": "at start",
+      "end": "at end",
+      "date": "on date"
+    },
+    "periodLabel": "Period",
+    "period": {
+      "day": "per work day",
+      "week": "per week",
+      "month": "per month"
     }
   }
 }

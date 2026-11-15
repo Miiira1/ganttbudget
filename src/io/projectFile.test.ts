@@ -44,7 +44,7 @@ describe('soubor projektu (JSON)', () => {
       expect(result.project.schemaVersion).toBe(2)
       expect(result.project.costCategories.map((c) => c.name)).toEqual(['Materiál', 'Mzdy', 'Služby', 'Investice', 'Režie', 'Rezerva'])
       expect([result.project.professions, result.project.workers, result.project.machines, result.project.materials]).toEqual([[], [], [], []])
-      expect(result.project.tasks).toEqual(sample().tasks)
+      expect(result.project.tasks).toEqual(sample().tasks.map((t) => ({ ...t, lines: [] }))) // formát 1 řádky neměl
       expect('resources' in result.project || 'costItems' in result.project).toBe(false)
     })
 

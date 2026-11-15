@@ -50,7 +50,11 @@
       "phaseDependency": "fáze nemůže mít vazbu (ani být předchůdcem).",
       "parentNotPhase": "podřízené položky mohou být jen pod fází (zkontrolujte sloupce Úroveň a Typ).",
       "cycle": "vazby tvoří kruh (činnost přes jiné činnosti čeká sama na sebe)."
-    }
+    },
+    "linesWarning_one": "Zároveň zanikne {{count}} řádek zdrojů a nákladů ze současných činností (tabulka ho neobsahuje).",
+    "linesWarning_few": "Zároveň zaniknou {{count}} řádky zdrojů a nákladů ze současných činností (tabulka je neobsahuje).",
+    "linesWarning_many": "Zároveň zanikne {{count}} řádků zdrojů a nákladů ze současných činností (tabulka je neobsahuje).",
+    "linesWarning_other": "Zároveň zanikne {{count}} řádků zdrojů a nákladů ze současných činností (tabulka je neobsahuje)."
   },
   "export": {
     "csvType": "Tabulka CSV",
@@ -143,7 +147,9 @@
     "taskCount_many": "{{count}} položky",
     "taskCount_other": "{{count}} položek",
     "nameLabel": "Název projektu",
-    "renameHint": "Kliknutím přejmenujete projekt"
+    "renameHint": "Kliknutím přejmenujete projekt",
+    "cost": "Náklady: {{amount}}",
+    "costHint": "Součet nákladů všech činností a fází projektu"
   },
   "table": {
     "caption": "Seznam činností projektu",
@@ -198,7 +204,20 @@
     "confirmDeleteMany_one": "Opravdu smazat {{count}} položku (vybrané řádky včetně položek ve vybraných fázích)? Změnu lze vrátit tlačítkem Zpět (Ctrl+Z).",
     "confirmDeleteMany_few": "Opravdu smazat {{count}} položky (vybrané řádky včetně položek ve vybraných fázích)? Změnu lze vrátit tlačítkem Zpět (Ctrl+Z).",
     "confirmDeleteMany_many": "Opravdu smazat {{count}} položek (vybrané řádky včetně položek ve vybraných fázích)? Změnu lze vrátit tlačítkem Zpět (Ctrl+Z).",
-    "confirmDeleteMany_other": "Opravdu smazat {{count}} položek (vybrané řádky včetně položek ve vybraných fázích)? Změnu lze vrátit tlačítkem Zpět (Ctrl+Z)."
+    "confirmDeleteMany_other": "Opravdu smazat {{count}} položek (vybrané řádky včetně položek ve vybraných fázích)? Změnu lze vrátit tlačítkem Zpět (Ctrl+Z).",
+    "cost": "Náklady",
+    "costHint": "Náklad položky ze zdrojů a nákladů v panelu Detail činnosti; u fáze včetně podřízených. Najetím myší uvidíte rozpad.",
+    "costWithChildren": "Včetně podřízených položek",
+    "costParts": {
+      "labor": "Práce",
+      "machines": "Stroje",
+      "material": "Materiál",
+      "other": "Ostatní"
+    },
+    "confirmMilestoneLines_one": "Milník smí mít jen jednorázový náklad a materiál. Odebere se {{count}} řádek zdrojů. Pokračovat? (Lze vrátit Ctrl+Z.)",
+    "confirmMilestoneLines_few": "Milník smí mít jen jednorázový náklad a materiál. Odeberou se {{count}} řádky zdrojů. Pokračovat? (Lze vrátit Ctrl+Z.)",
+    "confirmMilestoneLines_many": "Milník smí mít jen jednorázový náklad a materiál. Odebere se {{count}} řádků zdrojů. Pokračovat? (Lze vrátit Ctrl+Z.)",
+    "confirmMilestoneLines_other": "Milník smí mít jen jednorázový náklad a materiál. Odebere se {{count}} řádků zdrojů. Pokračovat? (Lze vrátit Ctrl+Z.)"
   },
   "kind": {
     "task": "Činnost",
@@ -248,7 +267,8 @@
       "multiSelect": "Ctrl + klik na řádek nebo úsečku = přidat ho do výběru / odebrat; Shift + klik = vybrat souvislý rozsah. Tlačítka, zkratky i tažení pak pracují se všemi vybranými.",
       "dragGroup": "Táhnout jednu z vybraných úseček = posunout všechny vybrané o stejný počet pracovních dnů; táhnout ⠿ u vybraného řádku = přesunout celý výběr.",
       "resourceTabs": "Zdroje: táhnout záložku (Profese, Pracovníci…) = změnit pořadí záložek; na vybrané záložce totéž Alt+Shift+← / →.",
-      "rate": "Zdroje: kliknout na hodinovou sazbu (✎) = nastavit ji ručně, kalkulací nebo podle profese."
+      "rate": "Zdroje: kliknout na hodinovou sazbu (✎) = nastavit ji ručně, kalkulací nebo podle profese.",
+      "detailPanel": "Detail činnosti (pod plánem): kliknout na činnost = ukázat její zdroje a náklady; táhnout oddělovač nad panelem (nebo šipky ↑ ↓) = změnit výšku; ▾ = sbalit."
     }
   },
   "structure": {
@@ -469,6 +489,16 @@
         "pcs": "ks",
         "set": "sada"
       }
+    },
+    "lines": {
+      "consultant": "Externí poradce pro výběrové řízení",
+      "deposit": "Záloha dodavateli pracoviště (30 %)",
+      "travel": "Cestovné na přejímku FAT",
+      "floor": "Stavební úpravy podlahy (dodavatel)",
+      "container": "Pronájem skladového kontejneru",
+      "training": "Školení obsluhy (dodavatel)",
+      "support": "Servisní podpora dodavatele",
+      "finalPayment": "Doplatek dodavateli pracoviště (70 %)"
     }
   },
   "resources": {
@@ -564,7 +594,11 @@
       "departmentInUse_one": "Do střediska „{{name}}“ patří {{count}} pracovník ({{examples}}). Nejdřív ho zařaďte jinam.",
       "departmentInUse_few": "Do střediska „{{name}}“ patří {{count}} pracovníci ({{examples}}). Nejdřív je zařaďte jinam.",
       "departmentInUse_many": "Do střediska „{{name}}“ patří {{count}} pracovníků (např. {{examples}}). Nejdřív je zařaďte jinam.",
-      "departmentInUse_other": "Do střediska „{{name}}“ patří {{count}} pracovníků (např. {{examples}}). Nejdřív je zařaďte jinam."
+      "departmentInUse_other": "Do střediska „{{name}}“ patří {{count}} pracovníků (např. {{examples}}). Nejdřív je zařaďte jinam.",
+      "usedOnTasks_one": "„{{name}}“ se používá na {{count}} činnosti ({{examples}}). Nejdřív ho tam odeberte nebo nahraďte (panel Detail činnosti).",
+      "usedOnTasks_few": "„{{name}}“ se používá na {{count}} činnostech ({{examples}}). Nejdřív ho tam odeberte nebo nahraďte (panel Detail činnosti).",
+      "usedOnTasks_many": "„{{name}}“ se používá na {{count}} činnostech (např. {{examples}}). Nejdřív ho tam odeberte nebo nahraďte (panel Detail činnosti).",
+      "usedOnTasks_other": "„{{name}}“ se používá na {{count}} činnostech (např. {{examples}}). Nejdřív ho tam odeberte nebo nahraďte (panel Detail činnosti)."
     },
     "rateHint": "Nastavit hodinovou sazbu (ručně, kalkulací nebo podle profese)",
     "rateSource": {
@@ -674,6 +708,81 @@
       "invalid_many": "Knihovna obsahuje neplatná data ({{count}} problémů, např. v části „{{where}}“). Nic se nezměnilo.",
       "invalid_other": "Knihovna obsahuje neplatná data ({{count}} problémů, např. v části „{{where}}“). Nic se nezměnilo.",
       "saveFailed": "Knihovnu se nepodařilo uložit. Zkuste to znovu."
+    }
+  },
+  "detail": {
+    "title": "Detail činnosti",
+    "splitter": "Výška panelu Detail činnosti",
+    "splitterHint": "Táhněte nahoru / dolů, nebo šipkami ↑ ↓",
+    "collapse": "Sbalit panel Detail činnosti",
+    "expand": "Rozbalit panel Detail činnosti",
+    "noSelection": "Klikněte na činnost v plánu – tady uvidíte a přidáte její zdroje a náklady.",
+    "days_one": "{{count}} pracovní den",
+    "days_few": "{{count}} pracovní dny",
+    "days_many": "{{count}} pracovních dnů",
+    "days_other": "{{count}} pracovních dnů",
+    "cost": "Náklad",
+    "costWithChildren": "s podřízenými {{amount}}",
+    "addLabel": "Přidat řádek",
+    "addHint": {
+      "labor": "Přidat člověka (profesi nebo konkrétního pracovníka) s % zapojení",
+      "machine": "Přidat stroj nebo zařízení s % využití",
+      "material": "Přidat materiál nebo díl z databáze (množství × cena)",
+      "oneTime": "Přidat jednorázový náklad (např. záloha, licence) k začátku, ke konci nebo k datu",
+      "recurring": "Přidat průběžný náklad (např. nájem) za den, týden nebo měsíc po dobu činnosti"
+    },
+    "notForMilestone": "Milník má nulovou délku – smí mít jen jednorázový náklad a materiál.",
+    "kind": {
+      "labor": "Člověk",
+      "machine": "Stroj",
+      "material": "Materiál",
+      "oneTime": "Jednorázový",
+      "recurring": "Průběžný"
+    },
+    "empty": "Zatím žádné zdroje ani náklady. Přidejte je tlačítky vpravo nahoře.",
+    "caption": "Zdroje a náklady – {{name}}",
+    "columns": {
+      "kind": "Typ",
+      "resource": "Zdroj / položka",
+      "amount": "Množství",
+      "hours": "Hodiny",
+      "category": "Kategorie",
+      "cost": "Náklad",
+      "note": "Poznámka"
+    },
+    "fieldLabel": "{{field}} – {{kind}}",
+    "anyWorker": "— kdokoli z profese —",
+    "deleteLine": "Smazat řádek {{kind}}",
+    "deleteLineHint": "Smazat řádek (lze vrátit Ctrl+Z)",
+    "warning": {
+      "noRate": "Chybí hodinová sazba – nastavte ji u profese nebo pracovníka (Zdroje)."
+    },
+    "error": {
+      "noProfession": "V databázi zdrojů zatím není žádná profese. Přidejte ji na obrazovce Zdroje → Profese.",
+      "noMachine": "V databázi zdrojů zatím není žádný stroj. Přidejte ho na obrazovce Zdroje → Stroje a zařízení.",
+      "invalidShare": "Zapojení musí být 1 až 100 %.",
+      "noMaterial": "V databázi zdrojů zatím není žádný materiál. Přidejte ho na obrazovce Zdroje → Materiály a díly.",
+      "invalidQuantity": "Množství musí být kladné číslo s nejvýš 3 desetinnými místy."
+    },
+    "newName": {
+      "oneTime": "Jednorázový náklad",
+      "recurring": "Průběžný náklad"
+    },
+    "name": "Název",
+    "priceOverride": "Vlastní cena",
+    "priceOverrideHint": "Prázdné = cena z databáze ({{price}}). Zadáním čísla cenu jen pro tento řádek přepíšete.",
+    "when": "Kdy",
+    "date": "Datum",
+    "timing": {
+      "start": "na začátku",
+      "end": "na konci",
+      "date": "k datu"
+    },
+    "periodLabel": "Období",
+    "period": {
+      "day": "za prac. den",
+      "week": "za týden",
+      "month": "za měsíc"
     }
   }
 }

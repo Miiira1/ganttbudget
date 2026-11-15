@@ -26,7 +26,9 @@ import {
 import { TASK_KINDS, type Task, type TaskKind } from '../model/schema'
 import type { ScheduledTask } from '../engine/schedule'
 import { ROW_HEIGHT } from '../gantt/geometry'
-import { getSchedule, projectStore, useProject, useSchedule } from '../store/useProject'
+import { getSchedule, projectStore, useCosts, useProject, useSchedule } from '../store/useProject'
+import { formatMoney } from '../model/money'
+import { milestoneAllows } from '../model/catalogs'
 import { DateInputCell, NumberCell, TextCell } from './EditableCells'
 import { createWorkCalendar, isoToDay } from '../engine/calendar'
 import { durationForFinish } from '../gantt/drag'
@@ -87,6 +89,12 @@ interface TaskRowProps {
   constraintIgnored: boolean
   /** Text sloupce Předchůdci, např. "2; 5+3". */
   predecessorsText: string
+  /** Náklad položky v haléřích (u fáze včetně podřízených) a jeho rozpad – jednotlivá čísla, aby fungovalo memo. */
+  costTotal: number
+  costLabor: number
+  costMachines: number
+  costMaterial: number
+  costOther: number
   /** Má fáze podřízené položky (pak jde sbalit)? */
   hasChildren: boolean
   collapsed: boolean
@@ -163,6 +171,7 @@ function CollapseToggle({ task, hasChildren, collapsed }: { task: Task; hasChild
 const TaskRow = memo(function TaskRow(props: TaskRowProps) {
   const { task, number, depth, wbs, start, finish, computedDuration, inCycle, predecessorsText } = props
   const { hasChildren, collapsed, selected, dropIndicator: indicator, dragging, drag, constraintIgnored } = props
+  const { costTotal, costLabor, costMachines, costMaterial, costOther } = props
   const { t, i18n } = useTranslation()
   const select = useViewState((s) => s.select)
   // Řádek nesleduje celý projekt (jinak by se překresloval při každé změně kdekoli);
@@ -272,7 +281,16 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
           aria-label={label('table.kind')}
           title={hasChildren ? t('table.kindLockedHint') : t(`kind.${task.kind}Hint`)}
           value={task.kind}
-          onChange={(e) => updateTask(task.id, { kind: e.target.value as TaskKind })}
+          onChange={(e) => {
+            const kind = e.target.value as TaskKind
+            // Milník smí mít jen jednorázový náklad a materiál – ostatní řádky by se odebraly (N-08).
+            const removed = kind === 'milestone' ? task.lines.filter((l) => !milestoneAllows(l)).length : 0
+            if (removed > 0 && !window.confirm(t('table.confirmMilestoneLines', { count: removed }))) {
+              e.target.value = task.kind
+              return
+            }
+            updateTask(task.id, { kind })
+          }}
           className="w-full rounded border border-transparent bg-transparent px-1 py-0.5 font-normal hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 dark:hover:border-slate-600 dark:[&>option]:bg-slate-800"
         >
           {TASK_KINDS.map((kind) => (
@@ -366,6 +384,15 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
           max={100}
           onCommit={(percentComplete) => updateTask(task.id, { percentComplete })}
         />
+      </td>
+      <td className={`${td} px-2 text-right tabular-nums ${isPhase ? 'font-semibold' : ''}`}>
+        {costTotal > 0 && (
+          <CostAmount
+            total={costTotal}
+            parts={{ labor: costLabor, machines: costMachines, material: costMaterial, other: costOther }}
+            withChildren={isPhase}
+          />
+        )}
       </td>
       <td className={`${td}`}>
         <TextCell value={task.notes} label={label('table.notes')} onCommit={(notes) => updateTask(task.id, { notes })} />
@@ -473,6 +500,7 @@ export function TaskTable({ onAddTask, onLoadSample }: { onAddTask: () => void; 
   const { t } = useTranslation()
   const project = useProject((s) => s.project)
   const result = useSchedule()
+  const costs = useCosts()
   // Čísla řádků se počítají ze všech řádků (i skrytých), aby se sbalením neměnila.
   const numbers = useMemo(() => rowNumbers(project), [project])
   const rows = useVisibleRows(project)
@@ -524,6 +552,11 @@ export function TaskTable({ onAddTask, onLoadSample }: { onAddTask: () => void; 
               inCycle={result.cycleTaskIds.has(task.id)}
               constraintIgnored={result.constraintOverridden.has(task.id)}
               predecessorsText={formatPredecessorsWith(numbers, task)}
+              costTotal={costs.byTask.get(task.id)?.total.total ?? 0}
+              costLabor={costs.byTask.get(task.id)?.total.labor ?? 0}
+              costMachines={costs.byTask.get(task.id)?.total.machines ?? 0}
+              costMaterial={costs.byTask.get(task.id)?.total.material ?? 0}
+              costOther={costs.byTask.get(task.id)?.total.other ?? 0}
               hasChildren={parents.has(task.id)}
               collapsed={collapsed.has(task.id)}
               selected={selectedSet.has(task.id)}
@@ -535,5 +568,21 @@ export function TaskTable({ onAddTask, onLoadSample }: { onAddTask: () => void; 
         })}
       </tbody>
     </table>
+  )
+}
+
+/** Náklad v buňce tabulky; bublina ukáže rozpad na práci, stroje, materiál a ostatní. */
+function CostAmount(props: { total: number; parts: Record<'labor' | 'machines' | 'material' | 'other', number>; withChildren: boolean }) {
+  const { t, i18n } = useTranslation()
+  const currency = useProject((s) => s.project.currency)
+  const money = (h: number) => formatMoney(h, currency, i18n.language)
+  const lines = (['labor', 'machines', 'material', 'other'] as const)
+    .filter((k) => props.parts[k] > 0)
+    .map((k) => `${t(`table.costParts.${k}`)}: ${money(props.parts[k])}`)
+  const title = [props.withChildren ? t('table.costWithChildren') : null, ...lines].filter(Boolean).join('\n')
+  return (
+    <span title={title} className="block truncate">
+      {money(props.total)}
+    </span>
   )
 }

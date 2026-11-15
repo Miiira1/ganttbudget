@@ -32,6 +32,64 @@ export const DependencySchema = z.object({
 /** task = činnost, phase = fáze (sumární řádek), milestone = milník (délka 0). */
 export const TaskKindSchema = z.enum(['task', 'phase', 'milestone'])
 
+// ---------------------------------------------------------------------------
+// Řádky zdrojů a nákladů činnosti (fáze 6b, Z-02, R-01, R-02). Peníze = haléře.
+// ---------------------------------------------------------------------------
+
+const LineIdSchema = z.string().min(1).max(100)
+/** Částka v haléřích (stejná mez jako MoneySchema níže). */
+const LineMoneySchema = z.number().int().min(0).max(1_000_000_000_000)
+/** % zapojení / využití: 1–100 (desetiny povoleny). */
+const SharePctSchema = z.number().min(1).max(100)
+
+const lineBase = {
+  id: LineIdSchema,
+  /** Kategorie nákladů (výchozí podle databáze). */
+  categoryId: LineIdSchema,
+  note: z.string().max(500).optional(),
+}
+
+export const TaskLineSchema = z.discriminatedUnion('kind', [
+  /** Člověk: profese, volitelně konkrétní pracovník té profese; hodiny = dny × h/den × %. */
+  z.object({ ...lineBase, kind: z.literal('labor'), professionId: LineIdSchema, workerId: LineIdSchema.optional(), sharePct: SharePctSchema }),
+  /** Stroj: hodiny = dny × h/den × %. */
+  z.object({ ...lineBase, kind: z.literal('machine'), machineId: LineIdSchema, sharePct: SharePctSchema }),
+  /** Materiál: množství × cena (z databáze, nebo přepsaná na řádku). */
+  z.object({
+    ...lineBase,
+    kind: z.literal('material'),
+    materialId: LineIdSchema,
+    quantity: z
+      .number()
+      .gt(0)
+      .max(1_000_000_000)
+      .refine((q) => Math.abs(Math.round(q * 1000) - q * 1000) < 1e-6, { message: 'tooManyDecimals' }),
+    unitPriceOverride: LineMoneySchema.optional(),
+  }),
+  /** Jednorázový náklad k začátku, ke konci, nebo k pevnému datu. */
+  z
+    .object({
+      ...lineBase,
+      kind: z.literal('oneTime'),
+      name: z.string().trim().min(1).max(200),
+      amount: LineMoneySchema,
+      timing: z.enum(['start', 'end', 'date']),
+      date: IsoDateSchema.optional(),
+    })
+    .refine((l) => l.timing !== 'date' || l.date !== undefined, { message: 'missingDate', path: ['date'] }),
+  /** Průběžný náklad za pracovní den, kalendářní týden nebo měsíc po dobu činnosti. */
+  z.object({
+    ...lineBase,
+    kind: z.literal('recurring'),
+    name: z.string().trim().min(1).max(200),
+    amount: LineMoneySchema,
+    period: z.enum(['day', 'week', 'month']),
+  }),
+])
+
+/** Typy řádků, které smí mít milník (nulová délka – časově závislé řádky by byly vždy 0). */
+export const MILESTONE_LINE_KINDS = ['oneTime', 'material'] as const
+
 export const TaskSchema = z
   .object({
     id: z.string().min(1),
@@ -52,8 +110,8 @@ export const TaskSchema = z
       .string()
       .regex(/^#[0-9a-fA-F]{6}$/)
       .optional(),
-    /** Řádky zdrojů a nákladů činnosti (fáze 6b) – zatím musí být prázdné. */
-    lines: z.array(z.never()),
+    /** Řádky zdrojů a nákladů (fáze 6b). */
+    lines: z.array(TaskLineSchema).max(200),
   })
   .refine((t) => t.kind !== 'milestone' || t.durationDays === 0, {
     message: 'milestoneDuration',
@@ -221,6 +279,50 @@ export function checkCatalogs(
   })
 }
 
+/**
+ * Kontrola řádků činností: odkazy do databáze, pracovník patří k profesi řádku,
+ * milník jen s povolenými typy, jedinečná ID řádků v projektu.
+ */
+function checkTaskLines(
+  project: {
+    tasks: { kind: string; lines: z.infer<typeof TaskLineSchema>[] }[]
+    costCategories: { id: string }[]
+    professions: { id: string }[]
+    workers: { id: string; professionId: string }[]
+    machines: { id: string }[]
+    materials: { id: string }[]
+  },
+  ctx: z.RefinementCtx,
+): void {
+  const ids = (items: { id: string }[]) => new Set(items.map((x) => x.id))
+  const categories = ids(project.costCategories)
+  const professions = ids(project.professions)
+  const machines = ids(project.machines)
+  const materials = ids(project.materials)
+  const workers = new Map(project.workers.map((w) => [w.id, w]))
+  const lineIds = new Set<string>()
+  project.tasks.forEach((task, taskIndex) => {
+    task.lines.forEach((line, lineIndex) => {
+      const path = ['tasks', taskIndex, 'lines', lineIndex]
+      const issue = (message: string, field: string) => ctx.addIssue({ code: 'custom', message, path: [...path, field] })
+      if (lineIds.has(line.id)) issue('duplicateLineId', 'id')
+      lineIds.add(line.id)
+      if (!categories.has(line.categoryId)) issue('unknownCategory', 'categoryId')
+      if (task.kind === 'milestone' && !(MILESTONE_LINE_KINDS as readonly string[]).includes(line.kind)) issue('lineNotAllowed', 'kind')
+      if (line.kind === 'labor') {
+        if (!professions.has(line.professionId)) issue('unknownProfession', 'professionId')
+        if (line.workerId !== undefined) {
+          const worker = workers.get(line.workerId)
+          if (!worker) issue('unknownWorker', 'workerId')
+          else if (worker.professionId !== line.professionId) issue('workerProfessionMismatch', 'workerId')
+        }
+      }
+      if (line.kind === 'machine' && !machines.has(line.machineId)) issue('unknownMachine', 'machineId')
+      if (line.kind === 'material' && !materials.has(line.materialId)) issue('unknownMaterial', 'materialId')
+    })
+  })
+}
+
 /** Nejvíc položek v jednom číselníku. */
 export const MAX_CATALOG_ITEMS = 2000
 
@@ -246,6 +348,7 @@ export const ProjectSchema = z
   })
   .superRefine((project, ctx) => {
     checkCatalogs(project, ctx)
+    checkTaskLines(project, ctx)
     // Každá činnost musí mít jedinečné ID a odkazy musí mířit na existující činnosti.
     const ids = new Set<string>()
     project.tasks.forEach((task, index) => {
@@ -298,6 +401,8 @@ export type DependencyType = z.infer<typeof DependencyTypeSchema>
 export type Dependency = z.infer<typeof DependencySchema>
 export type TaskKind = z.infer<typeof TaskKindSchema>
 export type Task = z.infer<typeof TaskSchema>
+export type TaskLine = z.infer<typeof TaskLineSchema>
+export type TaskLineKind = TaskLine['kind']
 export type Calendar = z.infer<typeof CalendarSchema>
 export type Project = z.infer<typeof ProjectSchema>
 export type Category = z.infer<typeof CategorySchema>

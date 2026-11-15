@@ -3,14 +3,14 @@
  * Názvy, typy, délky v pracovních dnech, vazby všech typů FS, SS, FF, SF (s prodlevou, fáze 4c)
  * a hierarchie: činnosti a milníky patří do fáze, která je v seznamu nad nimi.
  * Obsahuje i vzorovou databázi zdrojů (fáze 6a): střediska, profese a pracovníky se sazbami
- * (ruční, kalkulace, podle profese), stroje a materiály. Řádky zdrojů na činnostech přijdou ve fázi 6b.
+ * (ruční, kalkulace, podle profese), stroje a materiály, a zdroje a náklady na činnostech (fáze 6b).
  *
  * Názvy jsou v překladových souborech (sample.tasks.*, sample.resources.*), aby šel projekt
  * vytvořit v každém jazyce. Jména lidí jsou smyšlená. Peníze v haléřích.
  */
 import { defaultCategoryId } from '../model/defaultCategories'
 import { createDefaultRateCalc, type RateCalc } from '../model/rates'
-import { createEmptyProject, createTask, type DependencyType, type Project, type TaskKind } from '../model/schema'
+import { createEmptyProject, createTask, type DependencyType, type Project, type TaskKind, type TaskLine } from '../model/schema'
 
 /** [klíč, typ, délka v pracovních dnech, předchůdci jako [klíč, prodleva, typ vazby (výchozí FS)]] */
 type Row = [key: string, kind: TaskKind, durationDays: number, predecessors?: [string, number, DependencyType?][]]
@@ -138,5 +138,106 @@ export function createSampleProject(translate: (key: string) => string, language
     }
   })
   addSampleResources(project, translate)
+  addSampleLines(project, translate)
   return project
+}
+
+/**
+ * Zdroje a náklady činností (fáze 6b). Zápis řádku:
+ *  ['labor', profese, pracovník | null, %] · ['machine', stroj, %] · ['material', materiál, množství]
+ *  ['oneTime', klíč názvu, Kč, kdy, kategorie] · ['recurring', klíč názvu, Kč, období]
+ * Smlouva s dodavatelem pracoviště 4,5 mil. Kč: záloha 30 % při podpisu, doplatek při předání.
+ */
+type SampleLine =
+  | ['labor', string, string | null, number]
+  | ['machine', string, number]
+  | ['material', string, number]
+  | ['oneTime', string, number, 'start' | 'end', 'services' | 'investment']
+  | ['recurring', string, number, 'day' | 'week' | 'month']
+
+const SAMPLE_LINES: Record<string, SampleLine[]> = {
+  p1: [['labor', 'pm', 'sample-w1', 20]],
+  t1a: [['labor', 'designer', 'sample-w2', 50]],
+  t1b: [['labor', 'pm', 'sample-w1', 50], ['labor', 'designer', 'sample-w2', 30]],
+  t2a: [['labor', 'pm', 'sample-w1', 50]],
+  t2b: [['labor', 'pm', 'sample-w1', 30], ['oneTime', 'consultant', 45_000, 'end', 'services']],
+  m2: [['oneTime', 'deposit', 1_350_000, 'start', 'investment']],
+  t3a: [['labor', 'designer', 'sample-w2', 100]],
+  t3b: [['labor', 'designer', 'sample-w2', 100], ['labor', 'plc', 'sample-w3', 50]],
+  t4a: [
+    ['material', 'sensor', 24],
+    ['material', 'lightCurtain', 2],
+    ['material', 'cabinet', 1],
+    ['material', 'profile', 60],
+    ['material', 'cylinder', 8],
+    ['material', 'fasteners', 10],
+  ],
+  t4b: [['labor', 'plc', 'sample-w3', 100]],
+  m4: [['oneTime', 'travel', 18_000, 'start', 'services']],
+  t5a: [['oneTime', 'floor', 280_000, 'end', 'services']],
+  t5b: [
+    ['labor', 'electrician', 'sample-w4', 100],
+    ['labor', 'fitter', 'sample-w5', 50],
+    ['machine', 'platform', 50],
+    ['material', 'cablePower', 180],
+    ['material', 'cableSignal', 120],
+    ['material', 'tray', 45],
+  ],
+  t5c: [['labor', 'fitter', 'sample-w5', 100], ['machine', 'welder', 50], ['material', 'profile', 40], ['material', 'fasteners', 5]],
+  t6a: [
+    ['labor', 'fitter', 'sample-w5', 100],
+    ['labor', 'fitter', 'sample-w6', 100],
+    ['labor', 'electrician', 'sample-w4', 50],
+    ['machine', 'crane', 25],
+    ['recurring', 'container', 6_000, 'week'],
+  ],
+  t6b: [['labor', 'plc', 'sample-w3', 100], ['labor', 'electrician', 'sample-w4', 50]],
+  t6c: [['labor', 'operator', 'sample-w7', 100], ['labor', 'operator', null, 100]],
+  t7a: [['oneTime', 'training', 35_000, 'end', 'services'], ['labor', 'operator', 'sample-w7', 50]],
+  t7b: [['labor', 'operator', 'sample-w7', 100], ['labor', 'pm', 'sample-w1', 20], ['recurring', 'support', 25_000, 'month']],
+  t8a: [['labor', 'pm', 'sample-w1', 50]],
+  m8: [['oneTime', 'finalPayment', 3_150_000, 'start', 'investment']],
+}
+
+function addSampleLines(project: Project, translate: (key: string) => string): void {
+  const categoryOf = (catalog: { id: string; categoryId: string }[], id: string) => catalog.find((x) => x.id === id)?.categoryId ?? defaultCategoryId('services')
+  project.tasks = project.tasks.map((task) => {
+    const key = task.id.replace(/^sample-/, '')
+    const lines: TaskLine[] = (SAMPLE_LINES[key] ?? []).map((spec, i): TaskLine => {
+      const id = `sample-l-${key}-${i + 1}`
+      switch (spec[0]) {
+        case 'labor': {
+          const professionId = `sample-pr-${spec[1]}`
+          return {
+            id,
+            kind: 'labor',
+            categoryId: categoryOf(project.professions, professionId),
+            professionId,
+            ...(spec[2] ? { workerId: spec[2] } : {}),
+            sharePct: spec[3],
+          }
+        }
+        case 'machine': {
+          const machineId = `sample-m-${spec[1]}`
+          return { id, kind: 'machine', categoryId: categoryOf(project.machines, machineId), machineId, sharePct: spec[2] }
+        }
+        case 'material': {
+          const materialId = `sample-x-${spec[1]}`
+          return { id, kind: 'material', categoryId: categoryOf(project.materials, materialId), materialId, quantity: spec[2] }
+        }
+        case 'oneTime':
+          return {
+            id,
+            kind: 'oneTime',
+            categoryId: defaultCategoryId(spec[4]),
+            name: translate(`sample.lines.${spec[1]}`),
+            amount: spec[2] * 100,
+            timing: spec[3],
+          }
+        case 'recurring':
+          return { id, kind: 'recurring', categoryId: defaultCategoryId('services'), name: translate(`sample.lines.${spec[1]}`), amount: spec[2] * 100, period: spec[3] }
+      }
+    })
+    return lines.length > 0 ? { ...task, lines } : task
+  })
 }

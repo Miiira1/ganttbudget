@@ -17,6 +17,7 @@ export function ImportDialog() {
   const { t } = useTranslation()
   const pending = useImportState((s) => s.pending)
   const currentCount = useProject((s) => s.project.tasks.length)
+  const currentLines = useProject((s) => s.project.tasks.reduce((sum, t) => sum + t.lines.length, 0))
   const dialogRef = useRef<HTMLDialogElement>(null)
   const titleId = useId()
 
@@ -78,6 +79,7 @@ export function ImportDialog() {
               )}
               <p className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100">
                 {t('import.replaceWarning', { count: currentCount })}
+                {currentLines > 0 && <strong className="mt-1 block">{t('import.linesWarning', { count: currentLines })}</strong>}
               </p>
             </>
           ) : (

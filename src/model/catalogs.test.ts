@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { categoryUsage, departmentUsage, professionUsage, uniqueName } from './catalogs'
-import { createEmptyProject, type Project } from './schema'
+import { categoryUsage, departmentUsage, lineUsage, professionUsage, syncLaborLines, uniqueName } from './catalogs'
+import { createEmptyProject, createTask, type Project } from './schema'
 
 function project(): Project {
   const p = createEmptyProject({ name: 'T', language: 'cs', startDate: '2026-11-16' })
@@ -25,12 +25,35 @@ describe('číselníky: pomocné funkce', () => {
   })
 
   it('kde všude se kategorie používá', () => {
-    expect(categoryUsage(project(), 'cat-material')).toEqual({ professions: [], machines: ['Jeřáb'], materials: ['Kabel', 'Čidlo'], total: 3 })
+    expect(categoryUsage(project(), 'cat-material')).toEqual({ professions: [], machines: ['Jeřáb'], materials: ['Kabel', 'Čidlo'], tasks: [], total: 3 })
     expect(categoryUsage(project(), 'cat-reserve').total).toBe(0)
   })
 
   it('kteří pracovníci mají profesi', () => {
     expect(professionUsage(project(), 'p1')).toEqual(['Jan', 'Eva'])
+  })
+
+  it('na kterých činnostech je položka databáze použitá (řádky zdrojů)', () => {
+    const p = project()
+    p.tasks = [
+      { ...createTask({ id: 'A', name: 'Montáž', order: 0 }), lines: [{ id: 'l1', kind: 'labor', categoryId: 'cat-labor', professionId: 'p1', workerId: 'w2', sharePct: 50 }] },
+      { ...createTask({ id: 'B', name: 'Kabeláž', order: 1 }), lines: [{ id: 'l2', kind: 'material', categoryId: 'cat-material', materialId: 'x1', quantity: 3 }] },
+    ]
+    expect(lineUsage(p, 'professions', 'p1')).toEqual(['Montáž'])
+    expect(lineUsage(p, 'workers', 'w2')).toEqual(['Montáž'])
+    expect(lineUsage(p, 'workers', 'w1')).toEqual([])
+    expect(lineUsage(p, 'materials', 'x1')).toEqual(['Kabeláž'])
+    expect(lineUsage(p, 'machines', 'm1')).toEqual([])
+  })
+
+  it('řádky s pracovníkem převezmou jeho (změněnou) profesi', () => {
+    const p = project()
+    p.professions.push({ id: 'p2', name: 'Montér', categoryId: 'cat-labor', capacityPerDay: 8 })
+    p.tasks = [{ ...createTask({ id: 'A', name: 'A', order: 0 }), lines: [{ id: 'l1', kind: 'labor', categoryId: 'cat-labor', professionId: 'p1', workerId: 'w2', sharePct: 50 }] }]
+    p.workers[1]!.professionId = 'p2'
+    const synced = syncLaborLines(p)
+    expect((synced.tasks[0]!.lines[0] as { professionId: string }).professionId).toBe('p2')
+    expect(syncLaborLines(synced)).toBe(synced) // nic ke změně = stejný objekt
   })
 
   it('kteří pracovníci patří do střediska', () => {

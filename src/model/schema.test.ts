@@ -252,9 +252,68 @@ describe('databáze zdrojů (fáze 6a, formát v2)', () => {
     expect(result.success && result.data.departments).toEqual([])
   })
 
-  it('řádky zdrojů na činnosti zatím musí být prázdné (přijdou ve fázi 6b)', () => {
-    const p = withCatalogs()
-    ;(p.tasks[0]!.lines as unknown[]) = [{ kind: 'labor' }]
-    expect(ProjectSchema.safeParse(p).success).toBe(false)
+  describe('řádky zdrojů a nákladů na činnosti (fáze 6b)', () => {
+    /** Projekt s jedním řádkem každého typu na činnosti „a“. */
+    function withLines(): Project {
+      const p = withCatalogs()
+      p.tasks[0]!.lines = [
+        { id: 'l1', kind: 'labor', categoryId: 'cat-labor', professionId: 'p1', workerId: 'w1', sharePct: 50 },
+        { id: 'l2', kind: 'machine', categoryId: 'cat-services', machineId: 'm1', sharePct: 25 },
+        { id: 'l3', kind: 'material', categoryId: 'cat-material', materialId: 'x1', quantity: 120.5 },
+        { id: 'l4', kind: 'oneTime', categoryId: 'cat-services', name: 'Záloha', amount: 5_000_000, timing: 'date', date: '2026-11-20' },
+        { id: 'l5', kind: 'recurring', categoryId: 'cat-services', name: 'Nájem', amount: 70_000, period: 'week', note: 'kontejner' },
+      ]
+      return p
+    }
+
+    it('přijme platné řádky všech pěti typů', () => {
+      expect(issues(withLines())).toEqual([])
+    })
+
+    it('odkazy do databáze musí existovat; pracovník musí patřit k profesi řádku', () => {
+      const p = withLines()
+      const lines = p.tasks[0]!.lines as Record<string, unknown>[]
+      lines[0]!.workerId = 'w2' // Eva je elektrikářka, řádek je na programátora
+      lines[1]!.machineId = 'nic'
+      lines[2]!.materialId = 'nic'
+      lines[3]!.categoryId = 'nic'
+      expect(issues(p).sort()).toEqual(['unknownCategory', 'unknownMachine', 'unknownMaterial', 'workerProfessionMismatch'])
+      const q = withLines()
+      ;(q.tasks[0]!.lines[0] as Record<string, unknown>).professionId = 'nic'
+      expect(issues(q)).toContain('unknownProfession')
+    })
+
+    it('milník smí mít jen jednorázový náklad a materiál', () => {
+      const p = withLines()
+      p.tasks[1]!.lines = [p.tasks[0]!.lines[2]!, p.tasks[0]!.lines[3]!].map((l, i) => ({ ...l, id: `m${i}` }))
+      expect(issues(p)).toEqual([])
+      p.tasks[1]!.lines.push({ ...p.tasks[0]!.lines[0]!, id: 'm9' })
+      expect(issues(p)).toEqual(['lineNotAllowed'])
+    })
+
+    it('ID řádků jsou v projektu jedinečná', () => {
+      const p = withLines()
+      p.tasks[1]!.lines = [{ ...p.tasks[0]!.lines[3]!, id: 'l1' }]
+      expect(issues(p)).toEqual(['duplicateLineId'])
+    })
+
+    it('meze hodnot: % 1–100, množství kladné s nejvýš 3 desetinnými místy, částky v haléřích, datum u „k datu“', () => {
+      for (const change of [
+        (l: Record<string, unknown>[]) => (l[0]!.sharePct = 0),
+        (l: Record<string, unknown>[]) => (l[0]!.sharePct = 101),
+        (l: Record<string, unknown>[]) => (l[2]!.quantity = 0),
+        (l: Record<string, unknown>[]) => (l[2]!.quantity = 1.2345),
+        (l: Record<string, unknown>[]) => (l[2]!.unitPriceOverride = 10.5),
+        (l: Record<string, unknown>[]) => (l[3]!.amount = -1),
+        (l: Record<string, unknown>[]) => delete l[3]!.date,
+        (l: Record<string, unknown>[]) => (l[4]!.period = 'year'),
+        (l: Record<string, unknown>[]) => (l[4]!.name = ''),
+        (l: Record<string, unknown>[]) => (l[0]!.kind = 'neznámý'),
+      ]) {
+        const p = withLines()
+        change(p.tasks[0]!.lines as Record<string, unknown>[])
+        expect(ProjectSchema.safeParse(p).success).toBe(false)
+      }
+    })
   })
 })

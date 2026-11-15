@@ -10,6 +10,7 @@ import { showNotice } from '../ui/notice'
 import { saveBlob } from './fileActions'
 import { buildLibrary, libraryFileName, mergeLibrary, parseLibraryFile, serializeLibrary, type Library, type LibraryFileError } from './libraryFile'
 import { MAX_FILE_CHARS } from './projectFile'
+import { syncLaborLines } from '../model/catalogs'
 
 const isAbort = (error: unknown) => error instanceof DOMException && error.name === 'AbortError'
 
@@ -59,7 +60,8 @@ export function startLibraryImport(t: TFunction): void {
 /** Potvrzení v dialogu: sloučit knihovnu do projektu (jeden krok Zpět). */
 export function confirmLibrary(library: Library): void {
   const store = projectStore.getState()
-  const merged = mergeLibrary(store.project, library, () => crypto.randomUUID())
+  // Pracovník mohl v knihovně dostat jinou profesi – řádky činností s ním ji převezmou.
+  const merged = syncLaborLines(mergeLibrary(store.project, library, () => crypto.randomUUID()))
   if (merged !== store.project) store.loadProject(merged)
   useLibraryState.setState({ pending: null })
 }

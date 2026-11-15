@@ -26,7 +26,7 @@ export function DeleteCategoryDialog({ category, onClose }: { category: Category
   }, [category])
 
   const usage = category ? categoryUsage(project, category.id) : null
-  const examples = usage ? [...usage.professions, ...usage.machines, ...usage.materials].slice(0, 5).join(', ') : ''
+  const examples = usage ? [...usage.professions, ...usage.machines, ...usage.materials, ...usage.tasks].slice(0, 5).join(', ') : ''
 
   function confirm() {
     if (!category || replacementId === '') return

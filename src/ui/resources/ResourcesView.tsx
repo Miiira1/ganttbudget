@@ -6,11 +6,11 @@
 import { useMemo, useState, type DragEvent, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
-import { categoryUsage, departmentUsage, professionUsage, uniqueName } from '../../model/catalogs'
+import { categoryUsage, departmentUsage, lineUsage, professionUsage, uniqueName } from '../../model/catalogs'
 import { defaultCategoryId } from '../../model/defaultCategories'
 import { formatMoney } from '../../model/money'
 import { effectiveWorkerRate, professionRate, workingDaysInYear } from '../../model/rates'
-import type { Category, Department, Machine, Material, Profession, Worker } from '../../model/schema'
+import type { CatalogKey, Category, Department, Machine, Material, Profession, Worker } from '../../model/schema'
 import { projectStore, useProject } from '../../store/useProject'
 import { showNotice } from '../notice'
 import { loadPreference, savePreference } from '../preferences'
@@ -155,6 +155,14 @@ export function ResourcesView() {
   )
 }
 
+/** Je položka na některých činnostech? Pak ji smazat nejde – hláška řekne, na kterých (fáze 6b). */
+function usedOnTasks(catalog: CatalogKey, item: { id: string; name: string }, t: TFunction): boolean {
+  const tasks = lineUsage(projectStore.getState().project, catalog, item.id)
+  if (tasks.length === 0) return false
+  showNotice(t('resources.error.usedOnTasks', { name: item.name, count: tasks.length, examples: tasks.slice(0, 3).join(', ') }))
+  return true
+}
+
 /** Smazat po potvrzení (N-08); jde vrátit Ctrl+Z. */
 function confirmDelete(name: string, run: () => void, t: TFunction) {
   if (window.confirm(t('resources.confirmDelete', { name }))) run()
@@ -204,7 +212,7 @@ function MaterialsTable() {
       addLabel={t('resources.add.materials')}
       emptyText={t('resources.empty.materials')}
       onAdd={add}
-      onDelete={(m) => confirmDelete(m.name, () => projectStore.getState().deleteCatalogItem('materials', m.id), t)}
+      onDelete={(m) => !usedOnTasks('materials', m, t) && confirmDelete(m.name, () => projectStore.getState().deleteCatalogItem('materials', m.id), t)}
       focusId={focusId}
     />
   )
@@ -357,6 +365,7 @@ function ProfessionsTable() {
   }
 
   function remove(profession: Profession) {
+    if (usedOnTasks('professions', profession, t)) return
     const names = professionUsage(projectStore.getState().project, profession.id)
     if (names.length > 0) {
       return showNotice(t('resources.error.professionInUse', { name: profession.name, count: names.length, examples: names.slice(0, 3).join(', ') }))
@@ -461,7 +470,7 @@ function WorkersTable() {
         addLabel={t('resources.add.workers')}
         emptyText={t(professions.length === 0 ? 'resources.empty.workersNoProfession' : 'resources.empty.workers')}
         onAdd={add}
-        onDelete={(w) => confirmDelete(w.name, () => projectStore.getState().deleteCatalogItem('workers', w.id), t)}
+        onDelete={(w) => !usedOnTasks('workers', w, t) && confirmDelete(w.name, () => projectStore.getState().deleteCatalogItem('workers', w.id), t)}
         focusId={focusId}
       />
       <RateDialog target={rateTarget} onClose={() => setRateTarget(null)} />
@@ -527,7 +536,7 @@ function MachinesTable() {
       addLabel={t('resources.add.machines')}
       emptyText={t('resources.empty.machines')}
       onAdd={add}
-      onDelete={(m) => confirmDelete(m.name, () => projectStore.getState().deleteCatalogItem('machines', m.id), t)}
+      onDelete={(m) => !usedOnTasks('machines', m, t) && confirmDelete(m.name, () => projectStore.getState().deleteCatalogItem('machines', m.id), t)}
       focusId={focusId}
     />
   )

@@ -26,6 +26,7 @@ const HEADERS: Record<ColumnId, { label: string; hint?: string; align?: 'right' 
   duration: { label: 'table.duration', hint: 'table.durationHint', align: 'right' },
   predecessors: { label: 'table.predecessors', hint: 'table.predecessorsHint' },
   percent: { label: 'table.percentComplete', align: 'right' },
+  cost: { label: 'table.cost', hint: 'table.costHint', align: 'right' },
   notes: { label: 'table.notes' },
   actions: { label: 'table.actions', align: 'center', srOnly: true },
 }

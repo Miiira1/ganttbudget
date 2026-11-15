@@ -26,8 +26,8 @@ import {
   type HierarchyError,
   type HierarchyResult,
 } from '../model/hierarchy'
-import type { CatalogItem } from '../model/catalogs'
-import { createTask, type Calendar, type CatalogKey, type Dependency, type Project, type Task, type TaskKind } from '../model/schema'
+import { milestoneAllows, syncLaborLines, type CatalogItem } from '../model/catalogs'
+import { createTask, type Calendar, type CatalogKey, type Dependency, type Project, type Task, type TaskKind, type TaskLine } from '../model/schema'
 
 /** Kolik kroků zpět si aplikace pamatuje. */
 export const HISTORY_LIMIT = 100
@@ -95,6 +95,13 @@ export interface ProjectState {
    * (jeden krok Zpět). Používanou kategorii bez platné náhrady nesmaže.
    */
   deleteCategory: (id: string, replacementId: string | null) => void
+  /**
+   * Řádky zdrojů a nákladů činnosti (fáze 6b) – vždy jeden krok Zpět.
+   * Hodnota undefined v úpravě nepovinný údaj odstraní. Platnost (odkazy, milník) hlídá UI a schéma.
+   */
+  addTaskLine: (taskId: string, line: TaskLine) => void
+  updateTaskLine: (taskId: string, lineId: string, patch: Partial<Record<string, unknown>>) => void
+  deleteTaskLine: (taskId: string, lineId: string) => void
   /** Přejmenuje projekt (ořízne mezery, max. 200 znaků; prázdný název se ignoruje). */
   renameProject: (name: string) => void
   /** Nahradí celý projekt (např. vzorovým). Lze vrátit přes Zpět. */
@@ -244,6 +251,10 @@ export function createProjectStore(initialProject: Project) {
           return next
         })
         if (!changed) return
+        // Milník smí mít jen jednorázový náklad a materiál – ostatní řádky se odeberou (UI se předem zeptá).
+        if (patch.kind === 'milestone') {
+          tasks = tasks.map((t) => (t.id === id && !t.lines.every(milestoneAllows) ? { ...t, lines: t.lines.filter(milestoneAllows) } : t))
+        }
         // Fáze zatím nemůže mít vazby (fáze 2–4b): při změně na fázi se její vazby odeberou.
         if (patch.kind === 'phase') {
           tasks = tasks.map((t) => {
@@ -293,7 +304,9 @@ export function createProjectStore(initialProject: Project) {
           else next[field] = value
         }
         if (JSON.stringify(next) === JSON.stringify(current)) return
-        commit({ ...project, [key]: list.map((x, i) => (i === index ? next : x)) })
+        const updated = { ...project, [key]: list.map((x, i) => (i === index ? next : x)) }
+        // Změna profese pracovníka se propíše do řádků činností s tímto pracovníkem (stejný krok Zpět).
+        commit(key === 'workers' ? syncLaborLines(updated) : updated)
       },
 
       deleteCatalogItem(key, id) {
@@ -306,7 +319,9 @@ export function createProjectStore(initialProject: Project) {
       deleteCategory(id, replacementId) {
         const { project } = get()
         if (!project.costCategories.some((c) => c.id === id)) return
-        const used = [...project.professions, ...project.machines, ...project.materials].some((x) => x.categoryId === id)
+        const used =
+          [...project.professions, ...project.machines, ...project.materials].some((x) => x.categoryId === id) ||
+          project.tasks.some((t) => t.lines.some((l) => l.categoryId === id))
         const replacementOk = replacementId !== null && replacementId !== id && project.costCategories.some((c) => c.id === replacementId)
         if (used && !replacementOk) return
         const move = <T extends { categoryId: string }>(items: T[]): T[] =>
@@ -317,7 +332,37 @@ export function createProjectStore(initialProject: Project) {
           professions: move(project.professions),
           machines: move(project.machines),
           materials: move(project.materials),
+          tasks: project.tasks.map((t) => (t.lines.some((l) => l.categoryId === id) ? { ...t, lines: move(t.lines) } : t)),
         })
+      },
+
+      addTaskLine(taskId, line) {
+        const { project } = get()
+        if (!project.tasks.some((t) => t.id === taskId)) return
+        commit({ ...project, tasks: project.tasks.map((t) => (t.id === taskId ? { ...t, lines: [...t.lines, line] } : t)) })
+      },
+
+      updateTaskLine(taskId, lineId, patch) {
+        const { project } = get()
+        const task = project.tasks.find((t) => t.id === taskId)
+        const current = task?.lines.find((l) => l.id === lineId)
+        if (!task || !current) return
+        const next: Record<string, unknown> = { ...current }
+        for (const [field, value] of Object.entries(patch)) {
+          if (value === undefined) delete next[field]
+          else next[field] = value
+        }
+        if (JSON.stringify(next) === JSON.stringify(current)) return
+        const lines = task.lines.map((l) => (l.id === lineId ? (next as TaskLine) : l))
+        commit({ ...project, tasks: project.tasks.map((t) => (t.id === taskId ? { ...t, lines } : t)) })
+      },
+
+      deleteTaskLine(taskId, lineId) {
+        const { project } = get()
+        const task = project.tasks.find((t) => t.id === taskId)
+        if (!task || !task.lines.some((l) => l.id === lineId)) return
+        const lines = task.lines.filter((l) => l.id !== lineId)
+        commit({ ...project, tasks: project.tasks.map((t) => (t.id === taskId ? { ...t, lines } : t)) })
       },
 
       renameProject(rawName) {

@@ -468,6 +468,72 @@ describe('databáze zdrojů (fáze 6a)', () => {
   })
 })
 
+describe('řádky zdrojů a nákladů na činnosti (fáze 6b)', () => {
+  const oneTime = { id: 'l1', kind: 'oneTime' as const, categoryId: 'cat-services', name: 'Záloha', amount: 100_000, timing: 'start' as const }
+
+  it('přidat, upravit, smazat řádek = vždy jeden krok Zpět', () => {
+    const store = newStore()
+    const a = store.getState().addTask('A')
+    const before = store.getState().past.length
+    store.getState().addTaskLine(a, oneTime)
+    store.getState().updateTaskLine(a, 'l1', { amount: 250_000, note: 'pozn.' })
+    expect(store.getState().project.tasks[0]!.lines[0]).toMatchObject({ amount: 250_000, note: 'pozn.' })
+    store.getState().updateTaskLine(a, 'l1', { note: undefined })
+    expect('note' in store.getState().project.tasks[0]!.lines[0]!).toBe(false)
+    store.getState().deleteTaskLine(a, 'l1')
+    expect(store.getState().project.tasks[0]!.lines).toEqual([])
+    expect(store.getState().past.length - before).toBe(4)
+    store.getState().undo()
+    expect(store.getState().project.tasks[0]!.lines).toHaveLength(1)
+    expect(ProjectSchema.safeParse(store.getState().project).success).toBe(true)
+  })
+
+  it('smazání kategorie s náhradou přesune i řádky činností', () => {
+    const store = newStore()
+    const a = store.getState().addTask('A')
+    store.getState().addTaskLine(a, oneTime) // kategorie Služby
+    store.getState().deleteCategory('cat-services', 'cat-reserve')
+    expect(store.getState().project.tasks[0]!.lines[0]!.categoryId).toBe('cat-reserve')
+    expect(ProjectSchema.safeParse(store.getState().project).success).toBe(true)
+  })
+
+  it('změna na milník odebere řádky, které milník mít nesmí (jeden krok Zpět)', () => {
+    const store = newStore()
+    const a = store.getState().addTask('A')
+    store.getState().addTaskLine(a, oneTime)
+    store.getState().addTaskLine(a, { id: 'l2', kind: 'recurring', categoryId: 'cat-services', name: 'Nájem', amount: 1, period: 'day' })
+    const before = store.getState().past.length
+    store.getState().updateTask(a, { kind: 'milestone' })
+    expect(store.getState().project.tasks[0]!.lines.map((l) => l.id)).toEqual(['l1'])
+    expect(store.getState().past.length - before).toBe(1)
+    expect(ProjectSchema.safeParse(store.getState().project).success).toBe(true)
+  })
+
+  it('změna profese pracovníka se propíše do řádků s tímto pracovníkem', () => {
+    const store = newStore()
+    store.getState().addCatalogItem('professions', { id: 'p1', name: 'Elektrikář', categoryId: 'cat-labor', capacityPerDay: 8 })
+    store.getState().addCatalogItem('professions', { id: 'p2', name: 'Montér', categoryId: 'cat-labor', capacityPerDay: 8 })
+    store.getState().addCatalogItem('workers', { id: 'w1', name: 'Jan', professionId: 'p1', capacityPerDay: 8 })
+    const a = store.getState().addTask('A')
+    store.getState().addTaskLine(a, { id: 'l9', kind: 'labor', categoryId: 'cat-labor', professionId: 'p1', workerId: 'w1', sharePct: 100 })
+    store.getState().updateCatalogItem('workers', 'w1', { professionId: 'p2' })
+    expect(store.getState().project.tasks[0]!.lines[0]).toMatchObject({ professionId: 'p2', workerId: 'w1' })
+    expect(ProjectSchema.safeParse(store.getState().project).success).toBe(true)
+  })
+
+  it('beze změny a u neexistujícího řádku se nic nezapíše', () => {
+    const store = newStore()
+    const a = store.getState().addTask('A')
+    store.getState().addTaskLine(a, oneTime)
+    const before = store.getState().past.length
+    store.getState().updateTaskLine(a, 'l1', { amount: 100_000 })
+    store.getState().updateTaskLine(a, 'nic', { amount: 1 })
+    store.getState().deleteTaskLine(a, 'nic')
+    store.getState().addTaskLine('nic', { ...oneTime, id: 'l2' })
+    expect(store.getState().past.length).toBe(before)
+  })
+})
+
 describe('název projektu (kritérium 12.1)', () => {
   it('přejmenuje projekt jedním krokem Zpět; mezery ořízne, prázdný a stejný název ignoruje', () => {
     const store = newStore()

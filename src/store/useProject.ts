@@ -5,6 +5,7 @@
 import { useStore } from 'zustand'
 import i18n from '../i18n'
 import { schedule, type ScheduleResult } from '../engine/schedule'
+import { computeCosts, type CostsResult } from '../model/costs'
 import { createEmptyProject, type Project } from '../model/schema'
 import { createProjectStore, type ProjectState } from './projectStore'
 
@@ -32,4 +33,22 @@ export function getSchedule(project: Project): ScheduleResult {
 /** Spočítané termíny aktuálního projektu (výsledek plánovacího jádra). */
 export function useSchedule(): ScheduleResult {
   return getSchedule(useProject((s) => s.project))
+}
+
+// Náklady (fáze 6b) se také počítají jen jednou pro každou verzi projektu.
+const costsCache = new WeakMap<Project, CostsResult>()
+
+/** Náklady řádků, položek a projektu pro danou verzi projektu (z paměti, pokud už byly spočítané). */
+export function getCosts(project: Project): CostsResult {
+  let result = costsCache.get(project)
+  if (!result) {
+    result = computeCosts(project, getSchedule(project))
+    costsCache.set(project, result)
+  }
+  return result
+}
+
+/** Náklady aktuálního projektu. */
+export function useCosts(): CostsResult {
+  return getCosts(useProject((s) => s.project))
 }

@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { LANGUAGES } from '../i18n/languages'
 import { formatIsoDate } from '../i18n/format'
 import { createSampleProject } from '../samples/automatizace'
-import { projectStore, useProject, useSchedule } from '../store/useProject'
+import { projectStore, useCosts, useProject, useSchedule } from '../store/useProject'
+import { formatMoney } from '../model/money'
 import { applyTheme, loadThemePreference, saveThemePreference, THEME_PREFERENCES, watchSystemTheme, type ThemePreference } from './theme'
 import { CalendarDialog } from './CalendarDialog'
 import { useNotice } from './notice'
@@ -25,6 +26,8 @@ import { startAutosave } from '../io/autosaveRunner'
 import { deleteSelected, duplicateSelected } from './structureCommands'
 import { ResourcesView } from './resources/ResourcesView'
 import { PlanIcon, ResourcesIcon } from './icons'
+import { DetailDock } from './detail/DetailDock'
+import { TaskDetailBody, TaskDetailHeader } from './detail/TaskDetail'
 import { loadPreference, savePreference } from './preferences'
 
 /** Hlavní pohledy: Plán (tabulka + graf) a Zdroje (databáze, fáze 6a). */
@@ -43,6 +46,7 @@ export default function App() {
   const canRedo = useProject((s) => s.future.length > 0)
   const { addTask, undo, redo, loadProject } = projectStore.getState()
   const { projectFinish, error: scheduleError } = useSchedule()
+  const projectCost = useCosts().project.total
   const notice = useNotice((s) => s.message)
   const clearNotice = useNotice((s) => s.clear)
   const isInfo = useNotice((s) => s.kind === 'info') && notice !== null
@@ -205,6 +209,14 @@ export default function App() {
                 </>
               )}
               {t('project.taskCount', { count: project.tasks.length })}
+              {projectCost > 0 && (
+                <>
+                  {' · '}
+                  <span title={t('project.costHint')}>
+                    {t('project.cost', { amount: formatMoney(projectCost, project.currency, i18n.language) })}
+                  </span>
+                </>
+              )}
             </p>
           </div>
           <label className="flex items-center gap-2 text-sm">
@@ -319,7 +331,12 @@ export default function App() {
         </main>
       ) : (
         <main className="min-h-0 flex-1">
-          <SplitView left={<TaskTable onAddTask={handleAddTask} onLoadSample={handleLoadSample} />} right={<GanttChart />} />
+          <DetailDock
+            plan={<SplitView left={<TaskTable onAddTask={handleAddTask} onLoadSample={handleLoadSample} />} right={<GanttChart />} />}
+            header={<TaskDetailHeader />}
+          >
+            <TaskDetailBody />
+          </DetailDock>
         </main>
       )}
 
