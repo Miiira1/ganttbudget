@@ -1,4 +1,4 @@
-# GanttBudget
+# MiRo project
 
 Jednoduchá webová aplikace pro plánování projektů (Ganttův diagram) s navázaným rozpočtem.
 Je určená studentům a praktikům bez zkušenosti s projektovým řízením. Běží jen v prohlížeči –
@@ -18,6 +18,19 @@ Je určená studentům a praktikům bez zkušenosti s projektovým řízením. B
 > nákladů, přenositelné mezi projekty jako knihovna (`.ganttbudget-lib.json`). Fáze 6b napojila zdroje na plán:
 > v panelu **Detail činnosti** pod plánem má každá činnost řádky (člověk, stroj, materiál, jednorázový
 > a průběžný náklad), tabulka ukazuje sloupec Náklady a záhlaví náklady projektu (viz [ZADANI.md](ZADANI.md), kap. 8).
+
+## Vzhled a značka
+
+Aplikace používá vizuální styl značky **MiRo project**:
+- **Barvy:** grafit `#262626`, papír `#F6F5F0` a žlutá `#FFC000` jako jediný barevný akcent
+  (primární tlačítka, výběr, kritická cesta). Žlutý text na světlém pozadí se nepoužívá, místo něj
+  tmavé zlato `#B38600`. Barvy jsou v `src/index.css` (`@theme`). Kontrast textu splňuje WCAG AA (≥ 4,5 : 1).
+- **Písmo:** Lato (licence SIL OFL) jako WOFF2 v `src/assets/fonts/`. Načítá se z vlastní adresy,
+  ne z Google Fonts, takže aplikace nic neposílá ven.
+- **Logo:** `src/assets/brand/` (světlá a tmavá varianta), ikony prohlížeče v `public/`.
+
+Přípony souborů (`.ganttbudget.json`, `.ganttbudget-lib.json`) a klíče v prohlížeči zůstávají
+z pracovního názvu GanttBudget beze změny, aby šly dál otevřít dříve uložené projekty a zálohy.
 
 ## Co je potřeba
 

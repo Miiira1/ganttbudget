@@ -17,7 +17,7 @@ export function ProjectName() {
         type="button"
         onClick={() => setDraft(name)}
         title={t('project.renameHint')}
-        className="rounded font-medium text-slate-800 underline decoration-dotted decoration-slate-400 underline-offset-2 hover:decoration-solid focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-slate-200"
+        className="rounded font-medium text-slate-800 underline decoration-dotted decoration-slate-400 underline-offset-2 hover:decoration-solid focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:text-slate-200"
       >
         {name}
       </button>
@@ -46,7 +46,7 @@ export function ProjectName() {
         e.preventDefault()
         e.stopPropagation()
       }}
-      className="w-72 max-w-full rounded border border-blue-500 bg-white px-1 font-medium text-slate-900 focus:outline-none dark:bg-slate-800 dark:text-slate-100"
+      className="w-72 max-w-full rounded border border-focus bg-white px-1 font-medium text-slate-900 focus:outline-none dark:bg-slate-800 dark:text-slate-100"
     />
   )
 }

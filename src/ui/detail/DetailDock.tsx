@@ -65,7 +65,7 @@ export function DetailDock({ plan, header, children }: { plan: ReactNode; header
           onPointerUp={() => setDrag(null)}
           onPointerCancel={() => setDrag(null)}
           onKeyDown={onKeyDown}
-          className="h-1.5 shrink-0 cursor-row-resize touch-none bg-slate-200 hover:bg-blue-400 focus:outline-none focus-visible:bg-blue-500 dark:bg-slate-700 dark:hover:bg-blue-500"
+          className="h-1.5 shrink-0 cursor-row-resize touch-none bg-slate-200 hover:bg-miro-turquoise focus:outline-none focus-visible:bg-focus dark:bg-slate-700 dark:hover:bg-miro-turquoise/70"
         />
       )}
       <section
@@ -79,7 +79,7 @@ export function DetailDock({ plan, header, children }: { plan: ReactNode; header
             onClick={() => setOpen(!open)}
             aria-expanded={open}
             title={t(open ? 'detail.collapse' : 'detail.expand')}
-            className="rounded px-1.5 text-slate-500 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:bg-slate-800"
+            className="rounded px-1.5 text-slate-500 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:bg-slate-800"
           >
             <span aria-hidden="true">{open ? '▾' : '▸'}</span>
             <span className="sr-only">{t(open ? 'detail.collapse' : 'detail.expand')}</span>

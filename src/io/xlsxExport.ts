@@ -26,7 +26,7 @@ function toDate(iso: string): Date {
 
 export async function toXlsx(headers: string[], table: ExportTable, name: string, dateFormat = 'd.m.yyyy'): Promise<ArrayBuffer> {
   const workbook = new ExcelJS.Workbook()
-  workbook.creator = 'GanttBudget'
+  workbook.creator = 'MiRo project'
   const sheet = workbook.addWorksheet(sheetName(name), { views: [{ state: 'frozen', ySplit: 1 }] })
 
   sheet.addRow(headers.map(protectText)).font = { bold: true }

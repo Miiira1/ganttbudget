@@ -6,7 +6,7 @@
 import { useMemo, useState, type DragEvent, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
-import { categoryUsage, departmentUsage, lineUsage, professionUsage, uniqueName } from '../../model/catalogs'
+import { absenceWorkingDays, categoryUsage, departmentUsage, lineUsage, professionUsage, uniqueName } from '../../model/catalogs'
 import { defaultCategoryId } from '../../model/defaultCategories'
 import { formatMoney } from '../../model/money'
 import { effectiveWorkerRate, professionRate, workingDaysInYear } from '../../model/rates'
@@ -18,6 +18,7 @@ import { CatalogTable, type CatalogColumn } from './CatalogTable'
 import { CapacityCell, CategorySelect, LazySelect, MoneyCell, NameCell, OptionalTextCell, RequiredTextCell } from './catalogCells'
 import { RateDialog, type RateTarget } from './RateDialog'
 import { DeleteCategoryDialog } from './DeleteCategoryDialog'
+import { AbsenceDialog } from './AbsenceDialog'
 import { moveTab, parseTabOrder } from './tabOrder'
 
 /** Podzáložky ve výchozím pořadí. */
@@ -118,9 +119,9 @@ export function ResourcesView() {
               }}
               onDragOver={(e) => onDragOver(e, id)}
               onDragEnd={() => setDrag(null)}
-              className={`-mb-px rounded-t-md border px-3 py-1.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+              className={`-mb-px rounded-t-md border px-3 py-1.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-focus ${
                 tab === id
-                  ? 'border-slate-200 border-b-white bg-white text-blue-700 dark:border-slate-700 dark:border-b-slate-900 dark:bg-slate-900 dark:text-blue-300'
+                  ? 'border-slate-300 border-b-miro-paper bg-miro-paper text-miro-graphite shadow-[inset_0_2px_0_0_#ffc000] dark:border-slate-700 dark:border-b-miro-graphite dark:bg-miro-graphite dark:text-miro-paper'
                   : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'
               } ${drag?.id === id ? 'opacity-50' : ''} ${markerBefore(id) ? 'shadow-[inset_3px_0_0_0_rgb(37_99_235)]' : ''} ${
                 markerAtEnd && id === order.filter((x) => x !== drag?.id).at(-1) ? 'shadow-[inset_-3px_0_0_0_rgb(37_99_235)]' : ''
@@ -135,7 +136,7 @@ export function ResourcesView() {
             type="button"
             onClick={() => setOrder([...TABS])}
             title={t('resources.resetTabOrderHint')}
-            className="mb-1 ml-auto rounded px-2 py-0.5 text-xs text-slate-500 hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+            className="mb-1 ml-auto rounded px-2 py-0.5 text-xs text-slate-500 hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
           >
             <span aria-hidden="true">↺ </span>
             {t('resources.resetTabOrder')}
@@ -302,10 +303,10 @@ function RateButton(props: { rate: number | null; source: string; label: string;
       onClick={props.onClick}
       aria-label={props.label}
       title={t('resources.rateHint')}
-      className="flex w-full items-center justify-end gap-2 rounded px-1.5 py-0.5 text-right tabular-nums hover:bg-blue-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:bg-slate-700"
+      className="flex w-full items-center justify-end gap-2 rounded px-1.5 py-0.5 text-right tabular-nums hover:bg-miro-turquoise-light/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:bg-slate-700"
     >
       {props.source !== 'none' && <span className="text-xs text-slate-500 dark:text-slate-400">{t(`resources.rateSource.${props.source}`)}</span>}
-      <span className={props.rate === null ? 'text-amber-700 dark:text-amber-400' : 'font-medium'}>
+      <span className={props.rate === null ? 'italic text-slate-500 dark:text-slate-400' : 'font-medium'}>
         {props.rate === null ? t('resources.noRate') : `${formatMoney(props.rate, currency, i18n.language)} / h`}
       </span>
       <span aria-hidden="true" className="text-slate-400">✎</span>
@@ -397,6 +398,8 @@ function WorkersTable() {
   const departments = useProject((s) => s.project.departments)
   const fundDays = useFundDays()
   const [focusId, setFocusId] = useState<string | null>(null)
+  const [absenceWorker, setAbsenceWorker] = useState<string | null>(null)
+  const calendar = useProject((s) => s.project.calendar)
   const [rateTarget, setRateTarget] = useState<RateTarget | null>(null)
   const label = (field: string, item: Worker) => t('resources.fieldLabel', { field: t(`resources.columns.${field}`), name: item.name })
   const byId = useMemo(() => new Map(professions.map((p) => [p.id, p])), [professions])
@@ -437,6 +440,27 @@ function WorkersTable() {
     },
     { key: 'capacity', header: t('resources.columns.capacity'), width: '7rem', align: 'right', cell: (w) => <CapacityCell catalog="workers" id={w.id} value={w.capacityPerDay} label={label('capacity', w)} /> },
     {
+      key: 'absences',
+      header: t('resources.columns.absences'),
+      width: '9rem',
+      align: 'right',
+      cell: (w) => {
+        const days = absenceWorkingDays(w, calendar)
+        return (
+          <button
+            type="button"
+            onClick={() => setAbsenceWorker(w.id)}
+            aria-label={label('absences', w)}
+            title={t('absence.hint')}
+            className="flex w-full items-center justify-end gap-2 rounded px-1.5 py-0.5 tabular-nums hover:bg-miro-turquoise-light/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:bg-slate-700"
+          >
+            <span className={days > 0 ? '' : 'text-slate-400'}>{days > 0 ? t('absence.workingDays', { count: days }) : '—'}</span>
+            <span aria-hidden="true" className="text-slate-400">✎</span>
+          </button>
+        )
+      },
+    },
+    {
       key: 'rate',
       header: t('resources.columns.rate'),
       width: '16rem',
@@ -448,7 +472,7 @@ function WorkersTable() {
     },
     ],
     // Sloupce se mění jen s těmito údaji (label a pomocné funkce závisí jen na t).
-    [t, byId, professionOptions, departmentOptions, fundDays],
+    [t, byId, professionOptions, departmentOptions, fundDays, calendar],
   )
 
   function add() {
@@ -474,6 +498,7 @@ function WorkersTable() {
         focusId={focusId}
       />
       <RateDialog target={rateTarget} onClose={() => setRateTarget(null)} />
+      <AbsenceDialog workerId={absenceWorker} onClose={() => setAbsenceWorker(null)} />
     </>
   )
 }

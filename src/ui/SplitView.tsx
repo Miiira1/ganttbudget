@@ -105,7 +105,7 @@ export function SplitView({ left, right }: { left: ReactNode; right: ReactNode }
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onKeyDown={onKeyDown}
-        className="w-1.5 shrink-0 cursor-col-resize touch-none bg-slate-200 hover:bg-blue-400 focus:outline-none focus-visible:bg-blue-500 dark:bg-slate-700 dark:hover:bg-blue-500"
+        className="w-1.5 shrink-0 cursor-col-resize touch-none bg-slate-200 hover:bg-miro-turquoise focus:outline-none focus-visible:bg-focus dark:bg-slate-700 dark:hover:bg-miro-turquoise/70"
       />
       <div
         ref={rightRef}

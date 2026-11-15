@@ -4,8 +4,7 @@
     "locale": "cs-CZ"
   },
   "app": {
-    "title": "GanttBudget",
-    "tagline": "Plán projektu a rozpočet",
+    "title": "MiRo project",
     "privacy": "Vaše data zůstávají jen v tomto počítači, nic se neposílá na server.",
     "notSavedYet": "Rozpracovaný projekt se průběžně zálohuje v tomto prohlížeči; pro jistotu ho ukládejte do souboru (Ctrl+S)."
   },
@@ -93,7 +92,7 @@
     "exportXlsxHint": "Uložit seznam činností do tabulky Excelu (doporučeno pro úpravy v Excelu)",
     "exportCsv": "Exportovat do CSV…",
     "exportCsvHint": "Uložit seznam činností jako CSV (pro jiné programy; Excel v něm může některé hodnoty převést na datum)",
-    "fileType": "Projekt GanttBudget",
+    "fileType": "Soubor projektu (MiRo project)",
     "fileNameHint": "Soubor, do kterého se projekt ukládá",
     "unsaved": "neuloženo",
     "unsavedHint": "Projekt má změny, které nejsou uložené v souboru. Uložte ho přes Soubor → Uložit (Ctrl+S).",
@@ -101,9 +100,9 @@
     "import": "Importovat z Excelu / CSV…",
     "importHint": "Nahradit činnosti tabulkou ze souboru .xlsx nebo .csv (nejdřív uvidíte náhled)",
     "error": {
-      "tooLarge": "Soubor je příliš velký (víc než 5 MB) – nejspíš to není projekt GanttBudget. Nic se nezměnilo.",
+      "tooLarge": "Soubor je příliš velký (víc než 5 MB) – nejspíš to není projekt z aplikace MiRo project. Nic se nezměnilo.",
       "notJson": "Soubor se nedá přečíst – je poškozený nebo to není soubor projektu (.json). Nic se nezměnilo.",
-      "notProject": "Tento soubor není projekt GanttBudget. Nic se nezměnilo.",
+      "notProject": "Tento soubor není projekt z aplikace MiRo project. Nic se nezměnilo.",
       "newerVersion": "Soubor je z novější verze aplikace (formát {{version}}). Aktualizujte aplikaci. Nic se nezměnilo.",
       "invalid_one": "Soubor projektu obsahuje neplatná data ({{count}} problém, např. v části „{{where}}“). Byl nejspíš upraven ručně nebo poškozen. Nic se nezměnilo.",
       "invalid_few": "Soubor projektu obsahuje neplatná data ({{count}} problémy, např. v části „{{where}}“). Byl nejspíš upraven ručně nebo poškozen. Nic se nezměnilo.",
@@ -217,7 +216,10 @@
     "confirmMilestoneLines_one": "Milník smí mít jen jednorázový náklad a materiál. Odebere se {{count}} řádek zdrojů. Pokračovat? (Lze vrátit Ctrl+Z.)",
     "confirmMilestoneLines_few": "Milník smí mít jen jednorázový náklad a materiál. Odeberou se {{count}} řádky zdrojů. Pokračovat? (Lze vrátit Ctrl+Z.)",
     "confirmMilestoneLines_many": "Milník smí mít jen jednorázový náklad a materiál. Odebere se {{count}} řádků zdrojů. Pokračovat? (Lze vrátit Ctrl+Z.)",
-    "confirmMilestoneLines_other": "Milník smí mít jen jednorázový náklad a materiál. Odebere se {{count}} řádků zdrojů. Pokračovat? (Lze vrátit Ctrl+Z.)"
+    "confirmMilestoneLines_other": "Milník smí mít jen jednorázový náklad a materiál. Odebere se {{count}} řádků zdrojů. Pokračovat? (Lze vrátit Ctrl+Z.)",
+    "slack": "Rezerva",
+    "slackHint": "Celková rezerva v pracovních dnech: o kolik se položka smí zpozdit, aniž se posune konec projektu. 0 = kritická cesta (žlutě).",
+    "slackCell": "Celková rezerva {{total}} prac. dní (konec projektu se neposune); volná rezerva {{free}} prac. dní (neposune ani žádného následníka)."
   },
   "kind": {
     "task": "Činnost",
@@ -362,7 +364,13 @@
     "constraintOverriddenMany_one": "U {{count}} posunuté činnosti platí vazba, takže začne později, než kam jste ji posunuli. Omezení se uložilo (📌).",
     "constraintOverriddenMany_few": "U {{count}} posunutých činností platí vazba, takže začnou později, než kam jste je posunuli. Omezení se uložilo (📌).",
     "constraintOverriddenMany_many": "U {{count}} posunutých činností platí vazba, takže začnou později, než kam jste je posunuli. Omezení se uložilo (📌).",
-    "constraintOverriddenMany_other": "U {{count}} posunutých činností platí vazba, takže začnou později, než kam jste je posunuli. Omezení se uložilo (📌)."
+    "constraintOverriddenMany_other": "U {{count}} posunutých činností platí vazba, takže začnou později, než kam jste je posunuli. Omezení se uložilo (📌).",
+    "critical": "Kritická cesta",
+    "criticalHint": "Zvýraznit kritickou cestu: žluté činnosti nesmějí nabrat zpoždění, jinak se posune konec projektu. Šedý pruh za úsečkou ukazuje rezervu.",
+    "slackBar_one": "Rezerva {{count}} pracovní den – o tolik se činnost smí zpozdit, aniž se posune konec projektu",
+    "slackBar_few": "Rezerva {{count}} pracovní dny – o tolik se činnost smí zpozdit, aniž se posune konec projektu",
+    "slackBar_many": "Rezerva {{count}} pracovních dnů – o tolik se činnost smí zpozdit, aniž se posune konec projektu",
+    "slackBar_other": "Rezerva {{count}} pracovních dnů – o tolik se činnost smí zpozdit, aniž se posune konec projektu"
   },
   "notice": {
     "close": "Zavřít upozornění"
@@ -568,7 +576,8 @@
       "profession": "Profese",
       "machineRate": "Sazba ({{currency}})",
       "rateUnit": "Za",
-      "department": "Středisko"
+      "department": "Středisko",
+      "absences": "Nepřítomnost"
     },
     "usageCount_one": "{{count}} položka",
     "usageCount_few": "{{count}} položky",
@@ -688,7 +697,7 @@
     "cancel": "Zrušit"
   },
   "library": {
-    "fileType": "Knihovna zdrojů GanttBudget",
+    "fileType": "Knihovna zdrojů (MiRo project)",
     "title": "Načíst knihovnu zdrojů",
     "catalog": "Seznam",
     "added": "Nové",
@@ -701,7 +710,7 @@
     "error": {
       "tooLarge": "Soubor je příliš velký (víc než 5 MB). Nic se nezměnilo.",
       "notJson": "Soubor se nedá přečíst – je poškozený nebo to není soubor knihovny. Nic se nezměnilo.",
-      "notLibrary": "Tento soubor není knihovna zdrojů GanttBudget (projekt se otevírá přes Soubor → Otevřít). Nic se nezměnilo.",
+      "notLibrary": "Tento soubor není knihovna zdrojů z aplikace MiRo project (projekt se otevírá přes Soubor → Otevřít). Nic se nezměnilo.",
       "newerVersion": "Knihovna je z novější verze aplikace (formát {{version}}). Aktualizujte aplikaci. Nic se nezměnilo.",
       "invalid_one": "Knihovna obsahuje neplatná data ({{count}} problém, např. v části „{{where}}“). Nic se nezměnilo.",
       "invalid_few": "Knihovna obsahuje neplatná data ({{count}} problémy, např. v části „{{where}}“). Nic se nezměnilo.",
@@ -783,6 +792,29 @@
       "day": "za prac. den",
       "week": "za týden",
       "month": "za měsíc"
+    }
+  },
+  "absence": {
+    "title": "Nepřítomnosti – {{name}}",
+    "intro": "Dovolená, nemoc, školení… V těchto dnech má pracovník nulovou kapacitu. Termíny činností se samy nemění – aplikace jen upozorní na přetížení.",
+    "hint": "Dovolená, nemoc a jiné nepřítomnosti pracovníka",
+    "from": "Od",
+    "to": "Do (prázdné = jeden den)",
+    "note": "Poznámka",
+    "notePlaceholder": "např. dovolená",
+    "add": "Přidat",
+    "empty": "Zatím žádné nepřítomnosti.",
+    "range": "{{from}} – {{to}}",
+    "workingDays_one": "{{count}} prac. den",
+    "workingDays_few": "{{count}} prac. dny",
+    "workingDays_many": "{{count}} prac. dnů",
+    "workingDays_other": "{{count}} prac. dnů",
+    "delete": "Smazat nepřítomnost {{range}}",
+    "undo": "Každou změnu lze vrátit tlačítkem Zpět (Ctrl+Z).",
+    "close": "Zavřít",
+    "error": {
+      "dates": "Zadejte platné datum začátku (a případně konce).",
+      "order": "Konec nesmí být před začátkem."
     }
   }
 }

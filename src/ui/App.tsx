@@ -1,4 +1,6 @@
 /** Hlavní okno aplikace: lišta s nástroji, tabulka činností a patička. */
+import logoOnLight from '../assets/brand/miro-horizontal-color-on-light.svg'
+import logoOnDark from '../assets/brand/miro-horizontal-color-on-dark.svg'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LANGUAGES } from '../i18n/languages'
@@ -13,6 +15,7 @@ import { TaskTable } from './TaskTable'
 import { SplitView } from './SplitView'
 import { GanttChart } from './gantt/GanttChart'
 import { ZoomSwitch } from './gantt/ZoomSwitch'
+import { CriticalToggle } from './gantt/CriticalToggle'
 import { StructureToolbar } from './StructureToolbar'
 import { runStructureCommand, STRUCTURE_COMMANDS, STRUCTURE_SHORTCUTS } from './structureCommands'
 import { useSelectedId, useViewState } from './viewState'
@@ -187,15 +190,17 @@ export default function App() {
       <header className="border-b border-slate-200 px-4 py-2 dark:border-slate-700">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
           <div className="mr-auto">
-            <h1 className="text-lg font-bold">
-              {t('app.title')} <span className="text-sm font-normal text-slate-500 dark:text-slate-400">· {t('app.tagline')}</span>
+            {/* Logo značky MiRo project (varianta pro světlé / tmavé pozadí). */}
+            <h1 className="flex items-center">
+              <img src={logoOnLight} alt={t('app.title')} className="h-8 w-auto dark:hidden" />
+              <img src={logoOnDark} alt={t('app.title')} className="hidden h-8 w-auto dark:block" />
             </h1>
             <p className="text-sm text-slate-600 dark:text-slate-400">
               <ProjectName />
               {fileName && <span title={t('file.fileNameHint')}> ({fileName})</span>}
               {dirty && (
-                <span className="ml-1 font-medium text-amber-700 dark:text-amber-400" title={t('file.unsavedHint')}>
-                  <span aria-hidden="true">● </span>
+                <span className="ml-1 font-medium text-slate-800 dark:text-slate-100" title={t('file.unsavedHint')}>
+                  <span aria-hidden="true" className="text-miro-gold dark:text-miro-yellow">● </span>
                   {t('file.unsaved')}
                 </span>
               )}
@@ -249,8 +254,8 @@ export default function App() {
                 aria-pressed={view === id}
                 onClick={() => setView(id)}
                 title={t(`view.${id}Hint`)}
-                className={`inline-flex items-center gap-1.5 rounded px-3 py-1 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-                  view === id ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+                className={`inline-flex items-center gap-1.5 rounded px-3 py-1 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-focus ${
+                  view === id ? 'bg-miro-graphite text-miro-paper dark:bg-miro-paper dark:text-miro-graphite' : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
                 }`}
               >
                 {id === 'plan' ? <PlanIcon /> : <ResourcesIcon />}
@@ -281,7 +286,8 @@ export default function App() {
           </button>
           {view === 'plan' && project.tasks.length > 0 && <StructureToolbar />}
           {view === 'plan' && project.tasks.length > 0 && (
-            <div className="ml-auto">
+            <div className="ml-auto flex flex-wrap gap-2">
+              <CriticalToggle />
               <ZoomSwitch />
             </div>
           )}
@@ -292,10 +298,10 @@ export default function App() {
       <div aria-live="assertive">
         {(notice ?? (scheduleError ? t(`schedule.${scheduleError}`) : null)) && (
           <div
-            className={`flex items-start justify-between gap-3 border-b px-4 py-2 text-sm ${
+            className={`flex items-start justify-between gap-3 border-b border-b-slate-300 px-4 py-2 text-sm dark:border-b-slate-700 ${
               isInfo
-                ? 'border-blue-300 bg-blue-50 text-blue-900 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-100'
-                : 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100'
+                ? 'border-l-4 border-l-miro-turquoise-dark bg-white text-slate-800 dark:border-l-miro-turquoise dark:bg-slate-800 dark:text-slate-100'
+                : 'border-l-4 border-l-miro-gold bg-miro-yellow-light/50 text-miro-graphite dark:border-l-miro-yellow dark:bg-slate-800 dark:text-miro-yellow-light'
             }`}
           >
             <p>
@@ -307,7 +313,7 @@ export default function App() {
                 type="button"
                 onClick={clearNotice}
                 aria-label={t('notice.close')}
-                className="rounded px-2 hover:bg-amber-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 dark:hover:bg-amber-900"
+                className="rounded px-2 hover:bg-slate-900/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:bg-slate-100/10"
               >
                 <span aria-hidden="true">✕</span>
               </button>

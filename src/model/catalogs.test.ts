@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { categoryUsage, departmentUsage, lineUsage, professionUsage, syncLaborLines, uniqueName } from './catalogs'
+import { absenceWorkingDays, categoryUsage, departmentUsage, lineUsage, professionUsage, syncLaborLines, uniqueName } from './catalogs'
 import { createEmptyProject, createTask, type Project } from './schema'
 
 function project(): Project {
@@ -54,6 +54,15 @@ describe('číselníky: pomocné funkce', () => {
     const synced = syncLaborLines(p)
     expect((synced.tasks[0]!.lines[0] as { professionId: string }).professionId).toBe('p2')
     expect(syncLaborLines(synced)).toBe(synced) // nic ke změně = stejný objekt
+  })
+
+  it('pracovní dny nepřítomnosti podle kalendáře projektu (víkendy a svátky se nepočítají)', () => {
+    const p = project()
+    // 21.–31. 12. 2026: pracovní dny 21., 22., 23., 28., 29., 30., 31. (24.–26. svátky, 27. neděle) = 7
+    // 3. 2. 2027 (středa) = 1
+    p.workers[0]!.absences = [{ start: '2026-12-21', end: '2026-12-31' }, { start: '2027-02-03', end: '2027-02-03' }]
+    expect(absenceWorkingDays(p.workers[0]!, p.calendar)).toBe(8)
+    expect(absenceWorkingDays(p.workers[1]!, p.calendar)).toBe(0)
   })
 
   it('kteří pracovníci patří do střediska', () => {

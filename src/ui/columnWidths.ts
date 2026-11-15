@@ -18,6 +18,7 @@ export type ColumnId =
   | 'start'
   | 'finish'
   | 'duration'
+  | 'slack'
   | 'predecessors'
   | 'percent'
   | 'cost'
@@ -33,6 +34,7 @@ export const COLUMNS: { id: ColumnId; width: number; min: number; resizable: boo
   { id: 'start', width: 144, min: 120, resizable: true },
   { id: 'finish', width: 144, min: 120, resizable: true },
   { id: 'duration', width: 96, min: 60, resizable: true },
+  { id: 'slack', width: 84, min: 60, resizable: true },
   { id: 'predecessors', width: 128, min: 70, resizable: true },
   { id: 'percent', width: 84, min: 60, resizable: true },
   { id: 'cost', width: 128, min: 80, resizable: true },

@@ -1,7 +1,7 @@
 # ZADÁNÍ: Aplikace pro Ganttovy diagramy s navázaným rozpočtem
 
-> Pracovní název: **GanttBudget** (změnitelný)
-> Verze zadání: 1.10 · Datum: 15. 11. 2026 (změny viz kap. 14)
+> Název aplikace: **MiRo project** (pracovní název do v1.10: GanttBudget)
+> Verze zadání: 1.11 · Datum: 15. 11. 2026 (změny viz kap. 14)
 > Dokument je zároveň vstupem pro Claude Code (vibe coding) a osnovou výukové case study.
 
 ---
@@ -28,7 +28,7 @@
 | Platforma | Webová aplikace v prohlížeči, bez serveru a bez účtů |
 | Ukládání | Soubor projektu (JSON) + automatická záloha v prohlížeči |
 | Velikost projektu | Do cca 300 činností |
-| Vzhled | Čistý, moderní; světlý i tmavý režim |
+| Vzhled | Čistý, moderní, podle značky MiRo project (N-13); světlý i tmavý režim |
 | Jazyky | Čeština a angličtina (rozšiřitelné o další) |
 | Časová jemnost | Dny (pracovní dny dle kalendáře) |
 | Měna | Jedna měna na projekt, výchozí CZK, volitelně jiná |
@@ -198,6 +198,7 @@ Státní svátky ČR k zakódování: 1. 1.; Velký pátek; Velikonoční pondě
 | N-10 | **Bezpečný import**: každý načítaný soubor (JSON, CSV, XLSX, výstup z AI) se před použitím ověří proti schématu (Zod). Neplatná data se nikdy nepoužijí částečně. Texty od uživatele se nikdy nevkládají do stránky jako HTML. |
 | N-11 | **Bezpečný export**: buňky začínající `=`, `+`, `-`, `@`, tabulátorem nebo CR se v CSV/XLSX ošetří, aby je Excel nespustil jako vzorec (CSV injection). |
 | N-12 | **Content Security Policy** v `index.html`: aplikace načítá skripty a styly jen ze své vlastní adresy. |
+| N-13 | **Vizuální identita MiRo project** (brand kit): logo v záhlaví (světlá / tmavá varianta) a ikony prohlížeče; písmo **Lato** (OFL) jako vlastní WOFF2, ne z Google Fonts. Barvy: základ **grafit** `#262626`, **papír** `#F6F5F0` a teplá šedá škála; **žlutá** `#FFC000` = důležité (primární tlačítko, kritická cesta, varování, neuloženo); **tyrkysová** `#3BDAFF` = doplňkový akcent pro interakci a stav (výběr, dnešek, najetí myší, fokus, informace, běžné úsečky činností průsvitně s rámečkem); červená jen pro chyby a mazání. Žlutý ani jasně tyrkysový text na světlém pozadí se nepoužívá (místo nich tmavé zlato `#B38600` a tmavá tyrkysová `#08708C`). Kontrast textu ≥ 4,5 : 1, grafiky ≥ 3 : 1 (WCAG AA, viz U-06). Barvy jsou tokeny v `src/index.css`. |
 | N-13 | **Závislosti**: co nejméně knihoven, zamčené verze (`package-lock.json`), pravidelně `npm audit`, na GitHubu zapnutý Dependabot. Žádné knihovny se známými neopravenými zranitelnostmi. |
 
 ---
@@ -407,7 +408,7 @@ Technicky: build bez chyb, testy plánovacího jádra projdou, aplikace je nasaz
 | 3 | Zaokrouhlování peněz | ✅ Rozhodnuto (v1.1): celá čísla v nejmenší jednotce měny, zobrazení na 2 desetinná místa |
 | 4 | Průběžný náklad „za měsíc" u činnosti, která nezačíná na začátku měsíce | Poměrně po dnech; upřesnit ve fázi 7 |
 | 5 | Skutečné náklady (AC) pro Earned Value | Zadávají se ručně jako položky k datu; upřesnit ve fázi 9 |
-| 6 | Pracovní název a logo aplikace | „GanttBudget" dočasně |
+| 6 | Pracovní název a logo aplikace | ✅ Rozhodnuto (v1.11): **MiRo project**, logo a barvy podle brand kitu (N-13). Přípony souborů `.ganttbudget.json` / `.ganttbudget-lib.json` a klíče v prohlížeči zůstávají kvůli kompatibilitě s uloženými projekty |
 | 7 | Licence | MIT, pokud zadavatel (fakulta) nevyžaduje jinak |
 | 8 | Použití ve výuce: potřeba odevzdávat projekty učiteli | Zatím jen soubor JSON/XLSX/PDF e-mailem nebo přes LMS |
 | 9 | Majetková práva k aplikaci (případné zaměstnanecké dílo ČVUT) | ✅ Ověřeno u fakulty (14. 11. 2026) |
@@ -430,3 +431,4 @@ Technicky: build bez chyb, testy plánovacího jádra projdou, aplikace je nasaz
 | 1.8 | 15. 11. 2026 | Zdroje a náklady – architektura před fází 6: číselníky (databáze) v projektu – profese, pracovníci, stroje, materiály a díly, kategorie; exportovatelné jako knihovna `.ganttbudget-lib.json` (Z-05). Kalkulace hodinové sazby z mzdy, odvodů, režie a produktivních hodin, s ruční sazbou navíc (Z-04). Na činnosti jeden seznam řádků `Task.lines` (člověk, stroj, materiál, jednorázový, průběžný náklad) místo `assignments` + `CostItem`; člověk = profese a volitelně pracovník (sazba pracovníka, jinak profese); cena materiálu z databáze se propíše, na řádku jde přepsat; délka činnosti se zdroji nemění. Fáze 6 rozdělena na 6a (databáze zdrojů), 6b (zdroje a náklady na činnostech), 6c (kritická cesta a vytížení); fáze 7 zúžena na rozpočet v čase |
 | 1.9 | 15. 11. 2026 | Fáze 6a – databáze zdrojů: nový číselník **střediska** (kód, název; Worker.departmentId volitelně) jako dimenze pro analytiku; pořadí podzáložek Zdrojů lze měnit (tažení, Alt+Shift+←/→, pamatuje si prohlížeč, „Výchozí pořadí“). Pravidla: názvy v číselníku jedinečné (bez ohledu na velikost písmen); používanou kategorii jde smazat jen s přesunem položek do náhradní; profesi ani středisko s pracovníky smazat nejde. Kalkulace sazby – výchozí odvody 33,8 %, dovolená 25 dní, nemoc 5 dní, 8 h/den, produktivita 85 %, režie % z mzdy nebo Kč/rok; fond = pracovní dny roku začátku projektu podle kalendáře projektu. Knihovna: párování podle názvů, odkazy se přemapují podle názvů, jiná měna se odmítne, náhled nové/změněné/beze změny, jeden krok Zpět. Formát projektu v2 s převodem v1. Vzorový projekt má vzorovou databázi |
 | 1.10 | 15. 11. 2026 | Fáze 6b – zdroje a náklady na činnostech: panel **Detail činnosti** pod plánem (sbalitelný, výška tažením); pravidla výpočtu nákladů v R-02 (týden a měsíc podle kalendářních dnů, den podle pracovních); řádky smí mít činnosti i fáze, milník jen jednorázový náklad a materiál; sloupec Náklady s rozpadem a náklady projektu v záhlaví (R-05); řádek bez sazby má náklad 0 a varování. Návaznosti: zdroj použitý na činnostech nejde smazat (hláška s výpisem činností); smazání kategorie přesune i řádky; změna profese pracovníka se propíše do jeho řádků; změna na milník se zeptá a odebere nepovolené řádky; import z tabulky řádky nepřenáší a předem varuje; duplikace kopíruje řádky s novými ID. **Volné štítky** u řádků (R-03) přesunuty do fáze 7. Vzorový projekt má náklady na většině položek |
+| 1.11 | 15. 11. 2026 | Vizuální identita (mezi kroky fáze 6c): aplikace přejmenována na **MiRo project**; nový požadavek **N-13** – logo, písmo Lato (WOFF2), barvy značky (grafit, papír, teplá šedá; žlutá = důležité, nově **tyrkysová** jako doplňkový akcent pro interakci a běžné úsečky činností; kritická cesta žlutě místo červeně); kontrast WCAG AA ověřen výpočtem (tlumená šedá ztmavena na 4,6 : 1). Otevřená otázka 6 uzavřena; přípony souborů beze změny kvůli kompatibilitě. Fáze 6c pokračuje jako v1.12 |

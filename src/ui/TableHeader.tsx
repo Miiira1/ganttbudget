@@ -24,6 +24,7 @@ const HEADERS: Record<ColumnId, { label: string; hint?: string; align?: 'right' 
   start: { label: 'table.start', hint: 'table.startHint' },
   finish: { label: 'table.finish', hint: 'table.finishHint' },
   duration: { label: 'table.duration', hint: 'table.durationHint', align: 'right' },
+  slack: { label: 'table.slack', hint: 'table.slackHint', align: 'right' },
   predecessors: { label: 'table.predecessors', hint: 'table.predecessorsHint' },
   percent: { label: 'table.percentComplete', align: 'right' },
   cost: { label: 'table.cost', hint: 'table.costHint', align: 'right' },
@@ -101,7 +102,7 @@ function ResizeHandle({ id, label }: { id: ColumnId; label: string }) {
       onPointerCancel={onPointerUp}
       onDoubleClick={() => resetWidth(id)}
       onKeyDown={onKeyDown}
-      className="absolute right-0 top-0 z-20 h-full w-2 cursor-col-resize touch-none border-r-2 border-transparent hover:border-blue-400 focus:outline-none focus-visible:border-blue-500 dark:hover:border-blue-500"
+      className="absolute right-0 top-0 z-20 h-full w-2 cursor-col-resize touch-none border-r-2 border-transparent hover:border-miro-turquoise focus:outline-none focus-visible:border-focus dark:hover:border-miro-turquoise"
     />
   )
 }

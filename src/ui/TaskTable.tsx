@@ -24,7 +24,7 @@ import {
   type DropPosition,
 } from '../model/hierarchy'
 import { TASK_KINDS, type Task, type TaskKind } from '../model/schema'
-import type { ScheduledTask } from '../engine/schedule'
+import { EMPTY_SCHEDULED, type ScheduledTask } from '../engine/schedule'
 import { ROW_HEIGHT } from '../gantt/geometry'
 import { getSchedule, projectStore, useCosts, useProject, useSchedule } from '../store/useProject'
 import { formatMoney } from '../model/money'
@@ -89,6 +89,10 @@ interface TaskRowProps {
   constraintIgnored: boolean
   /** Text sloupce Předchůdci, např. "2; 5+3". */
   predecessorsText: string
+  /** Celková a volná rezerva v pracovních dnech (null = nejde spočítat) a příznak kritické cesty. */
+  totalSlack: number | null
+  freeSlack: number | null
+  critical: boolean
   /** Náklad položky v haléřích (u fáze včetně podřízených) a jeho rozpad – jednotlivá čísla, aby fungovalo memo. */
   costTotal: number
   costLabor: number
@@ -123,7 +127,8 @@ const INDICATOR_SHADOW: Record<DropPosition, string> = {
 }
 
 /** Vybraný řádek: modré pozadí a pruh vlevo (barva není jediným nositelem informace – U-06). */
-const selectedRowClass = 'bg-blue-100 shadow-[inset_3px_0_0_0_rgb(37_99_235)] dark:bg-blue-900/40'
+const selectedRowClass =
+  'bg-miro-turquoise-light/60 shadow-[inset_3px_0_0_0_#08708c] dark:bg-miro-turquoise/15 dark:shadow-[inset_3px_0_0_0_#3bdaff]'
 
 /**
  * Ikona 📌: činnost má omezení „začít nejdříve k datu“ (nastavené tažením nebo v tabulce).
@@ -140,7 +145,7 @@ function ConstraintPin({ task, ignored }: { task: Task; ignored: boolean }) {
       title={t(ignored ? 'table.constraintIgnored' : 'table.constraint', { date })}
       aria-label={t('table.constraintClear', { date, name: task.name })}
       onClick={() => projectStore.getState().setTaskTiming(task.id, { constraintStart: null })}
-      className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-xs hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:bg-slate-700 ${
+      className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-xs hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:bg-slate-700 ${
         ignored ? 'opacity-40' : ''
       }`}
     >
@@ -161,7 +166,7 @@ function CollapseToggle({ task, hasChildren, collapsed }: { task: Task; hasChild
       aria-label={t(collapsed ? 'table.expand' : 'table.collapse', { name: task.name })}
       title={t(collapsed ? 'table.expandHint' : 'table.collapseHint')}
       onClick={() => toggle(task.id)}
-      className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-slate-500 hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:bg-slate-700"
+      className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-slate-500 hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:bg-slate-700"
     >
       <span aria-hidden="true">{collapsed ? '▸' : '▾'}</span>
     </button>
@@ -172,6 +177,7 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
   const { task, number, depth, wbs, start, finish, computedDuration, inCycle, predecessorsText } = props
   const { hasChildren, collapsed, selected, dropIndicator: indicator, dragging, drag, constraintIgnored } = props
   const { costTotal, costLabor, costMachines, costMaterial, costOther } = props
+  const { totalSlack, freeSlack, critical } = props
   const { t, i18n } = useTranslation()
   const select = useViewState((s) => s.select)
   // Řádek nesleduje celý projekt (jinak by se překresloval při každé změně kdekoli);
@@ -231,7 +237,7 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
       onClick={(e) => finishPlainClick(e, task.id)}
       onDragOver={(e) => drag.onDragOver(task, e)}
       onDrop={drag.onDrop}
-      className={`${selected ? selectedRowClass : `hover:bg-blue-50/60 dark:hover:bg-slate-800 ${kindRowClass[task.kind]}`} ${
+      className={`${selected ? selectedRowClass : `hover:bg-miro-turquoise-light/30 dark:hover:bg-slate-800 ${kindRowClass[task.kind]}`} ${
         dragging ? 'opacity-50' : ''
       }`}
     >
@@ -256,7 +262,7 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
         <div className="flex items-center gap-1" style={{ paddingLeft: depth * INDENT_PX }}>
           <CollapseToggle task={task} hasChildren={hasChildren} collapsed={collapsed} />
           {task.kind === 'milestone' && (
-            <span aria-hidden="true" className="pl-1 text-amber-600 dark:text-amber-400">
+            <span aria-hidden="true" className="pl-1 text-miro-graphite dark:text-slate-200">
               ◆
             </span>
           )}
@@ -291,7 +297,7 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
             }
             updateTask(task.id, { kind })
           }}
-          className="w-full rounded border border-transparent bg-transparent px-1 py-0.5 font-normal hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 dark:hover:border-slate-600 dark:[&>option]:bg-slate-800"
+          className="w-full rounded border border-transparent bg-transparent px-1 py-0.5 font-normal hover:border-slate-300 focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/40 dark:hover:border-slate-600 dark:[&>option]:bg-slate-800"
         >
           {TASK_KINDS.map((kind) => (
             // Fáze s činnostmi musí zůstat fází – ostatní volby jsou zašedlé.
@@ -350,6 +356,16 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
             disabled={task.kind === 'milestone'}
             onCommit={(durationDays) => updateTask(task.id, { durationDays })}
           />
+        )}
+      </td>
+      <td className={`${td} px-2 text-right tabular-nums`}>
+        {totalSlack !== null && (
+          <span
+            title={t('table.slackCell', { total: totalSlack, free: freeSlack ?? 0 })}
+            className={critical ? 'rounded bg-miro-yellow-light px-1.5 font-semibold text-miro-graphite dark:bg-miro-yellow/20 dark:text-miro-yellow-light' : 'text-slate-600 dark:text-slate-300'}
+          >
+            {totalSlack}
+          </span>
         )}
       </td>
       <td className={`${td}`}>
@@ -412,7 +428,7 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
   )
 })
 
-const NO_DATES: ScheduledTask = { start: null, finish: null, durationDays: null }
+const NO_DATES: ScheduledTask = EMPTY_SCHEDULED
 
 /** Právě přetahované řádky (jeden, nebo celý výběr) a kam by dopadly. */
 interface DragState {
@@ -552,6 +568,9 @@ export function TaskTable({ onAddTask, onLoadSample }: { onAddTask: () => void; 
               inCycle={result.cycleTaskIds.has(task.id)}
               constraintIgnored={result.constraintOverridden.has(task.id)}
               predecessorsText={formatPredecessorsWith(numbers, task)}
+              totalSlack={dates.totalSlack}
+              freeSlack={dates.freeSlack}
+              critical={dates.critical}
               costTotal={costs.byTask.get(task.id)?.total.total ?? 0}
               costLabor={costs.byTask.get(task.id)?.total.labor ?? 0}
               costMachines={costs.byTask.get(task.id)?.total.machines ?? 0}

@@ -27,7 +27,7 @@ export function StructureToolbar() {
         </button>
       ))}
       {count > 1 && (
-        <span role="status" className="ml-1 rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-900 dark:bg-blue-900/50 dark:text-blue-100" title={t('structure.selectedHint')}>
+        <span role="status" className="ml-1 rounded bg-miro-turquoise-light px-2 py-0.5 text-xs font-medium text-miro-graphite dark:bg-miro-turquoise/20 dark:text-miro-turquoise" title={t('structure.selectedHint')}>
           {t('structure.selectedCount', { count })}
         </span>
       )}

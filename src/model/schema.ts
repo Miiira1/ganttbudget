@@ -193,6 +193,15 @@ export const DepartmentSchema = z.object({
   code: z.string().max(50).optional(),
 })
 
+/** Nepřítomnost pracovníka (K-05): dovolená, nemoc… – rozsah dnů včetně obou krajních. */
+export const AbsenceSchema = z
+  .object({
+    start: IsoDateSchema,
+    end: IsoDateSchema,
+    note: z.string().max(200).optional(),
+  })
+  .refine((a) => a.start <= a.end, { message: 'rangeEndBeforeStart', path: ['end'] })
+
 export const WorkerSchema = z.object({
   id: IdSchema,
   name: NameSchema,
@@ -203,6 +212,8 @@ export const WorkerSchema = z.object({
   /** Bez vlastní sazby platí sazba profese. */
   rateCalc: RateCalcSchema.optional(),
   manualRate: MoneySchema.optional(),
+  /** Nepřítomnosti (fáze 6c) – ovlivní jen vytížení a varování, termíny se samy nemění. */
+  absences: z.array(AbsenceSchema).max(200).optional(),
 })
 
 export const MachineSchema = z.object({
@@ -410,6 +421,7 @@ export type RateCalcData = z.infer<typeof RateCalcSchema>
 export type Profession = z.infer<typeof ProfessionSchema>
 export type Worker = z.infer<typeof WorkerSchema>
 export type Department = z.infer<typeof DepartmentSchema>
+export type Absence = z.infer<typeof AbsenceSchema>
 export type Machine = z.infer<typeof MachineSchema>
 export type Material = z.infer<typeof MaterialSchema>
 

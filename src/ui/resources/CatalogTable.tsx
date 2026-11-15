@@ -92,7 +92,7 @@ const CatalogRow = memo(function CatalogRow(props: {
   const { t } = useTranslation()
   const { item, columns, onDelete } = props
   return (
-    <tr data-item-id={item.id} className="border-b border-slate-200 hover:bg-blue-50/60 dark:border-slate-700 dark:hover:bg-slate-800">
+    <tr data-item-id={item.id} className="border-b border-slate-200 hover:bg-miro-turquoise-light/30 dark:border-slate-700 dark:hover:bg-slate-800">
       {columns.map((c) => (
         <td key={c.key} className={`px-1 py-0.5 ${c.align === 'right' ? 'text-right' : ''}`}>
           {c.cell(item)}

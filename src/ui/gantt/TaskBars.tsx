@@ -70,22 +70,33 @@ function DragHandles({ bar, taskId }: { bar: Bar; taskId: string }) {
   )
 }
 
-function Shape({ bar }: { bar: Bar }) {
+/** critical: true / false v režimu kritické cesty, null = režim vypnutý (běžné barvy). */
+function Shape({ bar, critical }: { bar: Bar; critical: boolean | null }) {
   const cy = bar.centerY
   const width = Math.max(MIN_WIDTH, bar.xEnd - bar.xStart)
   switch (bar.kind) {
-    case 'task':
+    case 'task': {
+      const rect = { x: bar.xStart, y: cy - TASK_BAR_HEIGHT / 2, width, height: TASK_BAR_HEIGHT, rx: 3 }
+      if (!critical) {
+        // Běžná činnost: tyrkysová utlumená průhledností + výrazný tyrkysový rámeček.
+        // Pod ní neprůhledný podklad, aby skrz úsečku neprosvítala mřížka ani šipky vazeb.
+        return (
+          <>
+            <rect {...rect} className="fill-white dark:fill-slate-900" />
+            <rect {...rect} className="fill-miro-turquoise/35 stroke-miro-turquoise-dark dark:fill-miro-turquoise/30 dark:stroke-miro-turquoise" strokeWidth={1} />
+          </>
+        )
+      }
+      // Kritická: ve světlém vzhledu plná žlutá; v tmavém běžná (šedá) úsečka s průsvitnou žlutou vrstvou
+      // (žlutá je utlumená, neoslňuje) a jemným světle žlutým rámečkem.
       return (
-        <rect
-          x={bar.xStart}
-          y={cy - TASK_BAR_HEIGHT / 2}
-          width={width}
-          height={TASK_BAR_HEIGHT}
-          rx={3}
-          className="fill-blue-500 stroke-blue-700 dark:fill-blue-500 dark:stroke-blue-300"
-          strokeWidth={1}
-        />
+        <>
+          <rect {...rect} className="fill-miro-yellow stroke-miro-gold dark:fill-slate-400 dark:stroke-miro-yellow-light" strokeWidth={1} />
+          {/* Jemný světle žlutý rámeček kritické činnosti (jen v tmavém vzhledu). */}
+          <rect {...rect} className="hidden fill-miro-yellow/60 stroke-miro-yellow-light dark:inline" strokeWidth={1} pointerEvents="none" />
+        </>
       )
+    }
     case 'phase': {
       const top = cy - TASK_BAR_HEIGHT / 2
       const bottom = top + PHASE_BAR_HEIGHT
@@ -99,7 +110,13 @@ function Shape({ bar }: { bar: Bar }) {
         [bar.xStart + PHASE_TIP, bottom],
         [bar.xStart, bottom + PHASE_TIP],
       ]
-      return <polygon points={points.map((p) => p.join(',')).join(' ')} className="fill-slate-700 dark:fill-slate-300" />
+      return (
+        <polygon
+          points={points.map((p) => p.join(',')).join(' ')}
+          className={critical ? 'fill-miro-gold dark:fill-miro-yellow/70 dark:stroke-miro-yellow-light' : 'fill-miro-graphite dark:fill-slate-200'}
+          strokeWidth={critical ? 1 : undefined}
+        />
+      )
     }
     case 'milestone': {
       const cx = bar.xStart + MILESTONE_HALF
@@ -107,7 +124,11 @@ function Shape({ bar }: { bar: Bar }) {
       return (
         <polygon
           points={`${cx},${cy - h} ${cx + h},${cy} ${cx},${cy + h} ${cx - h},${cy}`}
-          className="fill-amber-500 stroke-amber-700 dark:fill-amber-400 dark:stroke-amber-200"
+          className={
+            critical
+              ? 'fill-miro-yellow stroke-miro-gold dark:fill-miro-yellow/75 dark:stroke-miro-yellow-light'
+              : 'fill-miro-graphite stroke-miro-graphite dark:fill-slate-100 dark:stroke-slate-300'
+          }
           strokeWidth={1}
         />
       )
@@ -136,7 +157,7 @@ function LinkHandles({ bar, taskId, label }: { bar: Bar; taskId: string; label: 
       data-link-task={taskId}
       data-link-anchor={anchor}
       style={{ touchAction: 'none' }}
-      className="cursor-crosshair fill-white stroke-blue-600 opacity-0 transition-opacity group-hover:opacity-100 dark:fill-slate-900 dark:stroke-blue-300"
+      className="cursor-crosshair fill-white stroke-miro-turquoise-dark opacity-0 transition-opacity group-hover:opacity-100 dark:fill-slate-900 dark:stroke-miro-turquoise"
       strokeWidth={1.5}
     >
       <title>{label}</title>
@@ -155,9 +176,13 @@ interface TaskBarsProps {
   /** Úsečky spočítané funkcí layoutBars (jen řádky s termínem). */
   bars: Map<string, Bar>
   dates: Map<string, ScheduledTask>
+  /** Kritické položky (null = zvýraznění kritické cesty je vypnuté). */
+  critical: ReadonlySet<string> | null
+  /** Kam sahá rezerva (x konce pruhu rezervy) u nekritických položek. */
+  slackEnds: Map<string, number> | null
 }
 
-export const TaskBars = memo(function TaskBars({ rows, bars, dates }: TaskBarsProps) {
+export const TaskBars = memo(function TaskBars({ rows, bars, dates, critical, slackEnds }: TaskBarsProps) {
   const { t, i18n } = useTranslation()
   return (
     <g>
@@ -179,7 +204,8 @@ export const TaskBars = memo(function TaskBars({ rows, bars, dates }: TaskBarsPr
           <g key={task.id} data-task-id={task.id} className="group">
             <title>{barTitle(task, { start: d.start, finish: d.finish }, t, i18n.language)}</title>
             {hoverZone}
-            <Shape bar={bar} />
+            {slackEnds?.has(task.id) && <SlackBar bar={bar} to={slackEnds.get(task.id) as number} title={t('gantt.slackBar', { count: d.totalSlack ?? 0 })} />}
+            <Shape bar={bar} critical={critical === null ? null : critical.has(task.id)} />
             <DragHandles bar={bar} taskId={task.id} />
             <LinkHandles bar={bar} taskId={task.id} label={t('gantt.linkHandle')} />
           </g>
@@ -188,3 +214,16 @@ export const TaskBars = memo(function TaskBars({ rows, bars, dates }: TaskBarsPr
     </g>
   )
 })
+
+/** Pruh rezervy: od konce úsečky po nejpozdější konec (o tolik se smí zpozdit, aniž posune konec projektu). */
+function SlackBar({ bar, to, title }: { bar: Bar; to: number; title: string }) {
+  const from = bar.kind === 'milestone' ? bar.xStart + MILESTONE_HALF : Math.max(bar.xEnd, bar.xStart + MIN_WIDTH)
+  if (to <= from + 1) return null
+  return (
+    <g>
+      <title>{title}</title>
+      <rect x={from} y={bar.centerY - 2} width={to - from} height={4} rx={2} className="fill-slate-400/50 dark:fill-slate-500/50" />
+      <line x1={to} x2={to} y1={bar.centerY - 5} y2={bar.centerY + 5} strokeWidth={1.5} className="stroke-slate-400 dark:stroke-slate-500" />
+    </g>
+  )
+}

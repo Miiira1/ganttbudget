@@ -10,7 +10,8 @@ import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { createWorkCalendar, dayToIso, isoToDay } from '../../engine/calendar'
 import { formatIsoDate } from '../../i18n/format'
-import { layoutBars, ROW_HEIGHT } from '../../gantt/geometry'
+import { barGeometry, layoutBars, MILESTONE_HALF, ROW_HEIGHT } from '../../gantt/geometry'
+import { useDisplayOptions } from '../displayOptions'
 import {
   createTimeline,
   dayAtOffset,
@@ -151,6 +152,25 @@ export function GanttChart() {
     [tl, calendar, showWeekends],
   )
   const bars = useMemo(() => layoutBars(tl, rows, dates), [tl, rows, dates])
+  // Kritická cesta (fáze 6c): kritické položky a kam sahá rezerva ostatních.
+  const showCritical = useDisplayOptions((s) => s.showCritical)
+  const critical = useMemo(() => {
+    if (!showCritical) return null
+    const ids = new Set<string>()
+    for (const [id, d] of dates) if (d.critical) ids.add(id)
+    return ids as ReadonlySet<string>
+  }, [showCritical, dates])
+  const slackEnds = useMemo(() => {
+    if (!showCritical) return null
+    const ends = new Map<string, number>()
+    rows.forEach((task, rowIndex) => {
+      const d = dates.get(task.id)
+      if (!d || d.critical || task.kind === 'phase' || !d.lateStart || !d.lateFinish || !d.totalSlack) return
+      const late = barGeometry(tl, task.kind, d.lateStart, d.lateFinish, rowIndex)
+      ends.set(task.id, task.kind === 'milestone' ? late.xStart + MILESTONE_HALF : late.xEnd)
+    })
+    return ends
+  }, [showCritical, rows, dates, tl])
   const gridLines = useMemo(() => headerRows(tl)[1].slice(1).map((s) => s.x), [tl])
   useZoomNavigation(wrapperRef, tl)
 
@@ -161,9 +181,9 @@ export function GanttChart() {
   const lang = i18n.language
 
   const fillClass: Record<NonWorkingRun['info']['kind'], string> = {
-    weekend: 'fill-slate-100 dark:fill-slate-800/70',
-    holiday: 'fill-amber-100 dark:fill-amber-900/40',
-    custom: 'fill-violet-100 dark:fill-violet-900/40',
+    weekend: 'fill-slate-200/60 dark:fill-slate-800/70',
+    holiday: 'fill-slate-200 dark:fill-slate-800',
+    custom: 'fill-slate-300/70 dark:fill-slate-700/60',
   }
   const background: ReactNode[] = runs.map((run) => {
     const x = dayToX(tl, run.startDay)
@@ -193,10 +213,10 @@ export function GanttChart() {
         <defs>
           {/* Šrafování odliší svátky a odstávky i bez rozlišení barev (U-06). */}
           <pattern id={`${patternId}-holiday`} width={6} height={6} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <line x1={0} y1={0} x2={0} y2={6} strokeWidth={2} className="stroke-amber-300 dark:stroke-amber-700/70" />
+            <line x1={0} y1={0} x2={0} y2={6} strokeWidth={1.5} className="stroke-slate-300 dark:stroke-slate-700" />
           </pattern>
           <pattern id={`${patternId}-custom`} width={6} height={6} patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
-            <line x1={0} y1={0} x2={0} y2={6} strokeWidth={2} className="stroke-violet-300 dark:stroke-violet-700/70" />
+            <line x1={0} y1={0} x2={0} y2={6} strokeWidth={1.5} className="stroke-slate-400/80 dark:stroke-slate-600" />
           </pattern>
         </defs>
 
@@ -210,7 +230,7 @@ export function GanttChart() {
             y={index * ROW_HEIGHT}
             width={tl.width}
             height={ROW_HEIGHT}
-            className="fill-blue-100/80 dark:fill-blue-900/40"
+            className="fill-miro-turquoise-light/50 dark:fill-miro-turquoise/10"
           />
         ))}
 
@@ -231,7 +251,7 @@ export function GanttChart() {
           />
         ))}
 
-        {/* Dnešek: červená svislá čára uprostřed dnešního dne. */}
+        {/* Dnešek: tyrkysová svislá čára uprostřed dnešního dne (žlutá patří kritické cestě). */}
         {showToday && (
           <g>
             <title>{t('gantt.today', { date: formatIsoDate(today, lang) })}</title>
@@ -241,14 +261,14 @@ export function GanttChart() {
               y1={0}
               y2="100%"
               strokeWidth={2}
-              className="stroke-red-500"
+              className="stroke-miro-turquoise-dark dark:stroke-miro-turquoise/80"
             />
           </g>
         )}
 
         {/* Šipky vazeb pod úsečkami, úsečky nad čárou dneška, aby byly čitelné. */}
-        <DependencyArrows rows={rows} bars={bars} />
-        <TaskBars rows={rows} bars={bars} dates={dates} />
+        <DependencyArrows rows={rows} bars={bars} critical={critical} />
+        <TaskBars rows={rows} bars={bars} dates={dates} critical={critical} slackEnds={slackEnds} />
 
         {/* Náhled při tažení úsečky (G-02) – nad vším ostatním. */}
         <BarDragLayer svgRef={svgRef} tl={tl} calendar={calendar} rows={rows} dates={dates} />

@@ -245,6 +245,20 @@ describe('databáze zdrojů (fáze 6a, formát v2)', () => {
     expect(issues(p).sort()).toEqual(['duplicateName', 'unknownDepartment'])
   })
 
+  it('nepřítomnosti pracovníka (fáze 6c): rozsahy od–do s poznámkou; konec před začátkem neprojde', () => {
+    const p = withCatalogs()
+    p.workers[0]!.absences = [
+      { start: '2026-12-21', end: '2026-12-31', note: 'Dovolená' },
+      { start: '2027-02-03', end: '2027-02-03' },
+    ]
+    expect(issues(p)).toEqual([])
+    p.workers[0]!.absences!.push({ start: '2027-03-10', end: '2027-03-01' })
+    expect(ProjectSchema.safeParse(p).success).toBe(false)
+    const q = withCatalogs()
+    q.workers[0]!.absences = [{ start: '2027-02-30', end: '2027-03-01' }]
+    expect(ProjectSchema.safeParse(q).success).toBe(false)
+  })
+
   it('soubor bez číselníku středisek (rozpracovaná verze 2) se přečte s prázdným seznamem', () => {
     const { departments, ...withoutDepartments } = withCatalogs()
     void departments

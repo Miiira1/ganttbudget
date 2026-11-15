@@ -171,7 +171,7 @@ const LineRow = memo(function LineRow({ taskId, line, cost }: { taskId: string; 
       <td className="px-1.5 py-0.5 text-right tabular-nums font-medium">
         {cost && formatMoney(cost.amount, currency, i18n.language)}
         {cost?.warning === 'noRate' && (
-          <span className="ml-1 text-amber-600 dark:text-amber-400" title={t('detail.warning.noRate')} aria-label={t('detail.warning.noRate')}>
+          <span className="ml-1 text-miro-gold dark:text-miro-yellow" title={t('detail.warning.noRate')} aria-label={t('detail.warning.noRate')}>
             ⚠
           </span>
         )}

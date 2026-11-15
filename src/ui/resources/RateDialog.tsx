@@ -32,7 +32,7 @@ interface Draft {
 }
 
 const fieldClass =
-  'w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-right text-sm tabular-nums focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 aria-[invalid=true]:border-red-500 dark:border-slate-600 dark:bg-slate-800'
+  'w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-right text-sm tabular-nums focus:outline-none focus-visible:ring-2 focus-visible:ring-focus aria-[invalid=true]:border-red-500 dark:border-slate-600 dark:bg-slate-800'
 
 function toDraft(calc: RateCalc, manualRate: number | undefined, lang: string): Draft {
   const num = (n: number) => n.toLocaleString(lang, { maximumFractionDigits: 2 })
@@ -243,8 +243,8 @@ export function RateDialog({ target, onClose }: { target: RateTarget | null; onC
                     <dd className="border-t border-slate-300 pt-1 text-right font-semibold dark:border-slate-600">
                       {formatNumber(result.productiveHours, lang)} h
                     </dd>
-                    <dt className="pt-2 text-base font-bold text-blue-700 dark:text-blue-300">{t('rate.steps.rate')}</dt>
-                    <dd className="pt-2 text-right text-base font-bold text-blue-700 dark:text-blue-300">
+                    <dt className="pt-2 text-base font-bold text-slate-900 dark:text-miro-yellow">{t('rate.steps.rate')}</dt>
+                    <dd className="pt-2 text-right text-base font-bold text-slate-900 dark:text-miro-yellow">
                       {money(result.rate)} / h
                     </dd>
                   </dl>

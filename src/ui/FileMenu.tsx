@@ -95,7 +95,7 @@ export function FileMenu() {
                 role="menuitem"
                 onClick={() => run(item.id)}
                 title={t(`file.${item.id}Hint`)}
-                className="flex w-full items-center justify-between gap-6 px-3 py-1.5 text-left text-sm hover:bg-slate-100 focus:bg-blue-50 focus:outline-none dark:hover:bg-slate-700 dark:focus:bg-slate-700"
+                className="flex w-full items-center justify-between gap-6 px-3 py-1.5 text-left text-sm hover:bg-slate-100 focus:bg-miro-turquoise-light/50 focus:outline-none dark:hover:bg-slate-700 dark:focus:bg-slate-700"
               >
                 <span>{t(`file.${item.id}`)}</span>
                 {item.shortcut && <kbd className="font-mono text-xs text-slate-500 dark:text-slate-400">{item.shortcut}</kbd>}

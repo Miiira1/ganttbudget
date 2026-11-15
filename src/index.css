@@ -4,6 +4,94 @@
 /* Tmavý režim se zapíná třídou "dark" na prvku <html> (řídí ji src/ui/theme.ts). */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+ * Písmo značky MiRo project: Lato (licence SIL OFL, src/assets/fonts/LICENSE-Lato.txt).
+ * Převedeno do WOFF2 jen s latinkou a češtinou (~36 kB na řez), načítá se z vlastní adresy (CSP).
+ * font-display: swap = text je vidět hned, písmo se doplní, až se stáhne.
+ */
+@font-face {
+  font-family: 'Lato';
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+  src: url('./assets/fonts/lato-300.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Lato';
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url('./assets/fonts/lato-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Lato';
+  font-weight: 500 600;
+  font-style: normal;
+  font-display: swap;
+  src: url('./assets/fonts/lato-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Lato';
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: url('./assets/fonts/lato-700.woff2') format('woff2');
+}
+
+/*
+ * Barvy značky (MiRo-brand-kit/06-colors). Neutrální „slate“ škála Tailwindu je nahrazená
+ * teplou škálou od papíru po grafit, takže celá aplikace dostane barevnost značky.
+ * Žlutá je jediný barevný akcent – používá se střídmě (primární akce, výběr, kritická cesta).
+ * Žlutý text na světlém pozadí se nepoužívá (kontrast 1,5 : 1) – místo něj tmavé zlato.
+ *
+ * Tyrkysová je druhý, doplňkový akcent (rozšíření značky, ZADANI v1.11): znamená „kde jsem a co
+ * právě dělám“ – výběr, dnešek, najetí myší, aktivní pole, informace. Žlutá = důležité, tyrkysová = interakce.
+ * Jasná #3bdaff má na bílé jen 1,7 : 1 → ve světlém vzhledu jen jako podklad; čáry a obrysy tmavou #08708c (5,2 : 1).
+ */
+@theme {
+  --font-sans: 'Lato', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --color-miro-graphite: #262626;
+  --color-miro-graphite-80: #4a4a47;
+  --color-miro-gray: #8a8a85;
+  --color-miro-gray-light: #d9d8d2;
+  --color-miro-paper: #f6f5f0;
+  --color-miro-yellow: #ffc000;
+  --color-miro-yellow-light: #ffe699;
+  --color-miro-gold: #b38600;
+  --color-miro-turquoise: #3bdaff;
+  --color-miro-turquoise-dark: #08708c;
+  --color-miro-turquoise-light: #c4f3ff;
+}
+
+/*
+ * Rámeček aktivního prvku (fokus z klávesnice) a zvýraznění při tažení: tyrkysová.
+ * Světlý vzhled tmavá #08708c (5,2 : 1 na papíře), tmavý vzhled jasná #3bdaff (9,1 : 1 na grafitu).
+ * Třídy ring-focus, bg-focus, border-focus se přepínají samy podle vzhledu.
+ */
+:root {
+  --focus-color: #08708c;
+}
+html.dark {
+  --focus-color: #3bdaff;
+}
+@theme inline {
+  --color-focus: var(--focus-color);
+
+  --color-slate-50: #fbfaf7;
+  --color-slate-100: #f6f5f0;
+  --color-slate-200: #ebeae4;
+  --color-slate-300: #d9d8d2;
+  --color-slate-400: #b2b1ab;
+  /* 500 je o kousek tmavší než šedá značky (#8a8a85 má na bílé jen 3,5 : 1) – tlumený text musí mít aspoň 4,5 : 1. */
+  --color-slate-500: #6f6f6a;
+  --color-slate-600: #5a5a56;
+  --color-slate-700: #4a4a47;
+  --color-slate-800: #353533;
+  --color-slate-900: #262626;
+  --color-slate-950: #1b1b1a;
+}
+
 html {
   color-scheme: light;
 }
@@ -11,24 +99,25 @@ html.dark {
   color-scheme: dark;
 }
 
+/* Světlý vzhled: papír a grafitový text; tmavý vzhled: grafit a papírový text. */
 body {
-  @apply bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100;
+  @apply bg-miro-paper font-sans text-miro-graphite antialiased dark:bg-miro-graphite dark:text-miro-paper;
 }
 
 /* Společný vzhled tlačítek. */
 @layer components {
   .btn-primary,
   .btn-secondary {
-    @apply inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 dark:focus-visible:ring-offset-slate-900;
+    @apply inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 dark:focus-visible:ring-offset-slate-900;
   }
   .btn-primary {
-    @apply bg-blue-600 text-white hover:bg-blue-700 disabled:hover:bg-blue-600;
+    @apply bg-miro-yellow text-miro-graphite hover:bg-[#e6ad00] disabled:hover:bg-miro-yellow;
   }
   .btn-secondary {
     @apply border border-slate-300 bg-white text-slate-800 hover:bg-slate-100 disabled:hover:bg-white dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 dark:disabled:hover:bg-slate-800;
   }
   .field-select {
-    @apply rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-600 dark:bg-slate-800;
+    @apply rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:border-slate-600 dark:bg-slate-800;
   }
 }
 
@@ -52,13 +141,13 @@ body {
 }
 /*
  * Tmavý režim: šedá ikona by na tmavém pozadí zmizela. Ikonu prohlížeče nahradíme vlastním
- * obrysem kalendáříku (maska) a obarvíme ji světle modře; po najetí myší ještě zesvětlá.
+ * obrysem kalendáříku (maska) a obarvíme ji světle šedě; po najetí myší zežloutne.
  */
 html.dark .date-cell::-webkit-calendar-picker-indicator {
   filter: none;
   opacity: 1;
   background-image: none;
-  background-color: rgb(96 165 250 / 0.75); /* blue-400 */
+  background-color: rgb(217 216 210 / 0.6); /* světle šedá značky */
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 1h1.5v2h5V1H12v2h1.5A1.5 1.5 0 0 1 15 4.5v9a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 13.5v-9A1.5 1.5 0 0 1 2.5 3H4zM2.5 6.5v7h11v-7z'/%3E%3C/svg%3E")
     center / 14px no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 1h1.5v2h5V1H12v2h1.5A1.5 1.5 0 0 1 15 4.5v9a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 13.5v-9A1.5 1.5 0 0 1 2.5 3H4zM2.5 6.5v7h11v-7z'/%3E%3C/svg%3E")
@@ -67,10 +156,10 @@ html.dark .date-cell::-webkit-calendar-picker-indicator {
 }
 html.dark .date-cell:hover::-webkit-calendar-picker-indicator,
 html.dark .date-cell:focus::-webkit-calendar-picker-indicator {
-  background-color: rgb(191 219 254); /* blue-200 */
+  background-color: rgb(255 230 153); /* světle žlutá značky */
 }
 html.dark .date-cell:disabled::-webkit-calendar-picker-indicator {
-  background-color: rgb(96 165 250 / 0.25);
+  background-color: rgb(217 216 210 / 0.2);
 }
 
 /* Šipky v číselných polích zbytečně zabírají místo v úzkých buňkách tabulky. */

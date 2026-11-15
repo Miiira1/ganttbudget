@@ -4,8 +4,7 @@
     "locale": "en-GB"
   },
   "app": {
-    "title": "GanttBudget",
-    "tagline": "Project plan and budget",
+    "title": "MiRo project",
     "privacy": "Your data stays on this computer only; nothing is sent to a server.",
     "notSavedYet": "Your project is continuously backed up in this browser; to be safe, save it to a file (Ctrl+S)."
   },
@@ -87,7 +86,7 @@
     "exportXlsxHint": "Save the task list as an Excel workbook (recommended for editing in Excel)",
     "exportCsv": "Export to CSV…",
     "exportCsvHint": "Save the task list as CSV (for other programs; Excel may convert some values to dates)",
-    "fileType": "GanttBudget project",
+    "fileType": "MiRo project file",
     "fileNameHint": "The file the project is saved to",
     "unsaved": "unsaved",
     "unsavedHint": "The project has changes that are not saved in the file. Save it with File → Save (Ctrl+S).",
@@ -95,9 +94,9 @@
     "import": "Import from Excel / CSV…",
     "importHint": "Replace the tasks with a table from an .xlsx or .csv file (you will see a preview first)",
     "error": {
-      "tooLarge": "The file is too large (over 5 MB) – it is probably not a GanttBudget project. Nothing has changed.",
+      "tooLarge": "The file is too large (over 5 MB) – it is probably not a MiRo project file. Nothing has changed.",
       "notJson": "The file cannot be read – it is damaged or not a project file (.json). Nothing has changed.",
-      "notProject": "This file is not a GanttBudget project. Nothing has changed.",
+      "notProject": "This file is not a MiRo project file. Nothing has changed.",
       "newerVersion": "The file is from a newer version of the app (format {{version}}). Please update the app. Nothing has changed.",
       "invalid_one": "The project file contains invalid data ({{count}} problem, e.g. in “{{where}}”). It was probably edited by hand or damaged. Nothing has changed.",
       "invalid_other": "The project file contains invalid data ({{count}} problems, e.g. in “{{where}}”). It was probably edited by hand or damaged. Nothing has changed.",
@@ -201,7 +200,10 @@
       "other": "Other"
     },
     "confirmMilestoneLines_one": "A milestone may only have a one-off cost and material. {{count}} resource line will be removed. Continue? (Ctrl+Z undoes it.)",
-    "confirmMilestoneLines_other": "A milestone may only have a one-off cost and material. {{count}} resource lines will be removed. Continue? (Ctrl+Z undoes it.)"
+    "confirmMilestoneLines_other": "A milestone may only have a one-off cost and material. {{count}} resource lines will be removed. Continue? (Ctrl+Z undoes it.)",
+    "slack": "Slack",
+    "slackHint": "Total slack in working days: how much the item may slip without moving the project finish. 0 = critical path (yellow).",
+    "slackCell": "Total slack {{total}} working days (project finish does not move); free slack {{free}} working days (no successor moves either)."
   },
   "kind": {
     "task": "Task",
@@ -336,7 +338,11 @@
     "workingDays_one": "{{count}} working day",
     "workingDays_other": "{{count}} working days",
     "constraintOverriddenMany_one": "For {{count}} moved task a dependency applies, so it starts later than where you moved it. The constraint was saved (📌).",
-    "constraintOverriddenMany_other": "For {{count}} moved tasks a dependency applies, so they start later than where you moved them. The constraints were saved (📌)."
+    "constraintOverriddenMany_other": "For {{count}} moved tasks a dependency applies, so they start later than where you moved them. The constraints were saved (📌).",
+    "critical": "Critical path",
+    "criticalHint": "Highlight the critical path: yellow tasks must not slip, otherwise the project finish moves. The grey bar after a bar shows its slack.",
+    "slackBar_one": "Slack {{count}} working day – the task may slip this much without moving the project finish",
+    "slackBar_other": "Slack {{count}} working days – the task may slip this much without moving the project finish"
   },
   "notice": {
     "close": "Close notice"
@@ -542,7 +548,8 @@
       "profession": "Profession",
       "machineRate": "Rate ({{currency}})",
       "rateUnit": "Per",
-      "department": "Department"
+      "department": "Department",
+      "absences": "Absence"
     },
     "usageCount_one": "{{count}} item",
     "usageCount_other": "{{count}} items",
@@ -650,7 +657,7 @@
     "cancel": "Cancel"
   },
   "library": {
-    "fileType": "GanttBudget resource library",
+    "fileType": "MiRo project resource library",
     "title": "Load resource library",
     "catalog": "List",
     "added": "New",
@@ -663,7 +670,7 @@
     "error": {
       "tooLarge": "The file is too large (over 5 MB). Nothing has changed.",
       "notJson": "The file cannot be read – it is damaged or not a library file. Nothing has changed.",
-      "notLibrary": "This file is not a GanttBudget resource library (open projects via File → Open). Nothing has changed.",
+      "notLibrary": "This file is not a resource library from MiRo project (open projects via File → Open). Nothing has changed.",
       "newerVersion": "The library is from a newer version of the app (format {{version}}). Please update the app. Nothing has changed.",
       "invalid_one": "The library contains invalid data ({{count}} problem, e.g. in “{{where}}”). Nothing has changed.",
       "invalid_other": "The library contains invalid data ({{count}} problems, e.g. in “{{where}}”). Nothing has changed.",
@@ -741,6 +748,27 @@
       "day": "per work day",
       "week": "per week",
       "month": "per month"
+    }
+  },
+  "absence": {
+    "title": "Absences – {{name}}",
+    "intro": "Vacation, sick leave, training… On these days the worker has zero capacity. Task dates do not change by themselves – the app only warns about overloads.",
+    "hint": "Vacation, sick leave and other absences of the worker",
+    "from": "From",
+    "to": "To (empty = one day)",
+    "note": "Note",
+    "notePlaceholder": "e.g. vacation",
+    "add": "Add",
+    "empty": "No absences yet.",
+    "range": "{{from}} – {{to}}",
+    "workingDays_one": "{{count}} work day",
+    "workingDays_other": "{{count}} work days",
+    "delete": "Delete absence {{range}}",
+    "undo": "Every change can be undone with Undo (Ctrl+Z).",
+    "close": "Close",
+    "error": {
+      "dates": "Enter a valid start date (and optionally an end date).",
+      "order": "The end must not be before the start."
     }
   }
 }

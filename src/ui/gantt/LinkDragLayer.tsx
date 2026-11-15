@@ -168,13 +168,13 @@ export function LinkDragLayer(props: LinkDragLayerProps) {
       ? `✕ ${t(`gantt.linkInvalid.${target.error.code}`)}`
       : `${target.type} – ${t(`gantt.dependencyType.${target.type}`)}`
   const labelWidth = label.length * 6.5 + 12
-  const color = target?.error ? 'stroke-red-600 dark:stroke-red-400' : 'stroke-blue-600 dark:stroke-blue-300'
+  const color = target?.error ? 'stroke-red-600 dark:stroke-red-400' : 'stroke-miro-turquoise-dark dark:stroke-miro-turquoise'
 
   return (
     <g pointerEvents="none" aria-hidden="true">
       <line x1={origin[0]} y1={origin[1]} x2={end[0]} y2={end[1]} strokeWidth={1.5} strokeDasharray="4 3" className={color} />
-      <circle cx={origin[0]} cy={origin[1]} r={4.5} strokeWidth={1.5} className={`fill-blue-600 dark:fill-blue-300 ${color}`} />
-      {valid && <circle cx={end[0]} cy={end[1]} r={6} strokeWidth={2} className="fill-blue-600/30 stroke-blue-600 dark:stroke-blue-300" />}
+      <circle cx={origin[0]} cy={origin[1]} r={4.5} strokeWidth={1.5} className={`fill-miro-turquoise-dark dark:fill-miro-turquoise ${color}`} />
+      {valid && <circle cx={end[0]} cy={end[1]} r={6} strokeWidth={2} className="fill-miro-turquoise/40 stroke-miro-turquoise-dark dark:stroke-miro-turquoise" />}
       <rect
         x={pointer[0] + 12}
         y={pointer[1] - 26}

@@ -42,6 +42,15 @@ describe('vzorová databáze zdrojů (fáze 6a)', () => {
     expect([...costs.lines.values()].every((c) => c.warning === null)).toBe(true)
   })
 
+  it('kritická cesta vede od první analýzy až k předání; souběžné činnosti mají rezervu', () => {
+    const s = schedule(project)
+    const critical = (key: string) => s.tasks.get(`sample-${key}`)!.critical
+    for (const key of ['t1a', 't1b', 't2a', 't2b', 'm2', 't3a', 't3b', 't4a', 't7b', 't8a', 'm8']) expect(critical(key), key).toBe(true)
+    // Úprava podlahy (SS+10 od výroby) a náhradní ruční výroba nejsou kritické.
+    expect(critical('t5a')).toBe(false)
+    expect(s.tasks.get('sample-t5a')!.totalSlack).toBeGreaterThan(0)
+  })
+
   it('sazby jsou realistické (200–1 500 Kč/h)', () => {
     for (const p of project.professions) {
       const rate = professionRate(p, fund)!

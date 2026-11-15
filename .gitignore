@@ -21,3 +21,7 @@ Thumbs.db
 
 # Lokální nastavení Claude Code
 .claude/settings.local.json
+
+# Brand kit MiRo project (zdrojové soubory značky – do veřejného repozitáře nepatří;
+# web používá jen kopie v src/assets)
+MiRo-brand-kit/

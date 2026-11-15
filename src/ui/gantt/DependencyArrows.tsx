@@ -11,11 +11,14 @@ import type { Task } from '../../model/schema'
 interface DependencyArrowsProps {
   rows: Task[]
   bars: Map<string, Bar>
+  /** Kritické položky (null = zvýraznění vypnuté); vazba mezi dvěma kritickými je červená. */
+  critical: ReadonlySet<string> | null
 }
 
-export const DependencyArrows = memo(function DependencyArrows({ rows, bars }: DependencyArrowsProps) {
+export const DependencyArrows = memo(function DependencyArrows({ rows, bars, critical }: DependencyArrowsProps) {
   const { t } = useTranslation()
   const markerId = useId()
+  const criticalMarkerId = useId()
   const nameById = new Map(rows.map((task) => [task.id, task.name]))
 
   const arrows = rows.flatMap((task) => {
@@ -32,7 +35,8 @@ export const DependencyArrows = memo(function DependencyArrows({ rows, bars }: D
         type: `${dep.type} – ${t(`gantt.dependencyType.${dep.type}`)}`,
         lag,
       })
-      return [{ key: `${dep.predecessorId}-${task.id}-${dep.type}`, path: pointsToPath(dependencyPoints(from, to, dep.type)), title }]
+      const isCritical = critical !== null && critical.has(task.id) && critical.has(dep.predecessorId)
+      return [{ key: `${dep.predecessorId}-${task.id}-${dep.type}`, path: pointsToPath(dependencyPoints(from, to, dep.type)), title, isCritical }]
     })
   })
 
@@ -41,6 +45,9 @@ export const DependencyArrows = memo(function DependencyArrows({ rows, bars }: D
       <defs>
         <marker id={markerId} viewBox="0 0 6 6" refX={6} refY={3} markerWidth={6} markerHeight={6} orient="auto">
           <path d="M 0 0 L 6 3 L 0 6 z" className="fill-slate-500 dark:fill-slate-400" />
+        </marker>
+        <marker id={criticalMarkerId} viewBox="0 0 6 6" refX={6} refY={3} markerWidth={6} markerHeight={6} orient="auto">
+          <path d="M 0 0 L 6 3 L 0 6 z" className="fill-miro-gold dark:fill-miro-yellow/70" />
         </marker>
       </defs>
       {arrows.map((a) => (
@@ -51,9 +58,9 @@ export const DependencyArrows = memo(function DependencyArrows({ rows, bars }: D
           <path
             d={a.path}
             fill="none"
-            strokeWidth={1.25}
-            markerEnd={`url(#${markerId})`}
-            className="stroke-slate-500 dark:stroke-slate-400"
+            strokeWidth={a.isCritical ? 1.75 : 1.25}
+            markerEnd={`url(#${a.isCritical ? criticalMarkerId : markerId})`}
+            className={a.isCritical ? 'stroke-miro-gold dark:stroke-miro-yellow/70' : 'stroke-slate-500 dark:stroke-slate-400'}
           />
         </g>
       ))}

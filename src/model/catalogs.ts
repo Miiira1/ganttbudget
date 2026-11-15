@@ -2,7 +2,8 @@
  * Databáze (číselníky) zdrojů – pomocné čisté funkce, testy v catalogs.test.ts.
  * Tvar číselníků určuje schema.ts (CategorySchema, ProfessionSchema…).
  */
-import { MILESTONE_LINE_KINDS, nameKey, type CatalogKey, type Project, type TaskLine } from './schema'
+import { createWorkCalendar, isoToDay } from '../engine/calendar'
+import { MILESTONE_LINE_KINDS, nameKey, type Calendar, type CatalogKey, type Project, type TaskLine, type Worker } from './schema'
 
 /** Položka daného číselníku (např. CatalogItem<'materials'> = Material). */
 export type CatalogItem<K extends CatalogKey> = Project[K][number]
@@ -75,3 +76,14 @@ export function syncLaborLines(project: Project): Project {
 
 /** Smí milník mít tento typ řádku? (nulová délka – jen jednorázový náklad a materiál) */
 export const milestoneAllows = (line: TaskLine) => (MILESTONE_LINE_KINDS as readonly string[]).includes(line.kind)
+
+/** Kolik pracovních dnů (podle kalendáře projektu) pracovník chybí – pro přehled v tabulce. */
+export function absenceWorkingDays(worker: Pick<Worker, 'absences'>, calendar: Calendar): number {
+  if (!worker.absences?.length) return 0
+  const work = createWorkCalendar(calendar)
+  const days = new Set<number>() // překrývající se rozsahy se nepočítají dvakrát
+  for (const a of worker.absences) {
+    for (let day = isoToDay(a.start); day <= isoToDay(a.end); day++) if (work.isWorkingDay(day)) days.add(day)
+  }
+  return days.size
+}

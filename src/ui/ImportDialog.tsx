@@ -77,7 +77,7 @@ export function ImportDialog() {
               {preview.length > PREVIEW_ROWS && (
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t('import.more', { count: preview.length - PREVIEW_ROWS })}</p>
               )}
-              <p className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100">
+              <p className="mt-4 rounded-md p-2 text-sm border-l-4 border-miro-gold bg-miro-yellow-light/50 text-miro-graphite dark:border-miro-yellow dark:bg-slate-800 dark:text-miro-yellow-light">
                 {t('import.replaceWarning', { count: currentCount })}
                 {currentLines > 0 && <strong className="mt-1 block">{t('import.linesWarning', { count: currentLines })}</strong>}
               </p>

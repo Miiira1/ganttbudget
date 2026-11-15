@@ -20,7 +20,7 @@ function weekdayName(isoWeekday: number, language: string): string {
 }
 
 const fieldClass =
-  'rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-600 dark:bg-slate-800'
+  'rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:border-slate-600 dark:bg-slate-800'
 const sectionClass = 'mt-5 border-t border-slate-200 pt-4 dark:border-slate-700'
 
 export function CalendarDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -145,7 +145,7 @@ export function CalendarDialog({ open, onClose }: { open: boolean; onClose: () =
           </label>
           {calendar.useCzechHolidays && (
             <details className="mt-2">
-              <summary className="cursor-pointer text-sm text-blue-700 dark:text-blue-400">
+              <summary className="cursor-pointer text-sm text-slate-700 underline decoration-miro-turquoise decoration-2 underline-offset-4 dark:text-slate-200">
                 {fromYear === toYear
                   ? t('calendar.holidaysOverviewOne', { year: fromYear })
                   : t('calendar.holidaysOverview', { from: fromYear, to: toYear })}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { schedule } from './schedule'
+import { EMPTY_SCHEDULED, schedule } from './schedule'
 import { createEmptyProject, createTask, type DependencyType, type Project, type Task, type TaskKind } from '../model/schema'
 
 /** Pomocník: činnost s FS vazbami ve tvaru [id předchůdce, prodleva]. */
@@ -316,7 +316,7 @@ describe('chyby a celkové výsledky', () => {
     const p = project([task('A', 1, [['B', 0]]), task('B', 1, [['A', 0]]), task('C', 2)])
     const result = schedule(p)
     expect([...result.cycleTaskIds].sort()).toEqual(['A', 'B'])
-    expect(result.tasks.get('A')).toEqual({ start: null, finish: null, durationDays: null })
+    expect(result.tasks.get('A')).toEqual(EMPTY_SCHEDULED)
     expect(dates(p, 'C')).toEqual(['2026-11-16', '2026-11-18'])
   })
 
@@ -342,7 +342,7 @@ describe('chyby a celkové výsledky', () => {
     })
     const result = schedule(p)
     expect(result.error).toBe('noWorkingDays')
-    expect(result.tasks.get('A')).toEqual({ start: null, finish: null, durationDays: null })
+    expect(result.tasks.get('A')).toEqual(EMPTY_SCHEDULED)
   })
 
   it('výpočet nemění vstupní projekt (čistá funkce)', () => {
@@ -385,5 +385,101 @@ describe('chyby a celkové výsledky', () => {
     const result = schedule(p)
     expect(performance.now() - t0).toBeLessThan(100)
     expect(result.tasks.get('T299')?.finish).not.toBeNull()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Kritická cesta a rezervy (fáze 6c)
+// Pracovní dny od Po 16. 11. 2026 (17. 11. svátek): 16., 18., 19., 20., 23., 24., 25. …
+// ---------------------------------------------------------------------------
+
+/** Činnost s vazbami libovolného typu [předchůdce, prodleva, typ]. */
+function linked(id: string, durationDays: number, preds: [string, number, DependencyType][], kind: TaskKind = 'task'): Task {
+  return {
+    ...createTask({ id, name: id, order: 0, kind, durationDays }),
+    dependencies: preds.map(([predecessorId, lagDays, type]) => ({ predecessorId, type, lagDays })),
+  }
+}
+
+/** [celková rezerva, volná rezerva, kritická] */
+function slack(p: Project, id: string) {
+  const t = schedule(p).tasks.get(id)!
+  return [t.totalSlack, t.freeSlack, t.critical]
+}
+
+describe('kritická cesta a rezervy (fáze 6c)', () => {
+  it('dvě souběžné větve: delší je kritická, kratší má rezervu', () => {
+    // A 3 dny (16.–19.), B 5 dnů (16.–23.), C po obou (24.). Konec projektu 24. 11.
+    const p = project([task('A', 3), task('B', 5), task('C', 1, [['A', 0], ['B', 0]])])
+    expect(slack(p, 'B')).toEqual([0, 0, true])
+    expect(slack(p, 'C')).toEqual([0, 0, true])
+    expect(slack(p, 'A')).toEqual([2, 2, false])
+    const a = schedule(p).tasks.get('A')!
+    // A smí začít nejpozději 19. 11. a skončit 23. 11., aniž posune C.
+    expect([a.lateStart, a.lateFinish]).toEqual(['2026-11-19', '2026-11-23'])
+  })
+
+  it('prodleva je součástí kritické cesty', () => {
+    // A 2 dny (16., 18.), B FS+2 po A → 23. 11.; C 5 dnů (16.–23.). Všechny končí 23. 11.
+    const p = project([task('A', 2), task('B', 1, [['A', 2]]), task('C', 5)])
+    expect(slack(p, 'A')).toEqual([0, 0, true])
+    expect(slack(p, 'B')).toEqual([0, 0, true])
+    expect(slack(p, 'C')).toEqual([0, 0, true])
+  })
+
+  it('SS a FF', () => {
+    // SS+1: A 4 dny (16.–20.), B 2 dny od 18. → 18.–19.; B může skončit až 20. → rezerva 1
+    const ss = project([task('A', 4), linked('B', 2, [['A', 1, 'SS']])])
+    expect(slack(ss, 'A')).toEqual([0, 0, true])
+    expect(slack(ss, 'B')).toEqual([1, 1, false])
+    // FF: B skončí s A → oba kritické
+    const ff = project([task('A', 4), linked('B', 2, [['A', 0, 'FF']])])
+    expect(slack(ff, 'A')).toEqual([0, 0, true])
+    expect(slack(ff, 'B')).toEqual([0, 0, true])
+  })
+
+  it('SF: náhradní činnost smí skončit nejpozději s koncem projektu', () => {
+    // A 2 dny s omezením od 23. 11. (23.–24.); B 2 dny SF od A: skončí nejdřív 20. 11. → 19.–20.
+    const a = { ...task('A', 2), constraintStart: '2026-11-23' }
+    const p = project([a, linked('B', 2, [['A', 0, 'SF']])])
+    expect(slack(p, 'A')).toEqual([0, 0, true])
+    expect(slack(p, 'B')).toEqual([2, 2, false])
+  })
+
+  it('milník na konci dne předchůdce je na kritické cestě; pozdní datum milníku', () => {
+    // A 3 dny (16.–19.), M milník po A (konec 19.), B 2 dny po M (20., 23.); D 1 den souběžně
+    const p = project([task('A', 3), task('M', 0, [['A', 0]], 'milestone'), task('B', 2, [['M', 0]]), task('D', 1)])
+    expect(slack(p, 'M')).toEqual([0, 0, true])
+    expect(slack(p, 'B')).toEqual([0, 0, true])
+    expect(slack(p, 'D')).toEqual([4, 4, false])
+    const m = schedule(p).tasks.get('M')!
+    expect([m.lateStart, m.lateFinish]).toEqual(['2026-11-19', '2026-11-19'])
+  })
+
+  it('fáze má rezervu nejmenší ze svých položek', () => {
+    const phase = task('F', 0, [], 'phase')
+    const p = project([phase, { ...task('A', 3), parentId: 'F' }, { ...task('B', 5), parentId: 'F' }, task('C', 2)])
+    expect(slack(p, 'F')).toEqual([0, 0, true])
+    expect(slack(p, 'C')).toEqual([3, 3, false])
+  })
+
+  it('omezení „začít nejdříve“ pozdní termíny neomezuje', () => {
+    // A 2 dny od 23. 11. (konec 24.), B 1 den (16.) → B může skončit až 24. → rezerva 5
+    const p = project([{ ...task('A', 2), constraintStart: '2026-11-23' }, task('B', 1)])
+    expect(slack(p, 'A')).toEqual([0, 0, true])
+    expect(slack(p, 'B')).toEqual([5, 5, false])
+  })
+
+  it('volná rezerva < celková: zpoždění posune následníka, ale ne konec projektu', () => {
+    // A 1 den (16.), B 1 den po A (18.), C 5 dnů (16.–23.). A: volná 0 (B hned navazuje), celková 3
+    const p = project([task('A', 1), task('B', 1, [['A', 0]]), task('C', 5)])
+    expect(slack(p, 'A')).toEqual([3, 0, false])
+    expect(slack(p, 'B')).toEqual([3, 3, false])
+  })
+
+  it('položky v kruhu rezervu nemají', () => {
+    const p = project([task('A', 1, [['B', 0]]), task('B', 1, [['A', 0]]), task('C', 1)])
+    expect(slack(p, 'A')).toEqual([null, null, false])
+    expect(slack(p, 'C')).toEqual([0, 0, true])
   })
 })

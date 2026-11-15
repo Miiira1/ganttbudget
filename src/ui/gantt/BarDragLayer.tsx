@@ -237,7 +237,7 @@ export function BarDragLayer(props: BarDragLayerProps) {
       {kind === 'milestone' ? (
         <polygon
           points={`${ghost.xStart + MILESTONE_HALF},${cy - MILESTONE_HALF} ${ghost.xEnd},${cy} ${ghost.xStart + MILESTONE_HALF},${cy + MILESTONE_HALF} ${ghost.xStart},${cy}`}
-          className="fill-amber-400/40 stroke-amber-700 dark:stroke-amber-200"
+          className="fill-miro-turquoise/40 stroke-miro-turquoise-dark dark:stroke-miro-turquoise"
           strokeDasharray="3 2"
         />
       ) : (
@@ -247,7 +247,7 @@ export function BarDragLayer(props: BarDragLayerProps) {
           width={Math.max(2, ghost.xEnd - ghost.xStart)}
           height={2 * BAR_HALF_HEIGHT}
           rx={3}
-          className="fill-blue-400/30 stroke-blue-700 dark:stroke-blue-200"
+          className="fill-miro-turquoise/30 stroke-miro-turquoise-dark dark:stroke-miro-turquoise"
           strokeDasharray="4 2"
           strokeWidth={1.5}
         />
@@ -269,7 +269,7 @@ function GhostBar(props: { tl: Timeline; kind: 'task' | 'milestone'; startDay: n
     return (
       <polygon
         points={`${ghost.xStart + MILESTONE_HALF},${cy - MILESTONE_HALF} ${ghost.xEnd},${cy} ${ghost.xStart + MILESTONE_HALF},${cy + MILESTONE_HALF} ${ghost.xStart},${cy}`}
-        className="fill-amber-400/40 stroke-amber-700 dark:stroke-amber-200"
+        className="fill-miro-turquoise/40 stroke-miro-turquoise-dark dark:stroke-miro-turquoise"
         strokeDasharray="3 2"
       />
     )
@@ -281,7 +281,7 @@ function GhostBar(props: { tl: Timeline; kind: 'task' | 'milestone'; startDay: n
       width={Math.max(2, ghost.xEnd - ghost.xStart)}
       height={2 * BAR_HALF_HEIGHT}
       rx={3}
-      className="fill-blue-400/30 stroke-blue-700 dark:stroke-blue-200"
+      className="fill-miro-turquoise/30 stroke-miro-turquoise-dark dark:stroke-miro-turquoise"
       strokeDasharray="4 2"
       strokeWidth={1.5}
     />
