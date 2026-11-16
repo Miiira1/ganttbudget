@@ -120,7 +120,11 @@
     "exportBudgetCsv": "Exportovat rozpočet do CSV…",
     "exportBudgetCsvHint": "Uložit řádky rozpočtu (zdroje a náklady činností) jako CSV",
     "importBudget": "Importovat rozpočet z Excelu / CSV…",
-    "importBudgetHint": "Načíst řádky zdrojů a nákladů činností (list Řádky z exportu rozpočtu); nahradí řádky činností uvedených v souboru"
+    "importBudgetHint": "Načíst řádky zdrojů a nákladů činností (list Řádky z exportu rozpočtu); nahradí řádky činností uvedených v souboru",
+    "exportWorkbook": "Exportovat celý projekt do Excelu…",
+    "exportWorkbookHint": "Uložit celý projekt do jednoho sešitu Excelu (činnosti, rozpočet, zdroje, kalendář, limity) – šedé sloupce jsou vypočtené jen pro kontrolu",
+    "importWorkbook": "Importovat celý projekt z Excelu…",
+    "importWorkbookHint": "Načíst celý projekt ze sešitu Excelu vytvořeného exportem celého projektu; po náhledu nahradí současný projekt"
   },
   "toolbar": {
     "label": "Hlavní nástroje",
@@ -1030,7 +1034,9 @@
       "tags": "Štítky",
       "note": "Poznámka",
       "hours": "Hodiny",
-      "cost": "Náklad"
+      "cost": "Náklad",
+      "hoursPerDay": "h/den",
+      "rate": "Sazba Kč/h"
     },
     "timing": {
       "start": "začátek",
@@ -1073,6 +1079,116 @@
       "missingDate": "u načasování „datum“ chybí datum.",
       "badDate": "neplatné datum (použijte např. 18.11.2026).",
       "badTags": "štítků je víc než 10 nebo je některý delší než 30 znaků."
+    }
+  },
+  "workbook": {
+    "computed": "vypočteno",
+    "fileSuffix": "celý projekt",
+    "formatValue": "MiRo project – sešit 1",
+    "yes": "ano",
+    "no": "ne",
+    "sheets": {
+      "project": "Projekt",
+      "calendar": "Kalendář",
+      "tasks": "Činnosti",
+      "lines": "Řádky",
+      "categories": "Kategorie",
+      "departments": "Střediska",
+      "professions": "Profese",
+      "workers": "Pracovníci",
+      "absences": "Nepřítomnosti",
+      "machines": "Stroje",
+      "materials": "Materiály",
+      "phasing": "Náběh"
+    },
+    "project": {
+      "item": "Položka",
+      "value": "Hodnota",
+      "format": "Formát sešitu",
+      "name": "Název projektu",
+      "startDate": "Začátek projektu (RRRR-MM-DD)",
+      "currency": "Měna",
+      "language": "Jazyk projektu",
+      "limit": "Limit rozpočtu projektu Kč",
+      "workingWeekdays": "Pracovní dny v týdnu (1 = pondělí … 7 = neděle)",
+      "czechHolidays": "České státní svátky (ano / ne)"
+    },
+    "columns": {
+      "kind": "Druh",
+      "from": "Od",
+      "to": "Do",
+      "name": "Název",
+      "code": "Kód",
+      "category": "Kategorie",
+      "limit": "Limit Kč",
+      "planned": "Plánováno Kč",
+      "capacity": "Hodin denně",
+      "manualRate": "Ruční sazba Kč/h",
+      "monthlyWage": "Hrubá mzda Kč/měsíc",
+      "contributionsPct": "Odvody %",
+      "overheadMode": "Režie – způsob",
+      "overheadValue": "Režie – Kč/rok nebo %",
+      "vacationDays": "Dovolená dní",
+      "sickDays": "Nemoc dní",
+      "calcHoursPerDay": "Kalkulace – hodin denně",
+      "productivityPct": "Produktivita %",
+      "rate": "Sazba Kč/h",
+      "rateSource": "Zdroj sazby",
+      "profession": "Profese",
+      "department": "Středisko",
+      "absenceDays": "Nepřítomnost prac. dní",
+      "worker": "Pracovník",
+      "note": "Poznámka",
+      "machineRate": "Sazba Kč",
+      "rateUnit": "Sazba za",
+      "unit": "Jednotka",
+      "unitPrice": "Cena za jednotku Kč",
+      "supplier": "Dodavatel"
+    },
+    "calendarKind": {
+      "custom": "volno / odstávka",
+      "removed": "odebraný svátek"
+    },
+    "overheadMode": {
+      "annual": "Kč za rok",
+      "percent": "% z mzdy"
+    },
+    "rateUnit": {
+      "hour": "hodinu",
+      "day": "den"
+    },
+    "importTitle": "Import celého projektu z Excelu",
+    "importSummary": "Sešit je v pořádku: projekt „{{name}}“, začátek {{start}}, měna {{currency}}. Obsahuje:",
+    "replaceWarning": "Import nahradí celý současný projekt „{{name}}“ – činnosti, rozpočet, databázi zdrojů, kalendář i limity – obsahem sešitu. Jde vrátit tlačítkem Zpět (Ctrl+Z). Projekt pak uložte do souboru (Ctrl+S).",
+    "importConfirm": "Nahradit projekt",
+    "error": {
+      "sheetRow": "List „{{sheet}}“, řádek {{row}}: {{message}}",
+      "sheetOnly": "List „{{sheet}}“: {{message}}",
+      "onlyXlsx": "Celý projekt jde načíst jen ze sešitu Excelu (.xlsx). Nic se nezměnilo.",
+      "missingSheet": "list v sešitu chybí (sešit musí mít všechny listy z exportu celého projektu).",
+      "missingColumns": "v prvním řádku chybí povinné sloupce (porovnejte s exportem celého projektu).",
+      "tooManyRows": "list má příliš mnoho řádků.",
+      "badName": "chybí název (nebo je delší než 200 znaků).",
+      "duplicateName": "stejný název už má jiný řádek – názvy musí být jedinečné.",
+      "badDate": "neplatné datum (použijte např. 18.11.2026).",
+      "badCurrency": "měna musí být třípísmenný kód, např. CZK.",
+      "badAmount": "chybná částka (kladné číslo, nejvýš 2 desetinná místa).",
+      "badWeekdays": "pracovní dny zapište čísly 1–7 oddělenými čárkou (1 = pondělí), např. 1, 2, 3, 4, 5.",
+      "badYesNo": "zapište „ano“, nebo „ne“.",
+      "badKind": "neznámý druh (povolené: volno / odstávka, odebraný svátek).",
+      "badRange": "konec je před začátkem (nebo nepřítomnost trvá déle než 2 roky).",
+      "nameTooLong": "text je delší než 200 znaků.",
+      "codeTooLong": "kód je delší než 50 znaků.",
+      "noteTooLong": "poznámka je delší než 200 znaků.",
+      "unknownCategory": "kategorie s tímto názvem není na listu Kategorie.",
+      "unknownDepartment": "středisko s tímto názvem není na listu Střediska.",
+      "unknownProfession": "profese s tímto názvem není na listu Profese.",
+      "unknownWorker": "pracovník s tímto jménem není na listu Pracovníci.",
+      "badCapacity": "hodin denně musí být číslo 0,5–24.",
+      "badRateCalc": "chybná kalkulace sazby (zkontrolujte mzdu, odvody, režii, dovolenou, nemoc, hodiny a produktivitu).",
+      "badRateUnit": "sazba stroje musí být „za hodinu“, nebo „za den“.",
+      "badUnit": "chybí jednotka (nebo je delší než 20 znaků).",
+      "invalid": "Data ze sešitu neprošla kontrolou."
     }
   }
 }

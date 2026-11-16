@@ -63,7 +63,13 @@ export interface XlsxSheet {
   widths?: number[]
   /** Kolik prvních sloupců zmrazit (zůstanou vidět při posunu doprava). */
   frozenColumns?: number
+  /** Vypočtené sloupce: šedý nadpis s dovětkem (např. „vypočteno“) a šedé hodnoty; import je ignoruje. */
+  computedColumns?: ReadonlySet<number>
+  computedSuffix?: string
 }
+
+const COMPUTED_FILL = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFEBEAE4' } }
+const COMPUTED_FONT = { color: { argb: 'FF5A5A56' }, italic: true }
 
 /** Sešit s více listy; text s ochranou proti vzorcům, čísla jako čísla, data jako data. */
 export async function toXlsxSheets(sheets: XlsxSheet[], dateFormat = 'd.m.yyyy'): Promise<ArrayBuffer> {
@@ -71,9 +77,16 @@ export async function toXlsxSheets(sheets: XlsxSheet[], dateFormat = 'd.m.yyyy')
   workbook.creator = 'MiRo project'
   for (const def of sheets) {
     const sheet = workbook.addWorksheet(sheetName(def.name), { views: [{ state: 'frozen', ySplit: 1, xSplit: def.frozenColumns ?? 0 }] })
-    sheet.addRow(def.headers.map(protectText)).font = { bold: true }
+    const computed = def.computedColumns ?? new Set<number>()
+    const header = sheet.addRow(def.headers.map((h, i) => protectText(computed.has(i) && def.computedSuffix ? `${h} (${def.computedSuffix})` : h)))
+    header.font = { bold: true }
+    computed.forEach((i) => {
+      const cell = header.getCell(i + 1)
+      cell.fill = COMPUTED_FILL
+      cell.font = { bold: true, ...COMPUTED_FONT }
+    })
     for (const row of def.rows) {
-      sheet.addRow(
+      const added = sheet.addRow(
         row.map((cell, i) => {
           if (cell === null) return null
           if (typeof cell === 'number') return cell
@@ -81,6 +94,7 @@ export async function toXlsxSheets(sheets: XlsxSheet[], dateFormat = 'd.m.yyyy')
           return protectText(cell)
         }),
       )
+      computed.forEach((i) => (added.getCell(i + 1).font = COMPUTED_FONT))
     }
     def.headers.forEach((_, i) => {
       const col = sheet.getColumn(i + 1)

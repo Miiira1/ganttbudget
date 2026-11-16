@@ -59,16 +59,18 @@ describe('export řádků rozpočtu (I-04)', () => {
       category: 'Mzdy',
       tags: 'dotace, IT',
       note: 'pozn.',
+      hoursPerDay: 4,
+      rate: 500,
       hours: 20,
       cost: 10_000,
     })
   })
 
   it('stroj, materiál s vlastní cenou, jednorázový k datu, průběžný za týden', () => {
-    expect(row(1)).toMatchObject({ kind: 'K:machine', resource: 'Jeřáb', quantity: 25, amount: null, hours: 10, cost: 15_000 })
+    expect(row(1)).toMatchObject({ kind: 'K:machine', resource: 'Jeřáb', quantity: 25, amount: null, hoursPerDay: 2, rate: 1_500, hours: 10, cost: 15_000 })
     expect(row(2)).toMatchObject({ kind: 'K:material', resource: '=Kabel', quantity: 10.5, amount: 30, cost: 315 })
     expect(row(3)).toMatchObject({ kind: 'K:oneTime', resource: 'Záloha', amount: 12_345.5, timing: 'T:date', date: '2026-12-01', cost: 12_345.5 })
-    expect(row(4)).toMatchObject({ kind: 'K:recurring', resource: 'Nájem', amount: 7_000, timing: 'T:week', date: null, hours: null })
+    expect(row(4)).toMatchObject({ kind: 'K:recurring', resource: 'Nájem', amount: 7_000, timing: 'T:week', date: null, hoursPerDay: null, rate: null, hours: null })
   })
 
   it('CSV: název začínající = dostane apostrof (ochrana proti vzorcům)', () => {

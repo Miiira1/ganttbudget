@@ -23,6 +23,7 @@ import { ShortcutsDialog } from './ShortcutsDialog'
 import { FileMenu } from './FileMenu'
 import { ImportDialog } from './ImportDialog'
 import { BudgetImportDialog } from './costs/BudgetImportDialog'
+import { WorkbookImportDialog } from './WorkbookImportDialog'
 import { LibraryDialog } from './resources/LibraryDialog'
 import { ProjectName } from './ProjectName'
 import { isDirty, openProject, saveProject, useFileState } from '../io/fileActions'
@@ -361,6 +362,7 @@ export default function App() {
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <ImportDialog />
       <BudgetImportDialog />
+      <WorkbookImportDialog />
       <LibraryDialog />
 
       {view === 'resources' ? (

@@ -69,13 +69,29 @@ export function distribute(total: number, weights: readonly number[]): number[] 
   return result
 }
 
+/** Počet dní měsíce, do kterého den patří (bez převodu na text – volá se pro každý den). */
 const daysInMonthOf = (day: number) => {
-  const [y, m] = dayToIso(day).split('-').map(Number) as [number, number]
-  return new Date(Date.UTC(y, m, 0)).getUTCDate()
+  const date = new Date(day * 86_400_000)
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate()
 }
 
 export function computeCostTimeline(project: Project, scheduleResult: ScheduleResult, costs: CostsResult): CostTimeline {
-  const work = createWorkCalendar(project.calendar)
+  const calendar = createWorkCalendar(project.calendar)
+  // Řádky se ve dnech hodně překrývají – pracovní dny a délky měsíců se zjistí jen jednou.
+  const workingCache = new Map<number, boolean>()
+  const monthCache = new Map<number, number>()
+  const work = {
+    isWorkingDay: (day: number) => {
+      let value = workingCache.get(day)
+      if (value === undefined) workingCache.set(day, (value = calendar.isWorkingDay(day)))
+      return value
+    },
+  }
+  const monthDays = (day: number) => {
+    let value = monthCache.get(day)
+    if (value === undefined) monthCache.set(day, (value = daysInMonthOf(day)))
+    return value
+  }
   const lines: LineTimeline[] = []
   const skippedByCategory = new Map<string, number>()
   let skippedLines = 0
@@ -114,7 +130,7 @@ export function computeCostTimeline(project: Project, scheduleResult: ScheduleRe
               ? spanDays().map((d) => (work.isWorkingDay(d) ? 1 : 0))
               : line.period === 'week'
                 ? spanDays().map(() => 1)
-                : spanDays().map((d) => 1 / daysInMonthOf(d))
+                : spanDays().map((d) => 1 / monthDays(d))
           break
         default: // člověk, stroj
           weights = spanDays().map((d) => (work.isWorkingDay(d) ? 1 : 0))

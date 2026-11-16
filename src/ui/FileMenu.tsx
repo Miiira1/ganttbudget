@@ -9,11 +9,12 @@ import { newProject, openProject, saveProject } from '../io/fileActions'
 import { exportCsv, exportXlsx } from '../io/exportActions'
 import { exportBudgetCsv, exportBudgetXlsx } from '../io/budgetExportActions'
 import { startBudgetImport } from '../io/budgetImportActions'
+import { exportWorkbook, startWorkbookImport } from '../io/workbookActions'
 import { startImport } from '../io/importActions'
 import { exportLibrary, startLibraryImport } from '../io/libraryActions'
 
 type Item = {
-  id: 'new' | 'open' | 'save' | 'saveAs' | 'exportXlsx' | 'exportCsv' | 'import' | 'exportBudgetXlsx' | 'exportBudgetCsv' | 'importBudget' | 'exportLibrary' | 'importLibrary'
+  id: 'new' | 'open' | 'save' | 'saveAs' | 'exportWorkbook' | 'importWorkbook' | 'exportXlsx' | 'exportCsv' | 'import' | 'exportBudgetXlsx' | 'exportBudgetCsv' | 'importBudget' | 'exportLibrary' | 'importLibrary'
   shortcut?: string
   separatorBefore?: boolean
 }
@@ -22,6 +23,8 @@ const ITEMS: Item[] = [
   { id: 'open', shortcut: 'Ctrl+O' },
   { id: 'save', shortcut: 'Ctrl+S' },
   { id: 'saveAs', shortcut: 'Ctrl+Shift+S' },
+  { id: 'exportWorkbook', separatorBefore: true },
+  { id: 'importWorkbook' },
   { id: 'exportXlsx', separatorBefore: true },
   { id: 'exportCsv' },
   { id: 'import', separatorBefore: true },
@@ -56,6 +59,8 @@ export function FileMenu() {
     buttonRef.current?.focus()
     if (id === 'new') newProject(t, i18n.language)
     else if (id === 'open') void openProject(t)
+    else if (id === 'exportWorkbook') void exportWorkbook(t, i18n.language)
+    else if (id === 'importWorkbook') startWorkbookImport(t)
     else if (id === 'exportXlsx') void exportXlsx(t, i18n.language)
     else if (id === 'exportCsv') void exportCsv(t)
     else if (id === 'import') startImport(t)

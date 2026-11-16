@@ -112,7 +112,11 @@
     "exportBudgetCsv": "Export budget to CSV…",
     "exportBudgetCsvHint": "Save the budget lines (resources and costs of tasks) as CSV",
     "importBudget": "Import budget from Excel / CSV…",
-    "importBudgetHint": "Load resource and cost lines of tasks (sheet Lines from the budget export); replaces the lines of tasks listed in the file"
+    "importBudgetHint": "Load resource and cost lines of tasks (sheet Lines from the budget export); replaces the lines of tasks listed in the file",
+    "exportWorkbook": "Export whole project to Excel…",
+    "exportWorkbookHint": "Save the whole project to one Excel workbook (tasks, budget, resources, calendar, limits) – grey columns are computed, for checking only",
+    "importWorkbook": "Import whole project from Excel…",
+    "importWorkbookHint": "Load the whole project from an Excel workbook created by the whole-project export; after a preview it replaces the current project"
   },
   "toolbar": {
     "label": "Main tools",
@@ -964,7 +968,9 @@
       "tags": "Tags",
       "note": "Note",
       "hours": "Hours",
-      "cost": "Cost"
+      "cost": "Cost",
+      "hoursPerDay": "h/day",
+      "rate": "Rate per hour"
     },
     "timing": {
       "start": "start",
@@ -1005,6 +1011,116 @@
       "missingDate": "the date is missing for timing \"date\".",
       "badDate": "invalid date (use e.g. 2026-11-18).",
       "badTags": "more than 10 tags, or a tag longer than 30 characters."
+    }
+  },
+  "workbook": {
+    "computed": "computed",
+    "fileSuffix": "whole project",
+    "formatValue": "MiRo project – workbook 1",
+    "yes": "yes",
+    "no": "no",
+    "sheets": {
+      "project": "Project",
+      "calendar": "Calendar",
+      "tasks": "Tasks",
+      "lines": "Lines",
+      "categories": "Categories",
+      "departments": "Departments",
+      "professions": "Professions",
+      "workers": "Workers",
+      "absences": "Absences",
+      "machines": "Machines",
+      "materials": "Materials",
+      "phasing": "Phasing"
+    },
+    "project": {
+      "item": "Item",
+      "value": "Value",
+      "format": "Workbook format",
+      "name": "Project name",
+      "startDate": "Project start (YYYY-MM-DD)",
+      "currency": "Currency",
+      "language": "Project language",
+      "limit": "Project budget limit",
+      "workingWeekdays": "Working days of the week (1 = Monday … 7 = Sunday)",
+      "czechHolidays": "Czech public holidays (yes / no)"
+    },
+    "columns": {
+      "kind": "Kind",
+      "from": "From",
+      "to": "To",
+      "name": "Name",
+      "code": "Code",
+      "category": "Category",
+      "limit": "Limit",
+      "planned": "Planned",
+      "capacity": "Hours per day",
+      "manualRate": "Manual rate per hour",
+      "monthlyWage": "Gross wage per month",
+      "contributionsPct": "Contributions %",
+      "overheadMode": "Overhead – mode",
+      "overheadValue": "Overhead – per year or %",
+      "vacationDays": "Vacation days",
+      "sickDays": "Sick days",
+      "calcHoursPerDay": "Calculation – hours per day",
+      "productivityPct": "Productivity %",
+      "rate": "Rate per hour",
+      "rateSource": "Rate source",
+      "profession": "Profession",
+      "department": "Department",
+      "absenceDays": "Absence work days",
+      "worker": "Worker",
+      "note": "Note",
+      "machineRate": "Rate",
+      "rateUnit": "Rate per",
+      "unit": "Unit",
+      "unitPrice": "Unit price",
+      "supplier": "Supplier"
+    },
+    "calendarKind": {
+      "custom": "day off / shutdown",
+      "removed": "removed holiday"
+    },
+    "overheadMode": {
+      "annual": "per year",
+      "percent": "% of wage"
+    },
+    "rateUnit": {
+      "hour": "hour",
+      "day": "day"
+    },
+    "importTitle": "Import whole project from Excel",
+    "importSummary": "The workbook is valid: project \"{{name}}\", start {{start}}, currency {{currency}}. It contains:",
+    "replaceWarning": "The import replaces the whole current project \"{{name}}\" – tasks, budget, resource database, calendar and limits – with the workbook content. It can be undone with Undo (Ctrl+Z). Then save the project to a file (Ctrl+S).",
+    "importConfirm": "Replace project",
+    "error": {
+      "sheetRow": "Sheet \"{{sheet}}\", row {{row}}: {{message}}",
+      "sheetOnly": "Sheet \"{{sheet}}\": {{message}}",
+      "onlyXlsx": "The whole project can only be loaded from an Excel workbook (.xlsx). Nothing has changed.",
+      "missingSheet": "the sheet is missing (the workbook must contain all sheets of the whole-project export).",
+      "missingColumns": "required columns are missing in the first row (compare with the whole-project export).",
+      "tooManyRows": "the sheet has too many rows.",
+      "badName": "the name is missing (or longer than 200 characters).",
+      "duplicateName": "another row already has the same name – names must be unique.",
+      "badDate": "invalid date (use e.g. 2026-11-18).",
+      "badCurrency": "the currency must be a three-letter code, e.g. CZK.",
+      "badAmount": "invalid amount (positive number, at most 2 decimals).",
+      "badWeekdays": "write working days as numbers 1–7 separated by commas (1 = Monday), e.g. 1, 2, 3, 4, 5.",
+      "badYesNo": "write \"yes\" or \"no\".",
+      "badKind": "unknown kind (allowed: day off / shutdown, removed holiday).",
+      "badRange": "the end is before the start (or the absence is longer than 2 years).",
+      "nameTooLong": "the text is longer than 200 characters.",
+      "codeTooLong": "the code is longer than 50 characters.",
+      "noteTooLong": "the note is longer than 200 characters.",
+      "unknownCategory": "no category with this name on the Categories sheet.",
+      "unknownDepartment": "no department with this name on the Departments sheet.",
+      "unknownProfession": "no profession with this name on the Professions sheet.",
+      "unknownWorker": "no worker with this name on the Workers sheet.",
+      "badCapacity": "hours per day must be a number 0.5–24.",
+      "badRateCalc": "invalid rate calculation (check wage, contributions, overhead, vacation, sick days, hours and productivity).",
+      "badRateUnit": "the machine rate must be per hour or per day.",
+      "badUnit": "the unit is missing (or longer than 20 characters).",
+      "invalid": "The workbook data did not pass the check."
     }
   }
 }

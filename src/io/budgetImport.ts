@@ -41,7 +41,7 @@ const TIMING_ALIASES = new Map<string, Timing>()
 for (const timing of TIMINGS) for (const label of [timing, cs.budgetExport.timing[timing], en.budgetExport.timing[timing]]) TIMING_ALIASES.set(nameKey(label), timing)
 
 /** Desetinné číslo z buňky (číslo, „2,5“, „50 %“); undefined = prázdné, null = nesmysl. */
-function decimal(value: CellValue): number | null | undefined {
+export function decimal(value: CellValue): number | null | undefined {
   if (value === null) return undefined
   if (typeof value === 'number') return Number.isFinite(value) ? value : null
   const raw = text(value).replace(/%/g, '').replace(/\s/g, '').replace(',', '.')
@@ -50,7 +50,7 @@ function decimal(value: CellValue): number | null | undefined {
 }
 
 /** Částka v haléřích z buňky (číslo v Kč, nebo text „1 234,50 Kč“); undefined = prázdné, null = nesmysl. */
-function money(value: CellValue): number | null | undefined {
+export function money(value: CellValue): number | null | undefined {
   if (value === null) return undefined
   if (typeof value === 'number') return Number.isFinite(value) && value >= 0 ? Math.round(value * 100) : null
   const raw = text(value).trim()

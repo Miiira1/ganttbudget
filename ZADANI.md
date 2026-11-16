@@ -1,7 +1,7 @@
 # ZADÁNÍ: Aplikace pro Ganttovy diagramy s navázaným rozpočtem
 
 > Název aplikace: **MiRo project** (pracovní název do v1.10: GanttBudget)
-> Verze zadání: 1.13 · Datum: 16. 11. 2026 (změny viz kap. 14)
+> Verze zadání: 1.14 · Datum: 16. 11. 2026 (změny viz kap. 14)
 > Dokument je zároveň vstupem pro Claude Code (vibe coding) a osnovou výukové case study.
 
 ---
@@ -140,9 +140,10 @@ Státní svátky ČR k zakódování: 1. 1.; Velký pátek; Velikonoční pondě
 | I-01 | **Celý projekt jako JSON** (otevřít/uložit, záloha, vstup pro AI). Formát je verzovaný (pole `schemaVersion`), aby šly starší soubory načíst. | M |
 | I-02 | Automatická záloha rozpracovaného projektu v prohlížeči (obnova po zavření záložky). | M |
 | I-03 | **Export a import činností do CSV a XLSX** (včetně hierarchie, vazeb, délek). Import s náhledem a kontrolou chyb před potvrzením. | M |
-| I-04 | **Export a import rozpočtu a časového náběhu nákladů do CSV a XLSX**: export XLSX má list **Řádky** (WBS, Činnost, Typ, Zdroj / název, Pracovník, Podíl % / množství, Částka / cena, Kdy / období, Datum, Kategorie, Štítky, Poznámka, Hodiny, Náklad) a list **Náběh** (kategorie × měsíce, Celkem, kumulativně); CSV obsahuje Řádky. Import (CSV nebo list Řádky) s náhledem: činnost podle WBS, zdroje a kategorie podle názvu (nic se nevytvoří samo), Hodiny a Náklad se ignorují; **nahradí řádky činností uvedených v souboru**, ostatní zůstanou; jakákoli chyba (s číslem řádku) import zablokuje; jeden krok Zpět; limit 5 MB / 20 000 řádků; české i anglické hlavičky. | D (fáze 7) |
+| I-04 | **Export a import rozpočtu a časového náběhu nákladů do CSV a XLSX**: export XLSX má list **Řádky** (WBS, Činnost, Typ, Zdroj / název, Pracovník, Podíl % / množství, Částka / cena, Kdy / období, Datum, Kategorie, Štítky, Poznámka a vypočtené h/den, Sazba Kč/h, Hodiny, Náklad) a list **Náběh** (kategorie × měsíce, Celkem, kumulativně); CSV obsahuje Řádky. Import (CSV nebo list Řádky) s náhledem: činnost podle WBS, zdroje a kategorie podle názvu (nic se nevytvoří samo), Hodiny a Náklad se ignorují; **nahradí řádky činností uvedených v souboru**, ostatní zůstanou; jakákoli chyba (s číslem řádku) import zablokuje; jeden krok Zpět; limit 5 MB / 20 000 řádků; české i anglické hlavičky. | D (fáze 7) |
 | I-05 | Export Gantta do **PDF** a obrázku (PNG/SVG) pro odevzdávání úkolů. | D (fáze 13) |
 | I-06 | Import ze souborů MS Project (XML) a GanttProject. | D (fáze 13) |
+| I-07 | **Celý projekt v jednom sešitu Excelu**: export s listy Projekt, Kalendář, Činnosti, Řádky, Kategorie, Střediska, Profese, Pracovníci (s kalkulací sazby), Nepřítomnosti, Stroje, Materiály a Náběh; **vypočtené sloupce** (termíny, sazby, h/den, hodiny, náklady, plánováno, celý Náběh) šedé s dovětkem „(vypočteno)“ – import je ignoruje a spočítá znovu, takže náklad se mění jen přes vstupy. Import (jen .xlsx) s náhledem počtů za listy: listy se propojují názvy (jedinečné) a WBS, položky databáze se stejným názvem si ponechají ID, chybějící list nebo jakákoli chyba (s listem a řádkem) import zablokuje; **nahradí celý projekt** jedním krokem Zpět; limity 5 MB, 2 000 řádků na list databáze; ověření schématem Zod. Soubor projektu (.json, I-01) zůstává hlavním formátem pro zálohu a přenos. | D (doplněk po fázi 7) |
 
 ### 4.8 Uživatelská přívětivost
 
@@ -411,7 +412,7 @@ Technicky: build bez chyb, testy plánovacího jádra projdou, aplikace je nasaz
 | 5 | Skutečné náklady (AC) pro Earned Value | Zadávají se ručně jako položky k datu; upřesnit ve fázi 9 |
 | 6 | Pracovní název a logo aplikace | ✅ Rozhodnuto (v1.11): **MiRo project**, logo a barvy podle brand kitu (N-13). Přípony souborů `.ganttbudget.json` / `.ganttbudget-lib.json` a klíče v prohlížeči zůstávají kvůli kompatibilitě s uloženými projekty |
 | 7 | Licence | MIT, pokud zadavatel (fakulta) nevyžaduje jinak |
-| 8 | Použití ve výuce: potřeba odevzdávat projekty učiteli | Zatím jen soubor JSON/XLSX/PDF e-mailem nebo přes LMS |
+| 8 | Použití ve výuce: potřeba odevzdávat projekty učiteli | Zatím soubor projektu (.json), sešit celého projektu (XLSX, I-07) nebo PDF e-mailem či přes LMS |
 | 9 | Majetková práva k aplikaci (případné zaměstnanecké dílo ČVUT) | ✅ Ověřeno u fakulty (14. 11. 2026) |
 | 10 | E-mail v Git commitech veřejného repozitáře | ✅ Vyřešeno (14. 11. 2026): Git používá skrytou adresu GitHubu (`…@users.noreply.github.com`) |
 
@@ -435,3 +436,4 @@ Technicky: build bez chyb, testy plánovacího jádra projdou, aplikace je nasaz
 | 1.11 | 15. 11. 2026 | Vizuální identita (mezi kroky fáze 6c): aplikace přejmenována na **MiRo project**; nový požadavek **N-13** – logo, písmo Lato (WOFF2), barvy značky (grafit, papír, teplá šedá; žlutá = důležité, nově **tyrkysová** jako doplňkový akcent pro interakci a běžné úsečky činností; kritická cesta žlutě místo červeně); kontrast WCAG AA ověřen výpočtem (tlumená šedá ztmavena na 4,6 : 1). Otevřená otázka 6 uzavřena; přípony souborů beze změny kvůli kompatibilitě. Fáze 6c pokračuje jako v1.12 |
 | 1.12 | 16. 11. 2026 | Fáze 6c – kritická cesta a vytížení: F-09, K-05 a Z-03 upřesněny podle implementace (pravidla rezerv a kritičnosti; vytížení = h/den × % v pracovních dnech, kapacita profese = součet pracovníků, nepřítomnost nemění termíny); nový třetí pohled **Vytížení** (základ A-04); varování v Detailu činnosti; datový model: vypočtené pozdní termíny a rezervy, `Worker.absences` s limitem 731 dnů na záznam (ochrana proti zamrznutí podvrženým souborem) |
 | 1.13 | 16. 11. 2026 | Fáze 7 – rozpočet v čase: R-03 (štítky), R-04 (náběh na haléř, materiál v den začátku, pohled **Náklady** jako čtvrtý pohled s tabulkou, skládaným grafem v odstínech značky a filtry s více volbami), R-06 (limity projektu a kategorií, varování s datem překročení) a I-04 (export XLSX s listy Řádky a Náběh, CSV; import řádků s náhledem, nahrazení řádků činností ze souboru) upřesněny podle implementace; A-03 má základní graf; datový model: `TaskLine.tags`, `Project.budget`; otevřená otázka 4 uzavřena. Úpravy rozhraní: tlačítko „Přidat činnost“ v druhé řadě před „Předsadit“, jazyk a vzhled na řádku loga, ikona Náklady (euro + křivka) |
+| 1.14 | 16. 11. 2026 | Doplněk po fázi 7 – celý projekt v Excelu: nový požadavek **I-07** (export sešitu se všemi daty projektu, vypočtené sloupce šedé a při importu ignorované, import celého sešitu s náhledem a nahrazením projektu); I-04 – list Řádky má navíc vypočtené h/den a Sazba Kč/h, aby bylo vidět, jak náklad vznikl; otevřená otázka 8 doplněna o sešit XLSX. Výpočet náběhu nákladů zrychlen (≈ 33 → 12 ms pro 300 činností) – rezerva pro testy výkonu i automatické nasazení |

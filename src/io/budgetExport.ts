@@ -3,20 +3,25 @@
  *
  * 1) Řádky: jeden řádek tabulky = jeden řádek činnosti (zdroj nebo náklad). Sloupce:
  *    WBS, Činnost, Typ, Zdroj / Název, Pracovník, Podíl % / Množství, Částka / Cena, Kdy / Období,
- *    Datum, Kategorie, Štítky, Poznámka, Hodiny, Náklad. Hodiny a Náklad jsou jen pro informaci
- *    (import je přepočítá). Peníze v celých jednotkách měny (Kč) s haléři jako desetinná místa.
+ *    Datum, Kategorie, Štítky, Poznámka, h/den, Sazba, Hodiny, Náklad. Poslední čtyři jsou vypočtené
+ *    (aby bylo vidět, jak náklad vznikl: h/den × dny × sazba) – import je ignoruje. Peníze v celých jednotkách měny (Kč) s haléři jako desetinná místa.
  * 2) Náběh: kategorie × období (náklady za období), součty, celkem a kumulativně.
  * Ochranu proti CSV injection přidá toCsv / xlsxExport (protectText).
  */
-import type { CostsResult } from '../model/costs'
+import { createResourceLookup, lineHoursPerDay, type CostsResult } from '../model/costs'
+import { effectiveWorkerRate, professionRate, workingDaysInYear } from '../model/rates'
 import { cumulative, summarizeCosts, type CostTimeline } from '../model/costTimeline'
 import { treeOrder, wbsNumbers } from '../model/hierarchy'
 import type { DayRange } from '../model/periods'
 import type { Project, TaskLine } from '../model/schema'
 import type { Cell } from './tableExport'
 
-export const BUDGET_COLUMNS = ['wbs', 'task', 'kind', 'resource', 'worker', 'quantity', 'amount', 'timing', 'date', 'category', 'tags', 'note', 'hours', 'cost'] as const
+export const BUDGET_COLUMNS = ['wbs', 'task', 'kind', 'resource', 'worker', 'quantity', 'amount', 'timing', 'date', 'category', 'tags', 'note', 'hoursPerDay', 'rate', 'hours', 'cost'] as const
 export type BudgetColumn = (typeof BUDGET_COLUMNS)[number]
+/** Vypočtené sloupce – v XLSX šedé s poznámkou „vypočteno“, import je ignoruje. */
+export const BUDGET_COMPUTED_COLUMNS: readonly BudgetColumn[] = ['hoursPerDay', 'rate', 'hours', 'cost']
+/** Sloupce s penězi (v XLSX formát s haléři). */
+export const BUDGET_MONEY_COLUMNS: readonly BudgetColumn[] = ['amount', 'rate', 'cost']
 /** Sloupce s datem (v XLSX opravdové datum). */
 export const BUDGET_DATE_COLUMNS: readonly BudgetColumn[] = ['date']
 
@@ -41,6 +46,22 @@ export function buildBudgetLines(project: Project, costs: CostsResult, labels: B
   const wbs = wbsNumbers(project)
   const name = <T extends { id: string; name: string }>(list: T[], id: string | undefined) => (id ? (list.find((x) => x.id === id)?.name ?? '') : '')
   const rows: Cell[][] = []
+  // Sazby stejně jako costs.ts (fond pracovních dnů roku začátku projektu).
+  const fundDays = workingDaysInYear(project.calendar, Number(project.startDate.slice(0, 4)))
+  const lookup = createResourceLookup(project)
+  const rateOf = (line: TaskLine): number | null => {
+    if (line.kind === 'labor') {
+      const profession = lookup.professions.get(line.professionId)
+      const worker = line.workerId ? lookup.workers.get(line.workerId) : undefined
+      if (!profession) return null
+      return worker ? effectiveWorkerRate(worker, profession, fundDays).rate : professionRate(profession, fundDays)
+    }
+    if (line.kind === 'machine') {
+      const machine = lookup.machines.get(line.machineId)
+      return machine && machine.rateUnit === 'hour' ? machine.rate : null // denní sazba se do Kč/h nepřevádí
+    }
+    return null
+  }
   for (const task of treeOrder(project)) {
     for (const line of task.lines) {
       const cost = costs.lines.get(line.id)
@@ -57,6 +78,14 @@ export function buildBudgetLines(project: Project, costs: CostsResult, labels: B
         category: name(project.costCategories, line.categoryId),
         tags: (line.tags ?? []).join(', '),
         note: line.note ?? '',
+        hoursPerDay: (() => {
+          const h = lineHoursPerDay(line, lookup)
+          return h === null ? null : round2(h)
+        })(),
+        rate: (() => {
+          const r = rateOf(line)
+          return r === null ? null : toUnits(r)
+        })(),
         hours: cost?.hours != null ? round2(cost.hours) : null,
         cost: cost ? toUnits(cost.amount) : null,
       }

@@ -22,7 +22,21 @@ Je určená studentům a praktikům bez zkušenosti s projektovým řízením. B
 > týdnech, měsících; histogram; přetížení červeně a jako varování v Detailu činnosti). Fáze 7 přidala pohled **Náklady**
 > (náběh nákladů po týdnech, měsících a čtvrtletích, kumulativně, skládaný graf, filtry kategorií, fází, druhů a štítků),
 > volné **štítky** u řádků, **limity rozpočtu** (projekt a kategorie, varování s datem překročení) a export / import
-> rozpočtu do Excelu a CSV (viz [ZADANI.md](ZADANI.md), kap. 8).
+> rozpočtu do Excelu a CSV. Doplněk po fázi 7: **celý projekt v jednom sešitu Excelu** (12 listů – projekt, kalendář,
+> činnosti, řádky, databáze zdrojů, náběh) jde exportovat, upravit a zase načíst; šedé sloupce „(vypočteno)“ import
+> ignoruje (viz [ZADANI.md](ZADANI.md), kap. 8).
+
+## Soubory: co kdy použít
+
+| Potřebuji… | Použijte (menu Soubor) |
+|---|---|
+| zálohovat projekt nebo ho přenést na jiný počítač | **Uložit** / **Otevřít** – soubor projektu `.ganttbudget.json` |
+| upravit celý projekt v Excelu a vrátit ho | **Exportovat / Importovat celý projekt do / z Excelu** – jeden sešit, šedé sloupce jsou jen vypočtené |
+| rychle upravit jen činnosti, nebo jen řádky rozpočtu | dílčí export a import činností / rozpočtu (XLSX, CSV) |
+| přenést databázi zdrojů do jiného projektu | **Exportovat / Načíst knihovnu zdrojů** – `.ganttbudget-lib.json` |
+
+Sešit celého projektu i soubor projektu obsahují všechna data včetně mezd z kalkulace sazeb – nesdílejte je s někým,
+kdo je vidět nemá.
 
 ## Vzhled a značka
 
@@ -85,7 +99,7 @@ requesty. Nic se nesloučí samo: u každého počkejte, až projdou testy, a sl
 |---|---|
 | `src/engine/` | plánovací jádro: kalendář (svátky, pracovní dny), výpočet termínů, rezervy a kritická cesta – čisté funkce s testy |
 | `src/gantt/` | výpočty pro graf: časová osa, poloha úseček, trasy šipek, tažení, kreslení vazeb – čisté funkce s testy |
-| `src/io/` | soubor projektu, automatická záloha (IndexedDB), export a import CSV/XLSX (činnosti i rozpočet), knihovna zdrojů – kontrola dat s testy |
+| `src/io/` | soubor projektu, automatická záloha (IndexedDB), export a import CSV/XLSX (činnosti, rozpočet, celý projekt – `workbookExport.ts`, `workbookImport.ts`), knihovna zdrojů – kontrola dat s testy |
 | `src/model/` | formát projektu (schéma Zod), strom fází a přesuny (`hierarchy.ts`), práce s daty a zápis předchůdců, peníze v haléřích (`money.ts`), kalkulace sazby (`rates.ts`), náklady činností (`costs.ts`), vytížení zdrojů (`load.ts`), časový náběh nákladů a limity (`costTimeline.ts`), období (`periods.ts`), štítky (`tags.ts`) |
 | `src/store/` | stav aplikace s historií změn (Zpět / Znovu) |
 | `src/ui/` | obrazovky a komponenty (React); `src/ui/gantt/` kreslí Ganttův graf (SVG), `src/ui/resources/` obrazovku Zdroje, `src/ui/detail/` panel Detail činnosti, `src/ui/load/` pohled Vytížení, `src/ui/costs/` pohled Náklady |

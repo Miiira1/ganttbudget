@@ -41,3 +41,20 @@ export async function readXlsx(buffer: ArrayBuffer, preferredSheets: readonly st
   }
   return rows
 }
+
+/** Všechny listy sešitu: název listu → tabulka (pro import celého projektu). */
+export async function readXlsxSheets(buffer: ArrayBuffer): Promise<Map<string, unknown[][]>> {
+  const workbook = new ExcelJS.Workbook()
+  await workbook.xlsx.load(buffer)
+  const sheets = new Map<string, unknown[][]>()
+  for (const sheet of workbook.worksheets) {
+    const width = sheet.columnCount
+    const rows: unknown[][] = []
+    for (let r = 1; r <= sheet.rowCount; r++) {
+      const row = sheet.getRow(r)
+      rows.push(Array.from({ length: width }, (_, c) => plain(row.getCell(c + 1).value)))
+    }
+    sheets.set(sheet.name, rows)
+  }
+  return sheets
+}
