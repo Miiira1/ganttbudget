@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next'
 import { formatIsoDate } from '../../i18n/format'
 import { absenceWorkingDays } from '../../model/catalogs'
 import { isValidIsoDate } from '../../model/dates'
-import type { Absence } from '../../model/schema'
+import { calendarDaysInclusive, MAX_ABSENCE_DAYS, type Absence } from '../../model/schema'
 import { projectStore, useProject } from '../../store/useProject'
 
 const fieldClass =
@@ -45,6 +45,7 @@ export function AbsenceDialog({ workerId, onClose }: { workerId: string | null; 
     const end = to === '' ? from : to
     if (!isValidIsoDate(from) || !isValidIsoDate(end)) return setError(t('absence.error.dates'))
     if (end < from) return setError(t('absence.error.order'))
+    if (calendarDaysInclusive(from, end) > MAX_ABSENCE_DAYS) return setError(t('absence.error.tooLong', { max: MAX_ABSENCE_DAYS }))
     const trimmed = note.trim().slice(0, 200)
     const entry: Absence = { start: from, end, ...(trimmed ? { note: trimmed } : {}) }
     save([...absences, entry].sort((a, b) => a.start.localeCompare(b.start)))

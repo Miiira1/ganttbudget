@@ -1,7 +1,7 @@
 # ZADÁNÍ: Aplikace pro Ganttovy diagramy s navázaným rozpočtem
 
 > Název aplikace: **MiRo project** (pracovní název do v1.10: GanttBudget)
-> Verze zadání: 1.11 · Datum: 15. 11. 2026 (změny viz kap. 14)
+> Verze zadání: 1.12 · Datum: 15. 11. 2026 (změny viz kap. 14)
 > Dokument je zároveň vstupem pro Claude Code (vibe coding) a osnovou výukové case study.
 
 ---
@@ -69,7 +69,7 @@ Priorita: **M** = MVP (verze 1.0), **D** = další fáze (viz kap. 8).
 | F-06 | Automatické číslování (WBS, např. 1.2.3). | M |
 | F-07 | Vazby mezi činnostmi: **FS, SS, FF, SF** s prodlevou (kladnou i zápornou) ve dnech. Zadání textem (např. `3FS+2`) i kreslením v grafu. | M |
 | F-08 | Po změně činnosti se **automaticky přepočítají** následníci. Detekce cyklů s jasnou chybovou hláškou. | M |
-| F-09 | Kritická cesta a rezervy (volná i celková), zvýraznění kritických činností. | D (fáze 6c) |
+| F-09 | Kritická cesta a rezervy (volná i celková), zvýraznění kritických činností: zpětný průchod jádra (pozdní začátek a konec), **celková rezerva** = o kolik pracovních dnů se položka smí zpozdit bez posunu konce projektu, **volná** = bez posunu následníka; **kritická** = celková rezerva ≤ 0 (fáze: nejmenší rezerva z podřízených). Přepínač **Kritická cesta** (žluté úsečky a vazby, pruh rezervy) a sloupec **Rezerva** (volná v bublině). | D (fáze 6c) |
 | F-10 | Poznámky k činnostem, barvy činností/fází. | D |
 | F-11 | **Hromadný výběr**: Ctrl+klik přidá / odebere řádek, Shift+klik vybere rozsah (v tabulce i na úsečkách), Esc výběr zruší. Hromadně fungují Odsadit, Předsadit, Nahoru, Dolů, Duplikovat, Smazat (jedno potvrzení), přetažení řádků i posun úseček. Každá akce = jeden krok Zpět; když nejde u některého řádku, nezmění se nic. | M (doplněk po fázi 5) |
 
@@ -97,7 +97,7 @@ Priorita: **M** = MVP (verze 1.0), **D** = další fáze (viz kap. 8).
 | K-02 | **České státní svátky se načtou automaticky** pro libovolný rok (včetně pohyblivých: Velký pátek, Velikonoční pondělí; výpočet algoritmem, bez externí služby). | M |
 | K-03 | **Vlastní výjimky**: libovolné dny nebo rozsahy (podniková odstávka, dovolená) a ruční přidání/odebrání svátků. Lze i vypnout automatické svátky. | M |
 | K-04 | Možnost zvolit jinou sadu svátků než českou (struktura připravená na další země). | D |
-| K-05 | Kalendáře zdrojů: nepřítomnosti konkrétního zdroje (dovolená, nemoc). | D (fáze 6c) |
+| K-05 | Kalendáře zdrojů: nepřítomnosti pracovníka jako rozsahy od–do s poznámkou (dialog z tabulky Pracovníci, sloupec s počtem pracovních dnů; max. 200 záznamů, jeden nejvýš 731 dnů). Ovlivní **jen vytížení a varování**, termíny činností se nemění. | D (fáze 6c) |
 
 Státní svátky ČR k zakódování: 1. 1.; Velký pátek; Velikonoční pondělí; 1. 5.; 8. 5.; 5. 7.; 6. 7.; 28. 9.; 28. 10.; 17. 11.; 24. 12.; 25. 12.; 26. 12. (Claude Code má jejich seznam před zakódováním ověřit proti aktuální legislativě.) ✅ Ověřeno 14. 11. 2026 proti zákonu č. 245/2000 Sb. ve znění novely 59/2026 Sb. (ta přidala jen významný den 30. 3., který není dnem pracovního klidu).
 
@@ -107,7 +107,7 @@ Státní svátky ČR k zakódování: 1. 1.; Velký pátek; Velikonoční pondě
 |---|---|---|
 | Z-01 | **Databáze (číselníky) zdrojů v projektu**: **profese** (sazba, kapacita h/den, kategorie nákladů), **pracovníci** (jméno, profese, vlastní nebo zděděná sazba, kapacita h/den, nepřítomnosti), **stroje a zařízení** (sazba Kč/h nebo Kč/den, kapacita h/den), **materiály a díly** (jednotka, jednotková cena, kategorie, volitelně kód/dodavatel), **střediska** (kód, název; pracovník volitelně patří do střediska – dimenze pro analytiku A-01 a A-04). Samostatná obrazovka „Zdroje“; pořadí jejích podzáložek si uživatel může změnit (tažením nebo Alt+Shift+←/→, pamatuje si ho prohlížeč). Položku použitou na činnostech nejde smazat bez varování. | D (fáze 6a) |
 | Z-02 | Přiřazení zdroje k činnosti jako **řádek činnosti**: člověk = profese a volitelně konkrétní pracovník (sazba pracovníka, jinak profese) + % zapojení; stroj + % využití. Hodiny = délka položky (pracovní dny; u fáze spočítaná délka) × h/den × % (h/den i sazba pracovníka, jinak profese). Řádky se zadávají v panelu **Detail činnosti** pod plánem. **Délka činnosti se zdroji nemění** (žádné automatické přeplánování). | D (fáze 6b) |
-| Z-03 | Detekce přetížení zdroje (varování + histogram vytížení). | D (fáze 6c) |
+| Z-03 | Detekce přetížení zdroje: poptávka = h/den × % řádku v každém pracovním dni položky; kapacita pracovníka = h/den (při nepřítomnosti 0), **profese** = součet jejích pracovníků (poptávka ze všech řádků profese; bez pracovníků se přetížení nehlásí), stroje = h/den; přetížený den = poptávka > kapacita. Pohled **Vytížení** (mřížka zdrojů × dny/týdny/měsíce, nejvyšší denní vytížení v %, histogram a činnosti vybraného zdroje, odznak s počtem přetížených) a ⚠ varování v panelu Detail činnosti (nepřítomnost, přetížení). | D (fáze 6c) |
 | Z-04 | **Kalkulace hodinové sazby** profese nebo pracovníka: (hrubá mzda × 12 + odvody zaměstnavatele, výchozí 33,8 % + přidělená režie Kč/rok nebo % ze mzdy) ÷ produktivní hodiny ((pracovní dny roku dle kalendáře − dovolená − nemoc) × h/den × produktivita %). Výpočet je vidět krok po kroku; ruční sazba ho přepíše. Peníze v haléřích. | D (fáze 6a) |
 | Z-05 | **Knihovna zdrojů**: číselníky jdou exportovat jako samostatný soubor (`.ganttbudget-lib.json`) a načíst do jiného projektu (ověření schématem Zod, náhled, sloučení podle názvu). | D (fáze 6a) |
 
@@ -129,7 +129,7 @@ Státní svátky ČR k zakódování: 1. 1.; Velký pátek; Velikonoční pondě
 | A-01 | **Interaktivní kontingenční tabulka**: uživatel volí řádky, sloupce, metriku a agregaci z dimenzí (fáze, činnost, kategorie, štítek, zdroj, měsíc/týden/čtvrtletí). | D (fáze 8) |
 | A-02 | K tabulce přiložené **grafy** (sloupcový, čárový, koláčový, skládaný), přepínání jedním klikem. | D |
 | A-03 | **Dashboard „Náklady v čase"**: S-křivka (kumulativní náklady) a cash flow po obdobích. | D |
-| A-04 | **Dashboard „Vytížení zdrojů"**: histogram po týdnech, zvýraznění přetížení. | D |
+| A-04 | **Dashboard „Vytížení zdrojů"**: histogram po týdnech, zvýraznění přetížení (základní pohled Vytížení hotový ve fázi 6c; fáze 8 přidá grafy a filtry). | D |
 | A-05 | **Dashboard „Plán vs. skutečnost"**: baseline vs. aktuální plán, % dokončení, **Earned Value** (PV, EV, AC, CPI, SPI, EAC) s vysvětlením pojmů. | D (fáze 9) |
 | A-06 | Přednastavené pohledy pro začátečníky + možnost uložit vlastní pohled. | D |
 
@@ -259,14 +259,14 @@ Task
   dependencies: [{ predecessorId, type: FS|SS|FF|SF, lagDays }]
   percentComplete, notes, color
   lines: TaskLine[]        // zdroje a náklady činnosti – jeden řádek = jeden zdroj / položka
-  // vypočteno enginem, neukládá se: start, finish, slack, isCritical, náklady
+  // vypočteno enginem, neukládá se: start, finish, lateStart, lateFinish, totalSlack, freeSlack, critical, náklady, vytížení
 
 RateCalc     monthlyWage, employerContribPct (33,8), overhead (Kč/rok | % ze mzdy),
              vacationDays, sickDays, hoursPerDay, productivityPct
              // sazba = roční náklady ÷ produktivní hodiny (Z-04)
 Profession   id, name, categoryId, rateCalc?, manualRate?, capacityPerDay
 Department   id, name, code?                       // středisko
-Worker       id, name, professionId, departmentId?, rateCalc?, manualRate?, capacityPerDay, absences[]
+Worker       id, name, professionId, departmentId?, rateCalc?, manualRate?, capacityPerDay, absences?[] { start, end, note? } (max 200, každá ≤ 731 dnů)
              // sazba: ruční > vlastní kalkulace > sazba profese
 Machine      id, name, rate, rateUnit (hour|day), capacityPerDay, categoryId
 Material     id, name, unit, unitPrice, categoryId, code?, supplier?
@@ -432,3 +432,4 @@ Technicky: build bez chyb, testy plánovacího jádra projdou, aplikace je nasaz
 | 1.9 | 15. 11. 2026 | Fáze 6a – databáze zdrojů: nový číselník **střediska** (kód, název; Worker.departmentId volitelně) jako dimenze pro analytiku; pořadí podzáložek Zdrojů lze měnit (tažení, Alt+Shift+←/→, pamatuje si prohlížeč, „Výchozí pořadí“). Pravidla: názvy v číselníku jedinečné (bez ohledu na velikost písmen); používanou kategorii jde smazat jen s přesunem položek do náhradní; profesi ani středisko s pracovníky smazat nejde. Kalkulace sazby – výchozí odvody 33,8 %, dovolená 25 dní, nemoc 5 dní, 8 h/den, produktivita 85 %, režie % z mzdy nebo Kč/rok; fond = pracovní dny roku začátku projektu podle kalendáře projektu. Knihovna: párování podle názvů, odkazy se přemapují podle názvů, jiná měna se odmítne, náhled nové/změněné/beze změny, jeden krok Zpět. Formát projektu v2 s převodem v1. Vzorový projekt má vzorovou databázi |
 | 1.10 | 15. 11. 2026 | Fáze 6b – zdroje a náklady na činnostech: panel **Detail činnosti** pod plánem (sbalitelný, výška tažením); pravidla výpočtu nákladů v R-02 (týden a měsíc podle kalendářních dnů, den podle pracovních); řádky smí mít činnosti i fáze, milník jen jednorázový náklad a materiál; sloupec Náklady s rozpadem a náklady projektu v záhlaví (R-05); řádek bez sazby má náklad 0 a varování. Návaznosti: zdroj použitý na činnostech nejde smazat (hláška s výpisem činností); smazání kategorie přesune i řádky; změna profese pracovníka se propíše do jeho řádků; změna na milník se zeptá a odebere nepovolené řádky; import z tabulky řádky nepřenáší a předem varuje; duplikace kopíruje řádky s novými ID. **Volné štítky** u řádků (R-03) přesunuty do fáze 7. Vzorový projekt má náklady na většině položek |
 | 1.11 | 15. 11. 2026 | Vizuální identita (mezi kroky fáze 6c): aplikace přejmenována na **MiRo project**; nový požadavek **N-13** – logo, písmo Lato (WOFF2), barvy značky (grafit, papír, teplá šedá; žlutá = důležité, nově **tyrkysová** jako doplňkový akcent pro interakci a běžné úsečky činností; kritická cesta žlutě místo červeně); kontrast WCAG AA ověřen výpočtem (tlumená šedá ztmavena na 4,6 : 1). Otevřená otázka 6 uzavřena; přípony souborů beze změny kvůli kompatibilitě. Fáze 6c pokračuje jako v1.12 |
+| 1.12 | 16. 11. 2026 | Fáze 6c – kritická cesta a vytížení: F-09, K-05 a Z-03 upřesněny podle implementace (pravidla rezerv a kritičnosti; vytížení = h/den × % v pracovních dnech, kapacita profese = součet pracovníků, nepřítomnost nemění termíny); nový třetí pohled **Vytížení** (základ A-04); varování v Detailu činnosti; datový model: vypočtené pozdní termíny a rezervy, `Worker.absences` s limitem 731 dnů na záznam (ochrana proti zamrznutí podvrženým souborem) |

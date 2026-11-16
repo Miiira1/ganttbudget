@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { LANGUAGES } from '../i18n/languages'
 import { formatIsoDate } from '../i18n/format'
 import { createSampleProject } from '../samples/automatizace'
-import { projectStore, useCosts, useProject, useSchedule } from '../store/useProject'
+import { projectStore, useCosts, useLoad, useProject, useSchedule } from '../store/useProject'
 import { formatMoney } from '../model/money'
 import { applyTheme, loadThemePreference, saveThemePreference, THEME_PREFERENCES, watchSystemTheme, type ThemePreference } from './theme'
 import { CalendarDialog } from './CalendarDialog'
@@ -28,13 +28,14 @@ import { isDirty, openProject, saveProject, useFileState } from '../io/fileActio
 import { startAutosave } from '../io/autosaveRunner'
 import { deleteSelected, duplicateSelected } from './structureCommands'
 import { ResourcesView } from './resources/ResourcesView'
-import { PlanIcon, ResourcesIcon } from './icons'
+import { LoadIcon, PlanIcon, ResourcesIcon } from './icons'
+import { LoadView } from './load/LoadView'
 import { DetailDock } from './detail/DetailDock'
 import { TaskDetailBody, TaskDetailHeader } from './detail/TaskDetail'
 import { loadPreference, savePreference } from './preferences'
 
 /** Hlavní pohledy: Plán (tabulka + graf) a Zdroje (databáze, fáze 6a). */
-const VIEWS = ['plan', 'resources'] as const
+const VIEWS = ['plan', 'resources', 'load'] as const
 type View = (typeof VIEWS)[number]
 
 /** Je kurzor v textovém poli? Tam necháme Ctrl+Z prohlížeči (vrací psaní v poli). */
@@ -60,8 +61,13 @@ export default function App() {
   const selectedId = useSelectedId(project)
   const selectRow = useViewState((s) => s.select)
 
-  // --- Pohled Plán / Zdroje (pamatuje si ho prohlížeč) ---
-  const [view, setViewState] = useState<View>(() => (loadPreference('view') === 'resources' ? 'resources' : 'plan'))
+  // --- Pohled Plán / Zdroje / Vytížení (pamatuje si ho prohlížeč) ---
+  const [view, setViewState] = useState<View>(() => {
+    const saved = loadPreference('view')
+    return VIEWS.find((v) => v === saved) ?? 'plan'
+  })
+  // Počet přetížených zdrojů pro odznak na přepínači (počítá se jen jednou pro každou verzi projektu).
+  const overloadedCount = useLoad().overloadedCount
   const setView = (next: View) => {
     setViewState(next)
     savePreference('view', next)
@@ -258,8 +264,17 @@ export default function App() {
                   view === id ? 'bg-miro-graphite text-miro-paper dark:bg-miro-paper dark:text-miro-graphite' : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
                 }`}
               >
-                {id === 'plan' ? <PlanIcon /> : <ResourcesIcon />}
+                {id === 'plan' ? <PlanIcon /> : id === 'resources' ? <ResourcesIcon /> : <LoadIcon />}
                 {t(`view.${id}`)}
+                {id === 'load' && overloadedCount > 0 && (
+                  <span
+                    className="ml-0.5 rounded-full bg-red-600 px-1.5 text-xs font-semibold leading-5 text-white dark:bg-red-500"
+                    title={t('load.overloadedBadge', { count: overloadedCount })}
+                  >
+                    {overloadedCount}
+                    <span className="sr-only"> {t('load.overloadedBadge', { count: overloadedCount })}</span>
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -329,6 +344,10 @@ export default function App() {
       {view === 'resources' ? (
         <main className="min-h-0 flex-1">
           <ResourcesView />
+        </main>
+      ) : view === 'load' ? (
+        <main className="min-h-0 flex-1">
+          <LoadView onShowPlan={() => setView('plan')} />
         </main>
       ) : project.tasks.length === 0 ? (
         // Prázdný projekt: jen uvítání přes celou šířku, graf by byl prázdný.

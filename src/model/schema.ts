@@ -194,6 +194,24 @@ export const DepartmentSchema = z.object({
 })
 
 /** Nepřítomnost pracovníka (K-05): dovolená, nemoc… – rozsah dnů včetně obou krajních. */
+/**
+ * Nejdelší jedna nepřítomnost v kalendářních dnech (včetně obou krajů) – 2 roky.
+ * Pojistka proti podvrženému souboru: rozsah „rok 1 – rok 9999“ by výpočty zamrazil.
+ * Delší nepřítomnost se zadá jako víc záznamů.
+ */
+export const MAX_ABSENCE_DAYS = 731
+
+/** Počet kalendářních dnů od–do včetně obou krajů (ISO data, bez časových pásem). */
+export function calendarDaysInclusive(start: string, end: string): number {
+  const toDay = (iso: string) => {
+    const [y, m, d] = iso.split('-').map(Number) as [number, number, number]
+    const date = new Date(Date.UTC(2000, m - 1, d))
+    date.setUTCFullYear(y) // i roky 0–99 (Date.UTC by je posunul do 20. století)
+    return Math.round(date.getTime() / 86_400_000)
+  }
+  return toDay(end) - toDay(start) + 1
+}
+
 export const AbsenceSchema = z
   .object({
     start: IsoDateSchema,
@@ -201,6 +219,7 @@ export const AbsenceSchema = z
     note: z.string().max(200).optional(),
   })
   .refine((a) => a.start <= a.end, { message: 'rangeEndBeforeStart', path: ['end'] })
+  .refine((a) => a.start > a.end || calendarDaysInclusive(a.start, a.end) <= MAX_ABSENCE_DAYS, { message: 'absenceTooLong', path: ['end'] })
 
 export const WorkerSchema = z.object({
   id: IdSchema,

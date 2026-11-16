@@ -35,3 +35,16 @@ export function ResourcesIcon({ className = '' }: { className?: string }) {
     </svg>
   )
 }
+
+/** Vytížení: sloupce histogramu a vodorovná čára kapacity; jeden sloupec ji přesahuje. */
+export function LoadIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg {...common} className={className}>
+      <path d="M1.5 14.5h13" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.55" />
+      <rect x="2.5" y="9" width="2.6" height="5.5" rx="0.8" fill="currentColor" opacity="0.65" />
+      <rect x="6.7" y="6.5" width="2.6" height="8" rx="0.8" fill="currentColor" opacity="0.8" />
+      <rect x="10.9" y="3" width="2.6" height="11.5" rx="0.8" fill="currentColor" />
+      <path d="M1 5.5h14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeDasharray="1.6 1.6" />
+    </svg>
+  )
+}

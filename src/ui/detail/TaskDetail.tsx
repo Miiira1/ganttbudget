@@ -2,16 +2,19 @@
  * Panel „Detail činnosti“ (fáze 6b, Z-02, R-01, R-02): řádky zdrojů a nákladů vybrané položky.
  * Každý řádek = jeden zdroj nebo náklad; u každého hodiny a náklad (model/costs.ts).
  * Každá změna je jeden krok Zpět. Text od uživatele se zobrazuje jen jako text.
+ * Fáze 6c: u řádku člověk / stroj varování, když je pracovník během činnosti nepřítomný
+ * nebo je zdroj přetížený (model/load.ts) – termíny se tím nemění.
  */
 import { memo, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { formatNumber } from '../../i18n/format'
 import type { LineCost } from '../../model/costs'
+import { lineLoadWarnings, type LineLoadWarnings } from '../../model/load'
 import { defaultCategoryId } from '../../model/defaultCategories'
 import { formatAmount, formatMoney, parseMoney } from '../../model/money'
 import { MILESTONE_LINE_KINDS, type Project, type Task, type TaskLine, type TaskLineKind } from '../../model/schema'
-import { projectStore, useCosts, useProject, useSchedule } from '../../store/useProject'
+import { projectStore, useCosts, useLoad, useProject, useSchedule } from '../../store/useProject'
 import { DateInputCell, TextCell } from '../EditableCells'
 import { showNotice } from '../notice'
 import { LazySelect, parseDecimal } from '../resources/catalogCells'
@@ -109,47 +112,102 @@ export function TaskDetailBody() {
   const selectedId = useSelectedId(project)
   const task = project.tasks.find((x) => x.id === selectedId)
   const costs = useCosts()
+  const scheduled = useSchedule()
+  const load = useLoad()
+  const warnings = useMemo(
+    () => new Map(task ? task.lines.map((line) => [line.id, lineLoadWarnings(project, scheduled, load, task.id, line)]) : []),
+    [project, scheduled, load, task],
+  )
   if (!task) return null
   if (task.lines.length === 0) return <p className="py-2 text-sm text-slate-500 dark:text-slate-400">{t('detail.empty')}</p>
 
   const th = 'border-b border-slate-300 px-1.5 py-1 text-left text-xs font-semibold uppercase tracking-wide text-slate-600 dark:border-slate-600 dark:text-slate-300'
   return (
-    <table className="w-full table-fixed border-collapse text-sm">
-      <caption className="sr-only">{t('detail.caption', { name: task.name })}</caption>
-      <colgroup>
-        <col style={{ width: '7rem' }} />
-        <col />
-        <col style={{ width: '7rem' }} />
-        <col style={{ width: '6rem' }} />
-        <col style={{ width: '9rem' }} />
-        <col style={{ width: '9rem' }} />
-        <col style={{ width: '12rem' }} />
-        <col style={{ width: '2.5rem' }} />
-      </colgroup>
-      <thead>
-        <tr>
-          <th className={th}>{t('detail.columns.kind')}</th>
-          <th className={th}>{t('detail.columns.resource')}</th>
-          <th className={`${th} text-right`}>{t('detail.columns.amount')}</th>
-          <th className={`${th} text-right`}>{t('detail.columns.hours')}</th>
-          <th className={th}>{t('detail.columns.category')}</th>
-          <th className={`${th} text-right`}>{t('detail.columns.cost')}</th>
-          <th className={th}>{t('detail.columns.note')}</th>
-          <th className={th}>
-            <span className="sr-only">{t('resources.delete')}</span>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {task.lines.map((line) => (
-          <LineRow key={line.id} taskId={task.id} line={line} cost={costs.lines.get(line.id)} />
-        ))}
-      </tbody>
-    </table>
+    <>
+      <table className="w-full table-fixed border-collapse text-sm">
+        <caption className="sr-only">{t('detail.caption', { name: task.name })}</caption>
+        <colgroup>
+          <col style={{ width: '7rem' }} />
+          <col />
+          <col style={{ width: '7rem' }} />
+          <col style={{ width: '6rem' }} />
+          <col style={{ width: '9rem' }} />
+          <col style={{ width: '9rem' }} />
+          <col style={{ width: '12rem' }} />
+          <col style={{ width: '2.5rem' }} />
+        </colgroup>
+        <thead>
+          <tr>
+            <th className={th}>{t('detail.columns.kind')}</th>
+            <th className={th}>{t('detail.columns.resource')}</th>
+            <th className={`${th} text-right`}>{t('detail.columns.amount')}</th>
+            <th className={`${th} text-right`}>{t('detail.columns.hours')}</th>
+            <th className={th}>{t('detail.columns.category')}</th>
+            <th className={`${th} text-right`}>{t('detail.columns.cost')}</th>
+            <th className={th}>{t('detail.columns.note')}</th>
+            <th className={th}>
+              <span className="sr-only">{t('resources.delete')}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {task.lines.map((line) => (
+            <LineRow key={line.id} taskId={task.id} line={line} cost={costs.lines.get(line.id)} warnings={warnings.get(line.id)} />
+          ))}
+        </tbody>
+      </table>
+      <LoadWarnings task={task} project={project} warnings={warnings} />
+    </>
   )
 }
 
-const LineRow = memo(function LineRow({ taskId, line, cost }: { taskId: string; line: TaskLine; cost: LineCost | undefined }) {
+/** Jméno zdroje řádku (pracovník, jinak profese; stroj) pro text varování. */
+function resourceName(project: Project, line: TaskLine): string {
+  if (line.kind === 'labor') {
+    const worker = line.workerId ? project.workers.find((w) => w.id === line.workerId) : undefined
+    return worker?.name ?? project.professions.find((p) => p.id === line.professionId)?.name ?? ''
+  }
+  if (line.kind === 'machine') return project.machines.find((m) => m.id === line.machineId)?.name ?? ''
+  return ''
+}
+
+/** Srozumitelný seznam varování pod tabulkou řádků (nepřítomnost, přetížení). */
+function LoadWarnings({ task, project, warnings }: { task: Task; project: Project; warnings: Map<string, LineLoadWarnings> }) {
+  const { t } = useTranslation()
+  const items: { key: string; text: string; over: boolean }[] = []
+  for (const line of task.lines) {
+    const w = warnings.get(line.id)
+    if (!w) continue
+    const name = resourceName(project, line)
+    if (w.absenceDays > 0) items.push({ key: `${line.id}-a`, text: t('detail.warning.absence', { name, count: w.absenceDays }), over: false })
+    if (w.overloadedDays > 0) items.push({ key: `${line.id}-o`, text: t('detail.warning.overloaded', { name, count: w.overloadedDays }), over: true })
+  }
+  if (items.length === 0) return null
+  return (
+    <ul className="mt-2 space-y-1 text-sm">
+      {items.map((item) => (
+        <li key={item.key} className="flex items-start gap-1.5">
+          <span aria-hidden="true" className={item.over ? 'text-red-700 dark:text-red-300' : 'text-miro-gold dark:text-miro-yellow'}>
+            ⚠
+          </span>
+          <span>{item.text}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+const LineRow = memo(function LineRow({
+  taskId,
+  line,
+  cost,
+  warnings,
+}: {
+  taskId: string
+  line: TaskLine
+  cost: LineCost | undefined
+  warnings: LineLoadWarnings | undefined
+}) {
   const { t, i18n } = useTranslation()
   const currency = useProject((s) => s.project.currency)
   const label = (field: string) => t('detail.fieldLabel', { field: t(`detail.columns.${field}`), kind: t(`detail.kind.${line.kind}`) })
@@ -164,6 +222,24 @@ const LineRow = memo(function LineRow({ taskId, line, cost }: { taskId: string; 
       </td>
       <td className="px-1.5 py-0.5 text-right tabular-nums text-slate-600 dark:text-slate-300">
         {cost?.hours != null ? `${formatNumber(Math.round(cost.hours * 10) / 10, i18n.language)} h` : ''}
+        {warnings && warnings.absenceDays > 0 && (
+          <span
+            className="ml-1 text-miro-gold dark:text-miro-yellow"
+            title={t('detail.warning.absenceShort', { count: warnings.absenceDays })}
+            aria-label={t('detail.warning.absenceShort', { count: warnings.absenceDays })}
+          >
+            ⚠
+          </span>
+        )}
+        {warnings && warnings.overloadedDays > 0 && (
+          <span
+            className="ml-1 text-red-700 dark:text-red-300"
+            title={t('detail.warning.overloadedShort', { count: warnings.overloadedDays })}
+            aria-label={t('detail.warning.overloadedShort', { count: warnings.overloadedDays })}
+          >
+            ⚠
+          </span>
+        )}
       </td>
       <td className="px-1 py-0.5">
         <LineCategory taskId={taskId} line={line} label={label('category')} />

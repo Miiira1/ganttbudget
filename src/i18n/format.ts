@@ -67,3 +67,17 @@ export function formatDateTime(isoTime: string, languageCode: string): string {
 export function formatNumber(value: number, languageCode: string): string {
   return new Intl.NumberFormat(localeFor(languageCode)).format(value)
 }
+
+/** Den a měsíc bez roku (cs: "16. 11.", en: "16/11") – popisky sloupců vytížení. */
+export function formatDayMonth(isoDate: string, languageCode: string): string {
+  const [y, m, d] = isoDate.split('-').map(Number)
+  if (y === undefined || m === undefined || d === undefined) return isoDate
+  return dateFormatter(languageCode, 'day-month', { day: 'numeric', month: 'numeric' }).format(new Date(Date.UTC(y, m - 1, d)))
+}
+
+/** Krátký název dne v týdnu (cs: "po", en: "Mon"). */
+export function formatWeekdayShort(isoDate: string, languageCode: string): string {
+  const [y, m, d] = isoDate.split('-').map(Number)
+  if (y === undefined || m === undefined || d === undefined) return isoDate
+  return dateFormatter(languageCode, 'weekday-short', { weekday: 'short' }).format(new Date(Date.UTC(y, m - 1, d)))
+}

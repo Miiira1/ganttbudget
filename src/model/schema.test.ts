@@ -259,6 +259,17 @@ describe('databáze zdrojů (fáze 6a, formát v2)', () => {
     expect(ProjectSchema.safeParse(q).success).toBe(false)
   })
 
+  it('jedna nepřítomnost trvá nejvýš 731 kalendářních dnů (ochrana proti zamrznutí podvrženým souborem)', () => {
+    const p = withCatalogs()
+    p.workers[0]!.absences = [{ start: '2026-01-01', end: '2028-01-01' }] // 731 dnů včetně obou krajů
+    expect(issues(p)).toEqual([])
+    p.workers[0]!.absences = [{ start: '2026-01-01', end: '2028-01-02' }] // 732 dnů
+    const tooLong = ProjectSchema.safeParse(p)
+    expect(tooLong.success === false && tooLong.error.issues.some((i) => i.message === 'absenceTooLong')).toBe(true)
+    p.workers[0]!.absences = [{ start: '0001-01-01', end: '9999-12-31' }]
+    expect(ProjectSchema.safeParse(p).success).toBe(false)
+  })
+
   it('soubor bez číselníku středisek (rozpracovaná verze 2) se přečte s prázdným seznamem', () => {
     const { departments, ...withoutDepartments } = withCatalogs()
     void departments

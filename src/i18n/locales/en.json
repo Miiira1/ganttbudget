@@ -254,7 +254,10 @@
       "dragGroup": "Drag one of the selected bars = move all selected by the same number of working days; drag ⠿ of a selected row = move the whole selection.",
       "resourceTabs": "Resources: drag a tab (Professions, Workers…) = change the tab order; on the selected tab the same with Alt+Shift+← / →.",
       "rate": "Resources: click an hourly rate (✎) = set it manually, by calculation or from the profession.",
-      "detailPanel": "Task detail (below the plan): click a task = show its resources and costs; drag the separator above the panel (or ↑ ↓) = change the height; ▾ = collapse."
+      "detailPanel": "Task detail (below the plan): click a task = show its resources and costs; drag the separator above the panel (or ↑ ↓) = change the height; ▾ = collapse.",
+      "critical": "The Critical path button highlights tasks without slack in yellow; the Slack column shows how many working days a task may slip",
+      "absence": "Resources → Workers → Absence column: holidays, sick leave, training (affects load, not dates)",
+      "load": "Load view: click a resource for its histogram and tasks; click a task to open it in the plan"
     }
   },
   "structure": {
@@ -603,7 +606,9 @@
     "plan": "Plan",
     "planHint": "Task table and Gantt chart",
     "resources": "Resources",
-    "resourcesHint": "Database of professions, workers, machines, materials and cost categories"
+    "resourcesHint": "Database of professions, workers, machines, materials and cost categories",
+    "load": "Load",
+    "loadHint": "Workload of workers, professions and machines over time; overloads in red"
   },
   "rate": {
     "title": "Hourly rate – {{name}}",
@@ -720,7 +725,15 @@
     "deleteLine": "Delete line {{kind}}",
     "deleteLineHint": "Delete the line (Ctrl+Z undoes it)",
     "warning": {
-      "noRate": "The hourly rate is missing – set it on the profession or worker (Resources)."
+      "noRate": "The hourly rate is missing – set it on the profession or worker (Resources).",
+      "absence_one": "{{name}}: absent during the task – {{count}} working day. The task dates do not change; consider another worker or moving the task.",
+      "absence_other": "{{name}}: absent during the task – {{count}} working days. The task dates do not change; consider another worker or moving the task.",
+      "overloaded_one": "{{name}}: overloaded during the task – {{count}} day. See the Load view for details.",
+      "overloaded_other": "{{name}}: overloaded during the task – {{count}} days. See the Load view for details.",
+      "absenceShort_one": "Absent during the task: {{count}} working day",
+      "absenceShort_other": "Absent during the task: {{count}} working days",
+      "overloadedShort_one": "Resource overloaded during the task: {{count}} day",
+      "overloadedShort_other": "Resource overloaded during the task: {{count}} days"
     },
     "error": {
       "noProfession": "The resource database has no profession yet. Add one in Resources → Professions.",
@@ -768,7 +781,75 @@
     "close": "Close",
     "error": {
       "dates": "Enter a valid start date (and optionally an end date).",
-      "order": "The end must not be before the start."
+      "order": "The end must not be before the start.",
+      "tooLong": "One absence can last at most {{max}} days (2 years). Enter a longer one as several records."
+    }
+  },
+  "load": {
+    "intro": "How many hours of work each resource has planned in each period against its capacity. The number in a cell is the highest daily load in the period. Click a resource for its histogram and task list.",
+    "unit": "Period",
+    "units": {
+      "day": "Days",
+      "week": "Weeks",
+      "month": "Months"
+    },
+    "weekShort": "W{{n}}",
+    "resource": "Resource",
+    "groups": {
+      "worker": "Workers",
+      "profession": "Professions",
+      "machine": "Machines"
+    },
+    "kind": {
+      "worker": "worker",
+      "profession": "profession",
+      "machine": "machine"
+    },
+    "legend": {
+      "label": "Legend",
+      "low": "up to 80%",
+      "high": "80–100%",
+      "over": "overload",
+      "noCapacity": "demand only (h)"
+    },
+    "cell": {
+      "free": "Free – capacity {{capacity}} h",
+      "title": "Planned {{demand}} h of {{capacity}} h capacity",
+      "peak": "Highest daily load {{pct}}%",
+      "overloaded_one": "{{count}} overloaded day",
+      "overloaded_other": "{{count}} overloaded days",
+      "noCapacity": "Planned {{demand}} h – the profession has no workers, capacity unknown"
+    },
+    "overloadedDays_one": "{{count}} overloaded day",
+    "overloadedDays_other": "{{count}} overloaded days",
+    "overloadedBadge_one": "{{count}} overloaded resource",
+    "overloadedBadge_other": "{{count}} overloaded resources",
+    "select": "Show load: {{name}}",
+    "noResources": "The project has no workers, professions or machines yet. Add them in the Resources view and assign them to tasks in the Task detail panel.",
+    "noPlan": "The plan has no scheduled tasks yet, so there is nothing to load.",
+    "detail": {
+      "label": "Load detail – {{name}}",
+      "capacity": "capacity {{hours}} h/day",
+      "absence_one": "absence {{count}} working day",
+      "absence_other": "absence {{count}} working days",
+      "noWorkers": "The profession has no workers – only demand is shown and overloads are not checked. Add workers in the Resources view.",
+      "histogram": "Load histogram",
+      "histogramSummary": "Load histogram – {{name}}, {{hours}} h in total",
+      "demand": "Planned hours",
+      "capacityLine": "Capacity",
+      "bar": "{{period}}: planned {{demand}} h, capacity {{capacity}} h",
+      "tasks": "Tasks using this resource",
+      "noTasks": "The resource is not assigned to any task yet.",
+      "showInPlan": "Show task {{name}} in the plan",
+      "anyWorker": "anyone in the profession",
+      "columns": {
+        "wbs": "WBS",
+        "task": "Task",
+        "who": "Worker",
+        "hoursPerDay": "h/day",
+        "dates": "Dates",
+        "hours": "Hours"
+      }
     }
   }
 }

@@ -270,7 +270,10 @@
       "dragGroup": "Táhnout jednu z vybraných úseček = posunout všechny vybrané o stejný počet pracovních dnů; táhnout ⠿ u vybraného řádku = přesunout celý výběr.",
       "resourceTabs": "Zdroje: táhnout záložku (Profese, Pracovníci…) = změnit pořadí záložek; na vybrané záložce totéž Alt+Shift+← / →.",
       "rate": "Zdroje: kliknout na hodinovou sazbu (✎) = nastavit ji ručně, kalkulací nebo podle profese.",
-      "detailPanel": "Detail činnosti (pod plánem): kliknout na činnost = ukázat její zdroje a náklady; táhnout oddělovač nad panelem (nebo šipky ↑ ↓) = změnit výšku; ▾ = sbalit."
+      "detailPanel": "Detail činnosti (pod plánem): kliknout na činnost = ukázat její zdroje a náklady; táhnout oddělovač nad panelem (nebo šipky ↑ ↓) = změnit výšku; ▾ = sbalit.",
+      "critical": "Tlačítko Kritická cesta žlutě zvýrazní činnosti bez rezervy; sloupec Rezerva ukazuje, o kolik pracovních dnů se činnost smí zpozdit",
+      "absence": "Zdroje → Pracovníci → sloupec Nepřítomnost: dovolená, nemoc, školení (ovlivní vytížení, ne termíny)",
+      "load": "Pohled Vytížení: klik na zdroj ukáže histogram a činnosti; klik na činnost ji otevře v plánu"
     }
   },
   "structure": {
@@ -641,7 +644,9 @@
     "plan": "Plán",
     "planHint": "Tabulka činností a Ganttův diagram",
     "resources": "Zdroje",
-    "resourcesHint": "Databáze profesí, pracovníků, strojů, materiálů a kategorií nákladů"
+    "resourcesHint": "Databáze profesí, pracovníků, strojů, materiálů a kategorií nákladů",
+    "load": "Vytížení",
+    "loadHint": "Vytížení pracovníků, profesí a strojů v čase; přetížení vyznačeno červeně"
   },
   "rate": {
     "title": "Hodinová sazba – {{name}}",
@@ -764,7 +769,23 @@
     "deleteLine": "Smazat řádek {{kind}}",
     "deleteLineHint": "Smazat řádek (lze vrátit Ctrl+Z)",
     "warning": {
-      "noRate": "Chybí hodinová sazba – nastavte ji u profese nebo pracovníka (Zdroje)."
+      "noRate": "Chybí hodinová sazba – nastavte ji u profese nebo pracovníka (Zdroje).",
+      "absence_one": "{{name}}: nepřítomnost během činnosti – {{count}} pracovní den. Termín činnosti se tím nemění; zvažte jiného pracovníka nebo posun činnosti.",
+      "absence_few": "{{name}}: nepřítomnost během činnosti – {{count}} pracovní dny. Termín činnosti se tím nemění; zvažte jiného pracovníka nebo posun činnosti.",
+      "absence_many": "{{name}}: nepřítomnost během činnosti – {{count}} pracovního dne. Termín činnosti se tím nemění; zvažte jiného pracovníka nebo posun činnosti.",
+      "absence_other": "{{name}}: nepřítomnost během činnosti – {{count}} pracovních dnů. Termín činnosti se tím nemění; zvažte jiného pracovníka nebo posun činnosti.",
+      "overloaded_one": "{{name}}: přetížení během činnosti – {{count}} den. Podrobnosti ukáže pohled Vytížení.",
+      "overloaded_few": "{{name}}: přetížení během činnosti – {{count}} dny. Podrobnosti ukáže pohled Vytížení.",
+      "overloaded_many": "{{name}}: přetížení během činnosti – {{count}} dne. Podrobnosti ukáže pohled Vytížení.",
+      "overloaded_other": "{{name}}: přetížení během činnosti – {{count}} dnů. Podrobnosti ukáže pohled Vytížení.",
+      "absenceShort_one": "Nepřítomnost během činnosti: {{count}} pracovní den",
+      "absenceShort_few": "Nepřítomnost během činnosti: {{count}} pracovní dny",
+      "absenceShort_many": "Nepřítomnost během činnosti: {{count}} pracovního dne",
+      "absenceShort_other": "Nepřítomnost během činnosti: {{count}} pracovních dnů",
+      "overloadedShort_one": "Zdroj je během činnosti přetížený: {{count}} den",
+      "overloadedShort_few": "Zdroj je během činnosti přetížený: {{count}} dny",
+      "overloadedShort_many": "Zdroj je během činnosti přetížený: {{count}} dne",
+      "overloadedShort_other": "Zdroj je během činnosti přetížený: {{count}} dnů"
     },
     "error": {
       "noProfession": "V databázi zdrojů zatím není žádná profese. Přidejte ji na obrazovce Zdroje → Profese.",
@@ -814,7 +835,83 @@
     "close": "Zavřít",
     "error": {
       "dates": "Zadejte platné datum začátku (a případně konce).",
-      "order": "Konec nesmí být před začátkem."
+      "order": "Konec nesmí být před začátkem.",
+      "tooLong": "Jedna nepřítomnost může trvat nejvýš {{max}} dní (2 roky). Delší zadejte jako víc záznamů."
+    }
+  },
+  "load": {
+    "intro": "Kolik hodin práce mají zdroje v jednotlivých obdobích naplánováno vůči své kapacitě. Číslo v buňce je nejvyšší denní vytížení v období. Klikněte na zdroj pro histogram a seznam činností.",
+    "unit": "Období",
+    "units": {
+      "day": "Dny",
+      "week": "Týdny",
+      "month": "Měsíce"
+    },
+    "weekShort": "T{{n}}",
+    "resource": "Zdroj",
+    "groups": {
+      "worker": "Pracovníci",
+      "profession": "Profese",
+      "machine": "Stroje"
+    },
+    "kind": {
+      "worker": "pracovník",
+      "profession": "profese",
+      "machine": "stroj"
+    },
+    "legend": {
+      "label": "Legenda",
+      "low": "do 80 %",
+      "high": "80–100 %",
+      "over": "přetížení",
+      "noCapacity": "jen poptávka (h)"
+    },
+    "cell": {
+      "free": "Volno – kapacita {{capacity}} h",
+      "title": "Naplánováno {{demand}} h z kapacity {{capacity}} h",
+      "peak": "Nejvyšší denní vytížení {{pct}} %",
+      "overloaded_one": "Přetížený {{count}} den",
+      "overloaded_few": "Přetížené {{count}} dny",
+      "overloaded_many": "Přetíženo {{count}} dne",
+      "overloaded_other": "Přetíženo {{count}} dnů",
+      "noCapacity": "Naplánováno {{demand}} h – profese nemá pracovníky, kapacita není známá"
+    },
+    "overloadedDays_one": "{{count}} den přetížení",
+    "overloadedDays_few": "{{count}} dny přetížení",
+    "overloadedDays_many": "{{count}} dne přetížení",
+    "overloadedDays_other": "{{count}} dnů přetížení",
+    "overloadedBadge_one": "{{count}} přetížený zdroj",
+    "overloadedBadge_few": "{{count}} přetížené zdroje",
+    "overloadedBadge_many": "{{count}} přetíženého zdroje",
+    "overloadedBadge_other": "{{count}} přetížených zdrojů",
+    "select": "Zobrazit vytížení: {{name}}",
+    "noResources": "Projekt zatím nemá žádné pracovníky, profese ani stroje. Přidejte je v pohledu Zdroje a pak je přiřaďte činnostem v panelu Detail činnosti.",
+    "noPlan": "Plán zatím nemá žádné činnosti s termíny, takže není co vytížit.",
+    "detail": {
+      "label": "Detail vytížení – {{name}}",
+      "capacity": "kapacita {{hours}} h/den",
+      "absence_one": "nepřítomnost {{count}} pracovní den",
+      "absence_few": "nepřítomnost {{count}} pracovní dny",
+      "absence_many": "nepřítomnost {{count}} pracovního dne",
+      "absence_other": "nepřítomnost {{count}} pracovních dnů",
+      "noWorkers": "Profese nemá žádné pracovníky – ukazuje se jen poptávka a přetížení se nehlídá. Pracovníky přidáte v pohledu Zdroje.",
+      "histogram": "Histogram vytížení",
+      "histogramSummary": "Histogram vytížení – {{name}}, celkem {{hours}} h",
+      "demand": "Naplánované hodiny",
+      "capacityLine": "Kapacita",
+      "bar": "{{period}}: naplánováno {{demand}} h, kapacita {{capacity}} h",
+      "tasks": "Činnosti, které zdroj vytěžují",
+      "noTasks": "Zdroj zatím není přiřazený žádné činnosti.",
+      "showInPlan": "Zobrazit činnost {{name}} v plánu",
+      "anyWorker": "kdokoli z profese",
+      "columns": {
+        "wbs": "WBS",
+        "task": "Činnost",
+        "who": "Pracovník",
+        "hoursPerDay": "h/den",
+        "dates": "Termín",
+        "hours": "Hodin"
+      }
     }
   }
 }

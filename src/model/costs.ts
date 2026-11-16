@@ -40,6 +40,36 @@ export interface CostsResult {
   project: CostSummary
 }
 
+/** Číselníky pro výpočet hodin řádku (připravené jednou pro celý výpočet). */
+export interface ResourceLookup {
+  workers: Map<string, Project['workers'][number]>
+  professions: Map<string, Project['professions'][number]>
+  machines: Map<string, Project['machines'][number]>
+}
+
+export function createResourceLookup(project: Project): ResourceLookup {
+  return {
+    workers: new Map(project.workers.map((w) => [w.id, w])),
+    professions: new Map(project.professions.map((p) => [p.id, p])),
+    machines: new Map(project.machines.map((m) => [m.id, m])),
+  }
+}
+
+/**
+ * Hodiny práce řádku za jeden pracovní den = h/den zdroje × podíl %.
+ * Člověk: kapacita konkrétního pracovníka, jinak profese. Společné pro náklady i vytížení,
+ * aby se nikdy nerozešly. Jiné druhy řádků hodiny nemají (null).
+ */
+export function lineHoursPerDay(line: TaskLine, lookup: ResourceLookup): number | null {
+  if (line.kind === 'labor') {
+    const worker = line.workerId ? lookup.workers.get(line.workerId) : undefined
+    const capacity = worker?.capacityPerDay ?? lookup.professions.get(line.professionId)?.capacityPerDay ?? 0
+    return (capacity * line.sharePct) / 100
+  }
+  if (line.kind === 'machine') return ((lookup.machines.get(line.machineId)?.capacityPerDay ?? 0) * line.sharePct) / 100
+  return null
+}
+
 const emptySummary = (): CostSummary => ({ total: 0, labor: 0, machines: 0, material: 0, other: 0 })
 
 function add(target: CostSummary, source: CostSummary): void {
@@ -78,9 +108,8 @@ interface Span {
 
 export function computeCosts(project: Project, scheduleResult: ScheduleResult): CostsResult {
   const fundDays = workingDaysInYear(project.calendar, Number(project.startDate.slice(0, 4)))
-  const professions = new Map(project.professions.map((p) => [p.id, p]))
-  const workers = new Map(project.workers.map((w) => [w.id, w]))
-  const machines = new Map(project.machines.map((m) => [m.id, m]))
+  const lookup = createResourceLookup(project)
+  const { professions, workers, machines } = lookup
   const materials = new Map(project.materials.map((m) => [m.id, m]))
   // Sazby se počítají jednou (kalkulace je stejná pro všechny řádky).
   const professionRates = new Map(project.professions.map((p) => [p.id, professionRate(p, fundDays)]))
@@ -90,15 +119,14 @@ export function computeCosts(project: Project, scheduleResult: ScheduleResult): 
     switch (line.kind) {
       case 'labor': {
         const worker = line.workerId ? workers.get(line.workerId) : undefined
-        const capacity = worker?.capacityPerDay ?? professions.get(line.professionId)?.capacityPerDay ?? 0
         const rate = worker ? (workerRates.get(worker.id) ?? null) : (professionRates.get(line.professionId) ?? null)
-        const hours = (span.days * capacity * line.sharePct) / 100
+        const hours = span.days * (lineHoursPerDay(line, lookup) ?? 0)
         return rate === null ? { amount: 0, hours, warning: 'noRate' } : { amount: Math.round(hours * rate), hours, warning: null }
       }
       case 'machine': {
         const machine = machines.get(line.machineId)
         if (!machine) return { amount: 0, hours: 0, warning: 'noRate' }
-        const hours = (span.days * machine.capacityPerDay * line.sharePct) / 100
+        const hours = span.days * (lineHoursPerDay(line, lookup) ?? 0)
         const amount = machine.rateUnit === 'hour' ? hours * machine.rate : (span.days * line.sharePct * machine.rate) / 100
         return { amount: Math.round(amount), hours, warning: null }
       }
