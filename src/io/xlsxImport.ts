@@ -23,10 +23,15 @@ function plain(value: ExcelJS.CellValue): string | number | Date | null {
   return null // chyba (#N/A…) nebo neznámý typ
 }
 
-export async function readXlsx(buffer: ArrayBuffer): Promise<unknown[][]> {
+/**
+ * Přečte list sešitu jako tabulku. `preferredSheets` = názvy listů, které se vezmou přednostně
+ * (např. „Řádky“ z exportu rozpočtu); jinak první list.
+ */
+export async function readXlsx(buffer: ArrayBuffer, preferredSheets: readonly string[] = []): Promise<unknown[][]> {
   const workbook = new ExcelJS.Workbook()
   await workbook.xlsx.load(buffer)
-  const sheet = workbook.worksheets[0]
+  const wanted = new Set(preferredSheets.map((n) => n.trim().toLowerCase()))
+  const sheet = workbook.worksheets.find((w) => wanted.has(w.name.trim().toLowerCase())) ?? workbook.worksheets[0]
   if (!sheet) return []
   const width = sheet.columnCount
   const rows: unknown[][] = []

@@ -1,7 +1,7 @@
 # ZADÁNÍ: Aplikace pro Ganttovy diagramy s navázaným rozpočtem
 
 > Název aplikace: **MiRo project** (pracovní název do v1.10: GanttBudget)
-> Verze zadání: 1.12 · Datum: 15. 11. 2026 (změny viz kap. 14)
+> Verze zadání: 1.13 · Datum: 16. 11. 2026 (změny viz kap. 14)
 > Dokument je zároveň vstupem pro Claude Code (vibe coding) a osnovou výukové case study.
 
 ---
@@ -117,10 +117,10 @@ Státní svátky ČR k zakódování: 1. 1.; Velký pátek; Velikonoční pondě
 |---|---|---|
 | R-01 | Zdroje i náklady jsou **řádky navázané na činnost nebo fázi** (jeden řádek = jeden zdroj nebo položka); **milník** smí mít jen jednorázový náklad a materiál. Posun činnosti automaticky posune náklady v čase. | D (fáze 6b) |
 | R-02 | Typy řádků: **člověk** (hodiny × sazba), **stroj** (hodiny × sazba), **materiál** (množství × jednotková cena z databáze – změna ceny v databázi se propíše, na řádku ji jde přepsat), **jednorázový náklad k datu** (na začátku/na konci činnosti nebo k pevnému datu), **průběžný náklad** (za pracovní den × pracovní dny; za týden × kalendářní dny ÷ 7; za měsíc – každý kalendářní den = částka ÷ počet dní jeho měsíce). Stroj se sazbou za den: dny × % × sazba. Množství materiálu až na 3 desetinná místa. Peníze v haléřích, zaokrouhlení u každého řádku. | D (fáze 6b) |
-| R-03 | **Kategorie nákladů** (editovatelný číselník, výchozí: materiál, mzdy, služby, investice, režie, rezerva – hotovo ve fázi 6a/6b) + **volné štítky** u řádků (fáze 7). | D |
-| R-04 | **Časový náběh nákladů**: rozpad všech položek do dnů/týdnů/měsíců, kumulativně i po obdobích. | D |
+| R-03 | **Kategorie nákladů** (editovatelný číselník, výchozí: materiál, mzdy, služby, investice, režie, rezerva – hotovo ve fázi 6a/6b) + **volné štítky** u řádků: nejvýš 10 na řádek, každý 1–30 znaků, bez opakování (velikost písmen se nerozlišuje); zadávají se jako „bublinky“ v panelu Detail činnosti s nápovědou už použitých štítků. | D (fáze 7) |
+| R-04 | **Časový náběh nákladů**: každý řádek se rozloží do dnů a součet dnů se rovná nákladu řádku **na haléř** (zbytky dostanou dny s největším zbytkem po dělení). Člověk, stroj a průběžný za den rovnoměrně do pracovních dnů položky; **materiál celý v den začátku**; jednorázový na začátku / na konci / k datu; průběžný za týden do kalendářních dnů (1/7), za měsíc do kalendářních dnů (částka ÷ počet dní měsíce); řádky fáze do její spočítané délky; položka bez termínu (kruh) se nezapočítá a pohled to napíše. Pohled **Náklady** (čtvrtý pohled): tabulka podle kategorií, fází nebo druhu × týdny / měsíce / čtvrtletí, za období i kumulativně; graf se skládanými sloupci v odstínech značky, kumulativní čárou a čárou limitu; filtry s více volbami (kategorie, fáze, druh) a filtr štítku. | D (fáze 7) |
 | R-05 | Souhrn nákladů za fázi (vlastní řádky + součet podřízených) a za celý projekt: sloupec **Náklady** v tabulce (bublina s rozpadem na práci, stroje, materiál, ostatní) a náklady projektu v záhlaví. | D (fáze 6b) |
-| R-06 | Volitelný limit rozpočtu a varování při překročení. | D |
+| R-06 | Volitelný **limit rozpočtu** celého projektu a jednotlivých kategorií (dialog Limity rozpočtu v pohledu Náklady, čerpání v %). Varování při překročení: v záhlaví („Náklady: X z limitu Y“ červeně), v pohledu Náklady (o kolik a **od kterého data** kumulativní náklady limit přesáhnou), v grafu čára limitu a bod překročení. Smazání kategorie smaže i její limit (s upozorněním). Filtry pohledu limity neovlivňují. | D (fáze 7) |
 
 ### 4.6 Analytika a dashboardy
 
@@ -128,7 +128,7 @@ Státní svátky ČR k zakódování: 1. 1.; Velký pátek; Velikonoční pondě
 |---|---|---|
 | A-01 | **Interaktivní kontingenční tabulka**: uživatel volí řádky, sloupce, metriku a agregaci z dimenzí (fáze, činnost, kategorie, štítek, zdroj, měsíc/týden/čtvrtletí). | D (fáze 8) |
 | A-02 | K tabulce přiložené **grafy** (sloupcový, čárový, koláčový, skládaný), přepínání jedním klikem. | D |
-| A-03 | **Dashboard „Náklady v čase"**: S-křivka (kumulativní náklady) a cash flow po obdobích. | D |
+| A-03 | **Dashboard „Náklady v čase"**: S-křivka (kumulativní náklady) a cash flow po obdobích (základní graf v pohledu Náklady hotový ve fázi 7; fáze 8 přidá plnohodnotný dashboard). | D |
 | A-04 | **Dashboard „Vytížení zdrojů"**: histogram po týdnech, zvýraznění přetížení (základní pohled Vytížení hotový ve fázi 6c; fáze 8 přidá grafy a filtry). | D |
 | A-05 | **Dashboard „Plán vs. skutečnost"**: baseline vs. aktuální plán, % dokončení, **Earned Value** (PV, EV, AC, CPI, SPI, EAC) s vysvětlením pojmů. | D (fáze 9) |
 | A-06 | Přednastavené pohledy pro začátečníky + možnost uložit vlastní pohled. | D |
@@ -140,7 +140,7 @@ Státní svátky ČR k zakódování: 1. 1.; Velký pátek; Velikonoční pondě
 | I-01 | **Celý projekt jako JSON** (otevřít/uložit, záloha, vstup pro AI). Formát je verzovaný (pole `schemaVersion`), aby šly starší soubory načíst. | M |
 | I-02 | Automatická záloha rozpracovaného projektu v prohlížeči (obnova po zavření záložky). | M |
 | I-03 | **Export a import činností do CSV a XLSX** (včetně hierarchie, vazeb, délek). Import s náhledem a kontrolou chyb před potvrzením. | M |
-| I-04 | **Export a import rozpočtu a časového náběhu nákladů do CSV a XLSX**. | D (fáze 7) |
+| I-04 | **Export a import rozpočtu a časového náběhu nákladů do CSV a XLSX**: export XLSX má list **Řádky** (WBS, Činnost, Typ, Zdroj / název, Pracovník, Podíl % / množství, Částka / cena, Kdy / období, Datum, Kategorie, Štítky, Poznámka, Hodiny, Náklad) a list **Náběh** (kategorie × měsíce, Celkem, kumulativně); CSV obsahuje Řádky. Import (CSV nebo list Řádky) s náhledem: činnost podle WBS, zdroje a kategorie podle názvu (nic se nevytvoří samo), Hodiny a Náklad se ignorují; **nahradí řádky činností uvedených v souboru**, ostatní zůstanou; jakákoli chyba (s číslem řádku) import zablokuje; jeden krok Zpět; limit 5 MB / 20 000 řádků; české i anglické hlavičky. | D (fáze 7) |
 | I-05 | Export Gantta do **PDF** a obrázku (PNG/SVG) pro odevzdávání úkolů. | D (fáze 13) |
 | I-06 | Import ze souborů MS Project (XML) a GanttProject. | D (fáze 13) |
 
@@ -243,6 +243,7 @@ Project
   machines: Machine[]
   materials: Material[]
   costCategories: Category[]
+  budget?: { limit?, categoryLimits: { categoryId, limit }[] }   // limity rozpočtu v haléřích (fáze 7)
   baselines: Baseline[]
 
 Calendar
@@ -271,7 +272,7 @@ Worker       id, name, professionId, departmentId?, rateCalc?, manualRate?, capa
 Machine      id, name, rate, rateUnit (hour|day), capacityPerDay, categoryId
 Material     id, name, unit, unitPrice, categoryId, code?, supplier?
 
-TaskLine     id, categoryId, note?, + podle typu:      // štítky (tags[]) přibudou ve fázi 7
+TaskLine     id, categoryId, note?, tags?[] (max 10 × 30 znaků), + podle typu:
   labor      professionId, workerId?, sharePct          // hodiny = dny × h/den × %; pracovník patří k profesi
   machine    machineId, sharePct
   material   materialId, quantity, unitPriceOverride?   // cena z číselníku, nebo přepsaná
@@ -406,7 +407,7 @@ Technicky: build bez chyb, testy plánovacího jádra projdou, aplikace je nasaz
 | 1 | Chování tažení úsečky u činností s předchůdci | ✅ Rozhodnuto ve fázi 4b (v1.4): posun nastaví omezení „začít nejdříve k datu“; platí nejpozdější z (začátek projektu, vazby, omezení); když vyhraje vazba, aplikace to vysvětlí a ikona 📌 je bledší. Ověřit v praxi s uživateli zůstává doporučeno |
 | 2 | Zdroje a rozpočet: mzda se počítá z hodin zdroje, nebo z celkové délky činnosti | Hodiny = délka činnosti × kapacita × podíl úvazku; ověřit ve fázi 6–7 |
 | 3 | Zaokrouhlování peněz | ✅ Rozhodnuto (v1.1): celá čísla v nejmenší jednotce měny, zobrazení na 2 desetinná místa |
-| 4 | Průběžný náklad „za měsíc" u činnosti, která nezačíná na začátku měsíce | Poměrně po dnech; upřesnit ve fázi 7 |
+| 4 | Průběžný náklad „za měsíc" u činnosti, která nezačíná na začátku měsíce | ✅ Rozhodnuto (v1.13): poměrně po kalendářních dnech – každý den = částka ÷ počet dní jeho měsíce (stejně v nákladech i v náběhu) |
 | 5 | Skutečné náklady (AC) pro Earned Value | Zadávají se ručně jako položky k datu; upřesnit ve fázi 9 |
 | 6 | Pracovní název a logo aplikace | ✅ Rozhodnuto (v1.11): **MiRo project**, logo a barvy podle brand kitu (N-13). Přípony souborů `.ganttbudget.json` / `.ganttbudget-lib.json` a klíče v prohlížeči zůstávají kvůli kompatibilitě s uloženými projekty |
 | 7 | Licence | MIT, pokud zadavatel (fakulta) nevyžaduje jinak |
@@ -433,3 +434,4 @@ Technicky: build bez chyb, testy plánovacího jádra projdou, aplikace je nasaz
 | 1.10 | 15. 11. 2026 | Fáze 6b – zdroje a náklady na činnostech: panel **Detail činnosti** pod plánem (sbalitelný, výška tažením); pravidla výpočtu nákladů v R-02 (týden a měsíc podle kalendářních dnů, den podle pracovních); řádky smí mít činnosti i fáze, milník jen jednorázový náklad a materiál; sloupec Náklady s rozpadem a náklady projektu v záhlaví (R-05); řádek bez sazby má náklad 0 a varování. Návaznosti: zdroj použitý na činnostech nejde smazat (hláška s výpisem činností); smazání kategorie přesune i řádky; změna profese pracovníka se propíše do jeho řádků; změna na milník se zeptá a odebere nepovolené řádky; import z tabulky řádky nepřenáší a předem varuje; duplikace kopíruje řádky s novými ID. **Volné štítky** u řádků (R-03) přesunuty do fáze 7. Vzorový projekt má náklady na většině položek |
 | 1.11 | 15. 11. 2026 | Vizuální identita (mezi kroky fáze 6c): aplikace přejmenována na **MiRo project**; nový požadavek **N-13** – logo, písmo Lato (WOFF2), barvy značky (grafit, papír, teplá šedá; žlutá = důležité, nově **tyrkysová** jako doplňkový akcent pro interakci a běžné úsečky činností; kritická cesta žlutě místo červeně); kontrast WCAG AA ověřen výpočtem (tlumená šedá ztmavena na 4,6 : 1). Otevřená otázka 6 uzavřena; přípony souborů beze změny kvůli kompatibilitě. Fáze 6c pokračuje jako v1.12 |
 | 1.12 | 16. 11. 2026 | Fáze 6c – kritická cesta a vytížení: F-09, K-05 a Z-03 upřesněny podle implementace (pravidla rezerv a kritičnosti; vytížení = h/den × % v pracovních dnech, kapacita profese = součet pracovníků, nepřítomnost nemění termíny); nový třetí pohled **Vytížení** (základ A-04); varování v Detailu činnosti; datový model: vypočtené pozdní termíny a rezervy, `Worker.absences` s limitem 731 dnů na záznam (ochrana proti zamrznutí podvrženým souborem) |
+| 1.13 | 16. 11. 2026 | Fáze 7 – rozpočet v čase: R-03 (štítky), R-04 (náběh na haléř, materiál v den začátku, pohled **Náklady** jako čtvrtý pohled s tabulkou, skládaným grafem v odstínech značky a filtry s více volbami), R-06 (limity projektu a kategorií, varování s datem překročení) a I-04 (export XLSX s listy Řádky a Náběh, CSV; import řádků s náhledem, nahrazení řádků činností ze souboru) upřesněny podle implementace; A-03 má základní graf; datový model: `TaskLine.tags`, `Project.budget`; otevřená otázka 4 uzavřena. Úpravy rozhraní: tlačítko „Přidat činnost“ v druhé řadě před „Předsadit“, jazyk a vzhled na řádku loga, ikona Náklady (euro + křivka) |

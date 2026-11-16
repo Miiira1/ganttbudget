@@ -42,11 +42,24 @@ const LineMoneySchema = z.number().int().min(0).max(1_000_000_000_000)
 /** % zapojení / využití: 1–100 (desetiny povoleny). */
 const SharePctSchema = z.number().min(1).max(100)
 
+/** Nejvíc štítků u jednoho řádku (fáze 7, R-03). */
+export const MAX_LINE_TAGS = 10
+/** Nejdelší štítek (znaky). */
+export const MAX_TAG_LENGTH = 30
+/** Volný štítek řádku: 1–30 znaků bez okrajových mezer. */
+const TagSchema = z
+  .string()
+  .min(1)
+  .max(MAX_TAG_LENGTH)
+  .refine((t) => t.trim() === t, { message: 'tagNotTrimmed' })
+
 const lineBase = {
   id: LineIdSchema,
   /** Kategorie nákladů (výchozí podle databáze). */
   categoryId: LineIdSchema,
   note: z.string().max(500).optional(),
+  /** Volné štítky (fáze 7) – např. „dotace“, „etapa 1“; bez opakování (velikost písmen se nerozlišuje). */
+  tags: z.array(TagSchema).max(MAX_LINE_TAGS).optional(),
 }
 
 export const TaskLineSchema = z.discriminatedUnion('kind', [
@@ -336,6 +349,7 @@ function checkTaskLines(
       const path = ['tasks', taskIndex, 'lines', lineIndex]
       const issue = (message: string, field: string) => ctx.addIssue({ code: 'custom', message, path: [...path, field] })
       if (lineIds.has(line.id)) issue('duplicateLineId', 'id')
+      if (line.tags && new Set(line.tags.map(nameKey)).size !== line.tags.length) issue('duplicateTag', 'tags')
       lineIds.add(line.id)
       if (!categories.has(line.categoryId)) issue('unknownCategory', 'categoryId')
       if (task.kind === 'milestone' && !(MILESTONE_LINE_KINDS as readonly string[]).includes(line.kind)) issue('lineNotAllowed', 'kind')
@@ -356,6 +370,15 @@ function checkTaskLines(
 /** Nejvíc položek v jednom číselníku. */
 export const MAX_CATALOG_ITEMS = 2000
 
+/** Limit rozpočtu v haléřích: kladné celé číslo (fáze 7, R-06). */
+const LimitSchema = z.number().int().min(1).max(1_000_000_000_000)
+
+/** Limity rozpočtu: celého projektu a volitelně jednotlivých kategorií nákladů. */
+export const BudgetSchema = z.object({
+  limit: LimitSchema.optional(),
+  categoryLimits: z.array(z.object({ categoryId: IdSchema, limit: LimitSchema })).max(MAX_CATALOG_ITEMS).default([]),
+})
+
 export const ProjectSchema = z
   .object({
     schemaVersion: z.literal(SCHEMA_VERSION),
@@ -375,10 +398,21 @@ export const ProjectSchema = z
     machines: z.array(MachineSchema).max(MAX_CATALOG_ITEMS),
     materials: z.array(MaterialSchema).max(MAX_CATALOG_ITEMS),
     baselines: futureList,
+    /** Limity rozpočtu (fáze 7) – nepovinné, starší soubory je nemají. */
+    budget: BudgetSchema.optional(),
   })
   .superRefine((project, ctx) => {
     checkCatalogs(project, ctx)
     checkTaskLines(project, ctx)
+    // Limit kategorie míří na existující kategorii a každá kategorie má nejvýš jeden limit.
+    const categoryIds = new Set(project.costCategories.map((c) => c.id))
+    const limited = new Set<string>()
+    project.budget?.categoryLimits.forEach((item, index) => {
+      const path = ['budget', 'categoryLimits', index, 'categoryId']
+      if (!categoryIds.has(item.categoryId)) ctx.addIssue({ code: 'custom', message: 'unknownCategory', path })
+      if (limited.has(item.categoryId)) ctx.addIssue({ code: 'custom', message: 'duplicateCategoryLimit', path })
+      limited.add(item.categoryId)
+    })
     // Každá činnost musí mít jedinečné ID a odkazy musí mířit na existující činnosti.
     const ids = new Set<string>()
     project.tasks.forEach((task, index) => {

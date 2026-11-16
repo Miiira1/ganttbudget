@@ -104,6 +104,10 @@ export interface ProjectState {
   deleteTaskLine: (taskId: string, lineId: string) => void
   /** Přejmenuje projekt (ořízne mezery, max. 200 znaků; prázdný název se ignoruje). */
   renameProject: (name: string) => void
+  /** Limit rozpočtu projektu v haléřích; null = zrušit (fáze 7). */
+  setBudgetLimit: (limit: number | null) => void
+  /** Limit kategorie nákladů v haléřích; null = zrušit. */
+  setCategoryLimit: (categoryId: string, limit: number | null) => void
   /** Nahradí celý projekt (např. vzorovým). Lze vrátit přes Zpět. */
   loadProject: (project: Project) => void
   /** Nahradí projekt a smaže historii (obnova ze zálohy po otevření aplikace – není co vracet). */
@@ -327,7 +331,10 @@ export function createProjectStore(initialProject: Project) {
         const move = <T extends { categoryId: string }>(items: T[]): T[] =>
           items.map((x) => (x.categoryId === id ? { ...x, categoryId: replacementId as string } : x))
         commit({
-          ...project,
+          ...withBudget(project, {
+            ...(project.budget ?? { categoryLimits: [] }),
+            categoryLimits: (project.budget?.categoryLimits ?? []).filter((c) => c.categoryId !== id),
+          }),
           costCategories: project.costCategories.filter((c) => c.id !== id),
           professions: move(project.professions),
           machines: move(project.machines),
@@ -363,6 +370,33 @@ export function createProjectStore(initialProject: Project) {
         if (!task || !task.lines.some((l) => l.id === lineId)) return
         const lines = task.lines.filter((l) => l.id !== lineId)
         commit({ ...project, tasks: project.tasks.map((t) => (t.id === taskId ? { ...t, lines } : t)) })
+      },
+
+      setBudgetLimit(limit) {
+        const { project } = get()
+        if (limit !== null && !validLimit(limit)) return
+        const current = project.budget ?? { categoryLimits: [] }
+        if ((current.limit ?? null) === limit) return
+        const { limit: _old, ...rest } = current
+        void _old
+        commit(withBudget(project, limit === null ? rest : { ...rest, limit }))
+      },
+
+      setCategoryLimit(categoryId, limit) {
+        const { project } = get()
+        if (!project.costCategories.some((c) => c.id === categoryId)) return
+        if (limit !== null && !validLimit(limit)) return
+        const current = project.budget ?? { categoryLimits: [] }
+        const exists = current.categoryLimits.some((c) => c.categoryId === categoryId)
+        let categoryLimits = current.categoryLimits
+        if (limit === null) {
+          if (!exists) return
+          categoryLimits = categoryLimits.filter((c) => c.categoryId !== categoryId)
+        } else if (exists) {
+          if (categoryLimits.some((c) => c.categoryId === categoryId && c.limit === limit)) return
+          categoryLimits = categoryLimits.map((c) => (c.categoryId === categoryId ? { categoryId, limit } : c))
+        } else categoryLimits = [...categoryLimits, { categoryId, limit }]
+        commit(withBudget(project, { ...current, categoryLimits }))
       },
 
       renameProject(rawName) {
@@ -423,3 +457,13 @@ export function createProjectStore(initialProject: Project) {
 }
 
 export type ProjectStore = ReturnType<typeof createProjectStore>
+
+/** Platný limit rozpočtu: kladné celé číslo haléřů. */
+const validLimit = (limit: number) => Number.isInteger(limit) && limit >= 1 && limit <= 1_000_000_000_000
+
+/** Projekt s novými limity; bez jakéhokoli limitu pole `budget` zmizí (soubor zůstane jako dřív). */
+function withBudget(project: Project, budget: NonNullable<Project['budget']>): Project {
+  const { budget: _old, ...rest } = project
+  void _old
+  return budget.limit === undefined && budget.categoryLimits.length === 0 ? (rest as Project) : { ...rest, budget }
+}

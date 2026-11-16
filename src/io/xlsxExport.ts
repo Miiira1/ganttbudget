@@ -5,7 +5,7 @@
  * Čísla se zapíšou jako čísla, data jako opravdová data, text s ochranou proti spuštění vzorce.
  */
 import ExcelJS from 'exceljs'
-import { DATE_COLUMNS, protectText, type ExportTable } from './tableExport'
+import { DATE_COLUMNS, protectText, type Cell, type ExportTable } from './tableExport'
 
 /** Název listu: Excel nepovolí [ ] : * ? / \ a delší než 31 znaků. */
 function sheetName(name: string): string {
@@ -47,5 +47,47 @@ export async function toXlsx(headers: string[], table: ExportTable, name: string
     if (DATE_COLUMNS.includes(column)) col.numFmt = dateFormat
     col.width = column === 'name' ? 45 : column === 'notes' ? 40 : column === 'predecessors' ? 16 : 13
   })
+  return (await workbook.xlsx.writeBuffer()) as ArrayBuffer
+}
+
+/** Jeden list sešitu (fáze 7 – export rozpočtu má listy Řádky a Náběh). */
+export interface XlsxSheet {
+  name: string
+  headers: string[]
+  rows: Cell[][]
+  /** Indexy sloupců s datem ("YYYY-MM-DD" → opravdové datum). */
+  dateColumns?: ReadonlySet<number>
+  /** Indexy sloupců s penězi (formát s oddělením tisíců a dvěma desetinnými místy). */
+  moneyColumns?: ReadonlySet<number>
+  /** Šířky sloupců (znaky); chybějící = 13. */
+  widths?: number[]
+  /** Kolik prvních sloupců zmrazit (zůstanou vidět při posunu doprava). */
+  frozenColumns?: number
+}
+
+/** Sešit s více listy; text s ochranou proti vzorcům, čísla jako čísla, data jako data. */
+export async function toXlsxSheets(sheets: XlsxSheet[], dateFormat = 'd.m.yyyy'): Promise<ArrayBuffer> {
+  const workbook = new ExcelJS.Workbook()
+  workbook.creator = 'MiRo project'
+  for (const def of sheets) {
+    const sheet = workbook.addWorksheet(sheetName(def.name), { views: [{ state: 'frozen', ySplit: 1, xSplit: def.frozenColumns ?? 0 }] })
+    sheet.addRow(def.headers.map(protectText)).font = { bold: true }
+    for (const row of def.rows) {
+      sheet.addRow(
+        row.map((cell, i) => {
+          if (cell === null) return null
+          if (typeof cell === 'number') return cell
+          if (def.dateColumns?.has(i) && cell !== '') return toDate(cell)
+          return protectText(cell)
+        }),
+      )
+    }
+    def.headers.forEach((_, i) => {
+      const col = sheet.getColumn(i + 1)
+      if (def.dateColumns?.has(i)) col.numFmt = dateFormat
+      if (def.moneyColumns?.has(i)) col.numFmt = '#,##0.00'
+      col.width = def.widths?.[i] ?? 13
+    })
+  }
   return (await workbook.xlsx.writeBuffer()) as ArrayBuffer
 }

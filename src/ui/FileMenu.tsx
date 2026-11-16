@@ -1,15 +1,22 @@
 /**
- * Menu „Soubor“ v liště: Nový, Otevřít…, Uložit, Uložit jako… (I-01), export a import tabulky (I-03).
+ * Menu „Soubor“ v liště: Nový, Otevřít…, Uložit, Uložit jako… (I-01), export a import tabulky (I-03),
+ * export rozpočtu (I-04, fáze 7).
  * Rozbalovací nabídka ovladatelná myší i klávesnicí (šipky, Enter, Esc).
  */
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { newProject, openProject, saveProject } from '../io/fileActions'
 import { exportCsv, exportXlsx } from '../io/exportActions'
+import { exportBudgetCsv, exportBudgetXlsx } from '../io/budgetExportActions'
+import { startBudgetImport } from '../io/budgetImportActions'
 import { startImport } from '../io/importActions'
 import { exportLibrary, startLibraryImport } from '../io/libraryActions'
 
-type Item = { id: 'new' | 'open' | 'save' | 'saveAs' | 'exportXlsx' | 'exportCsv' | 'import' | 'exportLibrary' | 'importLibrary'; shortcut?: string; separatorBefore?: boolean }
+type Item = {
+  id: 'new' | 'open' | 'save' | 'saveAs' | 'exportXlsx' | 'exportCsv' | 'import' | 'exportBudgetXlsx' | 'exportBudgetCsv' | 'importBudget' | 'exportLibrary' | 'importLibrary'
+  shortcut?: string
+  separatorBefore?: boolean
+}
 const ITEMS: Item[] = [
   { id: 'new' },
   { id: 'open', shortcut: 'Ctrl+O' },
@@ -18,6 +25,9 @@ const ITEMS: Item[] = [
   { id: 'exportXlsx', separatorBefore: true },
   { id: 'exportCsv' },
   { id: 'import', separatorBefore: true },
+  { id: 'exportBudgetXlsx', separatorBefore: true },
+  { id: 'exportBudgetCsv' },
+  { id: 'importBudget' },
   { id: 'exportLibrary', separatorBefore: true },
   { id: 'importLibrary' },
 ]
@@ -49,6 +59,9 @@ export function FileMenu() {
     else if (id === 'exportXlsx') void exportXlsx(t, i18n.language)
     else if (id === 'exportCsv') void exportCsv(t)
     else if (id === 'import') startImport(t)
+    else if (id === 'exportBudgetXlsx') void exportBudgetXlsx(t, i18n.language)
+    else if (id === 'exportBudgetCsv') void exportBudgetCsv(t, i18n.language)
+    else if (id === 'importBudget') startBudgetImport(t)
     else if (id === 'exportLibrary') void exportLibrary(t)
     else if (id === 'importLibrary') startLibraryImport(t)
     else void saveProject(t, id === 'saveAs')

@@ -81,3 +81,16 @@ export function parseMoney(text: string): number | null {
   const value = Number(integer) * 100 + Number(fraction.padEnd(2, '0'))
   return Number.isSafeInteger(value) && value <= MAX_MONEY ? value : null
 }
+
+const compactFormatters = new Map<string, Intl.NumberFormat>()
+
+/** Haléře → krátký zápis pro osy grafu („6,3 mil. Kč“, „250 tis. Kč“). */
+export function formatMoneyCompact(minorUnits: number, currency: string, languageCode: string): string {
+  const key = `${currency}|${languageCode}`
+  let formatter = compactFormatters.get(key)
+  if (!formatter) {
+    formatter = new Intl.NumberFormat(localeFor(languageCode), { style: 'currency', currency, notation: 'compact', maximumFractionDigits: 1 })
+    compactFormatters.set(key, formatter)
+  }
+  return formatter.format(minorUnits / 100)
+}

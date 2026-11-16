@@ -33,11 +33,11 @@ export interface ImportError {
 export type ImportResult = { ok: true; project: Project } | { ok: false; errors: ImportError[] }
 
 /** Hodnota buňky, jak ji dodá čtení CSV/XLSX. Cokoli jiného se bere jako prázdné. */
-const CellSchema = z.union([z.string(), z.number(), z.date(), z.null()]).catch(null)
-type CellValue = z.infer<typeof CellSchema>
+export const CellSchema = z.union([z.string(), z.number(), z.date(), z.null()]).catch(null)
+export type CellValue = z.infer<typeof CellSchema>
 
 // --- Hlavička: názvy sloupců česky i anglicky ---
-const normalize = (text: string) =>
+export const normalize = (text: string) =>
   text
     .toLowerCase()
     .replace(/\(.*?\)/g, '') // „Délka (dny)“ = „Délka“
@@ -57,7 +57,7 @@ for (const kind of ['task', 'phase', 'milestone'] as const) {
 
 // --- Převod hodnot buněk ---
 /** Text buňky; apostrof z ochrany proti vzorcům (export) se odstraní. */
-function text(value: CellValue): string {
+export function text(value: CellValue): string {
   if (value === null) return ''
   const raw = value instanceof Date ? value.toISOString().slice(0, 10) : String(value)
   return /^'[=+\-@\t\r]/.test(raw) ? raw.slice(1) : raw
@@ -73,7 +73,7 @@ function integer(value: CellValue, min: number, max: number): number | null | un
 const pad = (n: number) => String(n).padStart(2, '0')
 
 /** Datum: z XLSX (Date), ISO „2026-11-18“, české „18.11.2026“, nebo pořadové číslo dne z Excelu. */
-function isoDate(value: CellValue): string | null | undefined {
+export function isoDate(value: CellValue): string | null | undefined {
   if (value === null || (typeof value === 'string' && value.trim() === '')) return undefined
   let iso: string
   if (value instanceof Date) {

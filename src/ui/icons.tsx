@@ -48,3 +48,16 @@ export function LoadIcon({ className = '' }: { className?: string }) {
     </svg>
   )
 }
+
+/** Náklady: znak eura (peníze) vlevo nahoře a přes celou ikonu stoupající S-křivka (kumulativní náběh rozpočtu). */
+export function CostsIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg {...common} className={className}>
+      <path d="M7.6 2.3A3.2 3.2 0 1 0 7.6 7.7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M1.6 4.3h4M1.6 5.8h4" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+      <path d="M1.5 14.5h13" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" opacity="0.5" />
+      <path d="M1.8 12.8C6 12.8 8 11.5 10 8.5S12.8 3.6 14.8 3.2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <circle cx="14.8" cy="3.2" r="1.1" fill="currentColor" />
+    </svg>
+  )
+}

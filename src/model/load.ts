@@ -10,9 +10,10 @@
  *  - stroj: jeho h/den v pracovní dny.
  * Přetížený den = poptávka > kapacita. Termíny činností se vytížením nemění.
  */
-import { createWorkCalendar, dayToIso, isoToDay, isoWeekday } from '../engine/calendar'
+import { createWorkCalendar, isoToDay } from '../engine/calendar'
 import type { ScheduleResult } from '../engine/schedule'
 import { createResourceLookup, lineHoursPerDay } from './costs'
+import { splitPeriods, type DayRange } from './periods'
 import type { Project, TaskLine } from './schema'
 
 export type LoadResourceKind = 'worker' | 'profession' | 'machine'
@@ -42,10 +43,7 @@ export interface ResourceLoad {
   contributions: LoadContribution[]
 }
 
-export interface LoadRange {
-  startDay: number
-  endDay: number
-}
+export type LoadRange = DayRange
 
 export interface LoadResult {
   /** Od nejdřívějšího začátku po nejpozdější konec položek plánu; null = nic spočítaného. */
@@ -155,22 +153,9 @@ export function computeLoad(project: Project, scheduleResult: ScheduleResult): L
 
 export type LoadPeriodUnit = 'day' | 'week' | 'month'
 
-/** Rozdělí rozsah na dny, týdny (po–ne) nebo kalendářní měsíce; krajní období jsou oříznutá. */
+/** Rozdělí rozsah na dny, týdny (po–ne) nebo kalendářní měsíce (společné s pohledem Náklady). */
 export function loadPeriods(range: LoadRange, unit: LoadPeriodUnit): LoadRange[] {
-  const periods: LoadRange[] = []
-  for (let start = range.startDay; start <= range.endDay; ) {
-    let end: number
-    if (unit === 'day') end = start
-    else if (unit === 'week') end = start + (7 - isoWeekday(start))
-    else {
-      const [y, m] = dayToIso(start).split('-').map(Number) as [number, number]
-      end = Math.round(Date.UTC(y, m, 0) / 86_400_000) // poslední den měsíce
-    }
-    end = Math.min(end, range.endDay)
-    periods.push({ startDay: start, endDay: end })
-    start = end + 1
-  }
-  return periods
+  return splitPeriods(range, unit)
 }
 
 export interface PeriodLoad {

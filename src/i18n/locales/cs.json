@@ -88,9 +88,9 @@
     "saveHint": "Uložit projekt do souboru (poprvé se zeptá, kam)",
     "saveAs": "Uložit jako…",
     "saveAsHint": "Uložit projekt do nového souboru",
-    "exportXlsx": "Exportovat do Excelu (XLSX)…",
+    "exportXlsx": "Exportovat činnosti do Excelu (XLSX)…",
     "exportXlsxHint": "Uložit seznam činností do tabulky Excelu (doporučeno pro úpravy v Excelu)",
-    "exportCsv": "Exportovat do CSV…",
+    "exportCsv": "Exportovat činnosti do CSV…",
     "exportCsvHint": "Uložit seznam činností jako CSV (pro jiné programy; Excel v něm může některé hodnoty převést na datum)",
     "fileType": "Soubor projektu (MiRo project)",
     "fileNameHint": "Soubor, do kterého se projekt ukládá",
@@ -114,7 +114,13 @@
     "exportLibrary": "Exportovat knihovnu zdrojů…",
     "exportLibraryHint": "Uložit databázi zdrojů (profese, pracovníci, střediska, stroje, materiály, kategorie) do souboru pro jiné projekty",
     "importLibrary": "Načíst knihovnu zdrojů…",
-    "importLibraryHint": "Doplnit databázi zdrojů ze souboru knihovny (nové se přidají, změněné aktualizují, nic se nesmaže)"
+    "importLibraryHint": "Doplnit databázi zdrojů ze souboru knihovny (nové se přidají, změněné aktualizují, nic se nesmaže)",
+    "exportBudgetXlsx": "Exportovat rozpočet do Excelu (XLSX)…",
+    "exportBudgetXlsxHint": "Uložit rozpočet do Excelu: list Řádky (všechny zdroje a náklady činností) a list Náběh (náklady po měsících podle kategorií)",
+    "exportBudgetCsv": "Exportovat rozpočet do CSV…",
+    "exportBudgetCsvHint": "Uložit řádky rozpočtu (zdroje a náklady činností) jako CSV",
+    "importBudget": "Importovat rozpočet z Excelu / CSV…",
+    "importBudgetHint": "Načíst řádky zdrojů a nákladů činností (list Řádky z exportu rozpočtu); nahradí řádky činností uvedených v souboru"
   },
   "toolbar": {
     "label": "Hlavní nástroje",
@@ -148,7 +154,9 @@
     "nameLabel": "Název projektu",
     "renameHint": "Kliknutím přejmenujete projekt",
     "cost": "Náklady: {{amount}}",
-    "costHint": "Součet nákladů všech činností a fází projektu"
+    "costHint": "Součet nákladů všech činností a fází projektu",
+    "costOfLimit": "Náklady: {{amount}} z limitu {{limit}}",
+    "budgetOverHint": "Rozpočet je překročen – podrobnosti v pohledu Náklady."
   },
   "table": {
     "caption": "Seznam činností projektu",
@@ -632,7 +640,8 @@
       "moveTo": "Přesunout je do kategorie",
       "noOther": "Jiná kategorie neexistuje – nejdřív nějakou přidejte.",
       "undo": "Smazání i přesun jdou vrátit tlačítkem Zpět (Ctrl+Z).",
-      "confirm": "Přesunout a smazat"
+      "confirm": "Přesunout a smazat",
+      "limitNote": "Kategorie má nastavený limit rozpočtu – smaže se spolu s ní."
     },
     "noDepartment": "— bez střediska —",
     "tabMoveHint": "Pořadí záložek změníte tažením myší nebo klávesami Alt+Shift+← / →",
@@ -646,7 +655,9 @@
     "resources": "Zdroje",
     "resourcesHint": "Databáze profesí, pracovníků, strojů, materiálů a kategorií nákladů",
     "load": "Vytížení",
-    "loadHint": "Vytížení pracovníků, profesí a strojů v čase; přetížení vyznačeno červeně"
+    "loadHint": "Vytížení pracovníků, profesí a strojů v čase; přetížení vyznačeno červeně",
+    "costs": "Náklady",
+    "costsHint": "Časový náběh nákladů: kolik projekt stojí v každém týdnu, měsíci nebo čtvrtletí"
   },
   "rate": {
     "title": "Hodinová sazba – {{name}}",
@@ -762,7 +773,8 @@
       "hours": "Hodiny",
       "category": "Kategorie",
       "cost": "Náklad",
-      "note": "Poznámka"
+      "note": "Poznámka",
+      "tags": "Štítky"
     },
     "fieldLabel": "{{field}} – {{kind}}",
     "anyWorker": "— kdokoli z profese —",
@@ -813,6 +825,11 @@
       "day": "za prac. den",
       "week": "za týden",
       "month": "za měsíc"
+    },
+    "tags": {
+      "placeholder": "štítek…",
+      "hint": "Volné štítky řádku (např. „dotace“, „etapa 1“) – Enter nebo čárka přidá, × odebere. Nejvýš 10 štítků po 30 znacích.",
+      "remove": "Odebrat štítek {{tag}}"
     }
   },
   "absence": {
@@ -912,6 +929,150 @@
         "dates": "Termín",
         "hours": "Hodin"
       }
+    }
+  },
+  "periods": {
+    "quarterShort": "{{n}}. Q"
+  },
+  "costs": {
+    "intro": "Kdy se peníze utratí: práce a stroje rovnoměrně v pracovních dnech, materiál na začátku činnosti, jednorázové a průběžné náklady podle nastavení. Částky v buňkách jsou v celých jednotkách měny ({{currency}}), přesná částka je v bublině.",
+    "groupBy": "Řádky podle",
+    "groups": {
+      "category": "Kategorie",
+      "phase": "Fáze",
+      "kind": "Druh"
+    },
+    "unit": "Období",
+    "units": {
+      "week": "Týdny",
+      "month": "Měsíce",
+      "quarter": "Čtvrtletí"
+    },
+    "mode": "Zobrazení",
+    "modes": {
+      "period": "Za období",
+      "cumulative": "Kumulativně"
+    },
+    "tag": "Štítek",
+    "allTags": "Všechny řádky",
+    "skipped_one": "{{count}} řádek ({{amount}}) se do náběhu nezapočítal, protože jeho činnost nemá spočítaný termín (kruh vazeb).",
+    "skipped_few": "{{count}} řádky ({{amount}}) se do náběhu nezapočítaly, protože jejich činnosti nemají spočítaný termín (kruh vazeb).",
+    "skipped_many": "{{count}} řádku ({{amount}}) se do náběhu nezapočítalo, protože jejich činnosti nemají spočítaný termín (kruh vazeb).",
+    "skipped_other": "{{count}} řádků ({{amount}}) se do náběhu nezapočítalo, protože jejich činnosti nemají spočítaný termín (kruh vazeb).",
+    "caption": "Náklady projektu po obdobích",
+    "current": "Aktuální období",
+    "total": "Celkem",
+    "totalPeriod": "Celkem za období",
+    "totalCumulative": "Celkem kumulativně",
+    "empty": "Projekt zatím nemá žádné náklady. Přidejte činnostem zdroje a náklady v panelu Detail činnosti.",
+    "noRows": "Žádné náklady neodpovídají zvolenému štítku.",
+    "limits": {
+      "button": "Limity rozpočtu",
+      "hint": "Limit celého projektu a jednotlivých kategorií nákladů",
+      "title": "Limity rozpočtu",
+      "intro": "Limit je strop plánovaných nákladů ({{currency}}). Prázdné pole = bez limitu. Když plánované náklady limit přesáhnou, aplikace upozorní v záhlaví i v pohledu Náklady.",
+      "columns": {
+        "item": "Položka",
+        "planned": "Plánováno",
+        "limit": "Limit",
+        "used": "Čerpání"
+      },
+      "project": "Celý projekt",
+      "limitFor": "Limit – {{name}}",
+      "invalid": "Zadejte kladnou částku (např. 250 000), nebo pole vymažte – pak limit nebude.",
+      "undo": "Každou změnu jde vrátit tlačítkem Zpět (Ctrl+Z).",
+      "close": "Zavřít"
+    },
+    "status": {
+      "project": "Limit projektu {{limit}} – plánováno {{spent}} ({{pct}} %).",
+      "projectOver": "Limit projektu {{limit}} je překročen o {{over}} (plánováno {{spent}}). Kumulativní náklady ho přesáhnou {{date}}.",
+      "projectOverNoDate": "Limit projektu {{limit}} je překročen o {{over}} (plánováno {{spent}}).",
+      "categoryOver": "Kategorie {{name}}: limit {{limit}} překročen o {{over}} (od {{date}}).",
+      "categoryOverNoDate": "Kategorie {{name}}: limit {{limit}} překročen o {{over}}.",
+      "categoriesOk_one": "{{count}} kategorie s limitem – v limitu.",
+      "categoriesOk_few": "{{count}} kategorie s limitem – všechny v limitu.",
+      "categoriesOk_many": "{{count}} kategorie s limitem – všechny v limitu.",
+      "categoriesOk_other": "{{count}} kategorií s limitem – všechny v limitu."
+    },
+    "limitTitle": "Limit {{limit}} – čerpání {{pct}} %",
+    "chart": {
+      "period": "Za období (pravá osa)",
+      "cumulative": "Kumulativně (levá osa)",
+      "limit": "Limit projektu {{amount}}",
+      "summary": "Graf nákladů projektu po obdobích, celkem {{total}}",
+      "bar": "{{period}}: {{amount}} (kumulativně {{cumulative}})",
+      "exceed": "Kumulativní náklady přesáhnou limit v období {{period}}"
+    },
+    "filter": {
+      "label": "Filtr",
+      "all": "vše",
+      "some": "{{count}} z {{total}}",
+      "selectAll": "Vybrat vše",
+      "clear": "Zrušit filtry",
+      "note": "Filtr: zobrazeno {{amount}} z celkových {{total}}. Limity a záhlaví platí pro celý projekt."
+    }
+  },
+  "budgetExport": {
+    "fileSuffix": "rozpočet",
+    "sheetLines": "Řádky",
+    "sheetPhasing": "Náběh",
+    "columns": {
+      "wbs": "WBS",
+      "task": "Činnost",
+      "kind": "Typ",
+      "resource": "Zdroj / název",
+      "worker": "Pracovník",
+      "quantity": "Podíl % / množství",
+      "amount": "Částka / cena",
+      "timing": "Kdy / období",
+      "date": "Datum",
+      "category": "Kategorie",
+      "tags": "Štítky",
+      "note": "Poznámka",
+      "hours": "Hodiny",
+      "cost": "Náklad"
+    },
+    "timing": {
+      "start": "začátek",
+      "end": "konec",
+      "date": "datum",
+      "day": "den",
+      "week": "týden",
+      "month": "měsíc"
+    }
+  },
+  "budgetImport": {
+    "title": "Import rozpočtu",
+    "summary_one": "Soubor je v pořádku: {{count}} řádek (počet činností: {{tasks}}).",
+    "summary_few": "Soubor je v pořádku: {{count}} řádky (počet činností: {{tasks}}).",
+    "summary_many": "Soubor je v pořádku: {{count}} řádku (počet činností: {{tasks}}).",
+    "summary_other": "Soubor je v pořádku: {{count}} řádků (počet činností: {{tasks}}).",
+    "replaceWarning": "Import nahradí řádky zdrojů a nákladů u činností uvedených v souboru (počet činností: {{tasks}}, jejich současných řádků: {{count}}). Ostatní činnosti zůstanou beze změny. Import jde vrátit tlačítkem Zpět (Ctrl+Z).",
+    "confirm": "Nahradit řádky",
+    "error": {
+      "missingColumns": "V prvním řádku chybí sloupce „WBS“, „Typ“ nebo „Zdroj / název“ (hlavička listu Řádky z exportu rozpočtu).",
+      "empty": "Tabulka neobsahuje žádné řádky rozpočtu.",
+      "tooManyRows": "Tabulka má víc než 20 000 řádků – tolik jich aplikace nezpracuje.",
+      "invalid": "Data z tabulky neprošla kontrolou.",
+      "unknownTask": "v plánu není činnost s tímto WBS.",
+      "badKind": "neznámý typ (povolené: Člověk, Stroj, Materiál, Jednorázový, Průběžný).",
+      "lineNotAllowed": "milník smí mít jen materiál a jednorázový náklad.",
+      "missingName": "chybí zdroj nebo název.",
+      "nameTooLong": "název je delší než 200 znaků.",
+      "noteTooLong": "poznámka je delší než 500 znaků.",
+      "unknownCategory": "kategorie s tímto názvem v databázi není.",
+      "unknownProfession": "profese s tímto názvem v databázi není.",
+      "unknownWorker": "pracovník s tímto jménem v databázi není.",
+      "workerProfessionMismatch": "pracovník nepatří k uvedené profesi.",
+      "unknownMachine": "stroj s tímto názvem v databázi není.",
+      "unknownMaterial": "materiál s tímto názvem v databázi není.",
+      "badShare": "podíl musí být číslo 1–100 (%).",
+      "badQuantity": "množství musí být kladné číslo (nejvýš 3 desetinná místa).",
+      "badAmount": "chybná částka (kladné číslo, nejvýš 2 desetinná místa).",
+      "badTiming": "neznámé načasování (jednorázový: začátek, konec, datum; průběžný: den, týden, měsíc).",
+      "missingDate": "u načasování „datum“ chybí datum.",
+      "badDate": "neplatné datum (použijte např. 18.11.2026).",
+      "badTags": "štítků je víc než 10 nebo je některý delší než 30 znaků."
     }
   }
 }

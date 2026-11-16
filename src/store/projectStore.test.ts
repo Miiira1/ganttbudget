@@ -534,6 +534,63 @@ describe('řádky zdrojů a nákladů na činnosti (fáze 6b)', () => {
   })
 })
 
+describe('limity rozpočtu (fáze 7, R-06)', () => {
+  it('limit projektu a kategorie: nastavit, změnit, zrušit – každá změna jeden krok Zpět', () => {
+    const store = newStore()
+    const before = store.getState().past.length
+    store.getState().setBudgetLimit(500_000_00)
+    store.getState().setCategoryLimit('cat-material', 120_000_00)
+    store.getState().setCategoryLimit('cat-labor', 300_000_00)
+    store.getState().setCategoryLimit('cat-material', 150_000_00)
+    expect(store.getState().project.budget).toEqual({
+      limit: 500_000_00,
+      categoryLimits: [
+        { categoryId: 'cat-material', limit: 150_000_00 },
+        { categoryId: 'cat-labor', limit: 300_000_00 },
+      ],
+    })
+    expect(ProjectSchema.safeParse(store.getState().project).success).toBe(true)
+    store.getState().setCategoryLimit('cat-labor', null)
+    store.getState().setBudgetLimit(null)
+    expect(store.getState().project.budget).toEqual({ categoryLimits: [{ categoryId: 'cat-material', limit: 150_000_00 }] })
+    store.getState().setCategoryLimit('cat-material', null)
+    expect(store.getState().project.budget).toBeUndefined()
+    expect(store.getState().past.length - before).toBe(7)
+    store.getState().undo()
+    expect(store.getState().project.budget?.categoryLimits).toHaveLength(1)
+  })
+
+  it('nesmyslné hodnoty a neznámá kategorie se nezapíšou', () => {
+    const store = newStore()
+    const before = store.getState().past.length
+    store.getState().setBudgetLimit(0)
+    store.getState().setBudgetLimit(-5)
+    store.getState().setBudgetLimit(1.5)
+    store.getState().setCategoryLimit('nic', 100)
+    store.getState().setBudgetLimit(null) // už není nastavený
+    expect(store.getState().past.length).toBe(before)
+    expect(store.getState().project.budget).toBeUndefined()
+  })
+
+  it('smazání kategorie odstraní i její limit', () => {
+    const store = newStore()
+    store.getState().setCategoryLimit('cat-reserve', 10_000_00)
+    store.getState().deleteCategory('cat-reserve', null)
+    expect(store.getState().project.budget).toBeUndefined()
+    expect(ProjectSchema.safeParse(store.getState().project).success).toBe(true)
+  })
+
+  it('schéma: limit kladný, kategorie existující a jen jednou', () => {
+    const base = newStore().getState().project
+    const ok = { ...base, budget: { limit: 1, categoryLimits: [{ categoryId: 'cat-labor', limit: 5 }] } }
+    expect(ProjectSchema.safeParse(ok).success).toBe(true)
+    expect(ProjectSchema.safeParse({ ...base, budget: { limit: 0, categoryLimits: [] } }).success).toBe(false)
+    expect(ProjectSchema.safeParse({ ...base, budget: { categoryLimits: [{ categoryId: 'nic', limit: 5 }] } }).success).toBe(false)
+    const twice = { categoryId: 'cat-labor', limit: 5 }
+    expect(ProjectSchema.safeParse({ ...base, budget: { categoryLimits: [twice, twice] } }).success).toBe(false)
+  })
+})
+
 describe('název projektu (kritérium 12.1)', () => {
   it('přejmenuje projekt jedním krokem Zpět; mezery ořízne, prázdný a stejný název ignoruje', () => {
     const store = newStore()

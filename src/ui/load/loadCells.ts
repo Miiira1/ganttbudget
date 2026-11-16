@@ -6,7 +6,8 @@ import type { TFunction } from 'i18next'
 import { dayToIso } from '../../engine/calendar'
 import { isoWeek } from '../../gantt/timeline'
 import { formatDayMonth, formatIsoDate, formatMonth, formatNumber, formatWeekdayShort } from '../../i18n/format'
-import type { LoadPeriodUnit, LoadRange, PeriodLoad, ResourceLoad } from '../../model/load'
+import type { PeriodLoad, ResourceLoad } from '../../model/load'
+import type { DayRange, PeriodUnit } from '../../model/periods'
 
 /** Hranice „vysokého“ vytížení (ještě bez přetížení). */
 export const HIGH_LOAD_PCT = 80
@@ -55,12 +56,13 @@ export function formatHours(value: number, lang: string): string {
 }
 
 /** Popisek sloupce ve dvou řádcích (nahoře hlavní, dole doplňující) + celé období do bubliny. */
-export function periodLabel(period: LoadRange, unit: LoadPeriodUnit, t: TFunction, lang: string): { top: string; bottom: string; title: string } {
+export function periodLabel(period: DayRange, unit: PeriodUnit, t: TFunction, lang: string): { top: string; bottom: string; title: string } {
   const start = dayToIso(period.startDay)
   const end = dayToIso(period.endDay)
   const title = start === end ? formatIsoDate(start, lang) : `${formatIsoDate(start, lang)} – ${formatIsoDate(end, lang)}`
   if (unit === 'day') return { top: formatDayMonth(start, lang), bottom: formatWeekdayShort(start, lang), title }
   if (unit === 'week') return { top: t('load.weekShort', { n: isoWeek(period.startDay).week }), bottom: formatDayMonth(start, lang), title }
   const [y, m] = start.split('-').map(Number) as [number, number]
+  if (unit === 'quarter') return { top: t('periods.quarterShort', { n: Math.ceil(m / 3) }), bottom: String(y), title }
   return { top: formatMonth(y, m, lang, 'short'), bottom: String(y), title }
 }

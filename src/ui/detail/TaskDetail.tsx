@@ -11,6 +11,7 @@ import type { TFunction } from 'i18next'
 import { formatNumber } from '../../i18n/format'
 import type { LineCost } from '../../model/costs'
 import { lineLoadWarnings, type LineLoadWarnings } from '../../model/load'
+import { allTags } from '../../model/tags'
 import { defaultCategoryId } from '../../model/defaultCategories'
 import { formatAmount, formatMoney, parseMoney } from '../../model/money'
 import { MILESTONE_LINE_KINDS, type Project, type Task, type TaskLine, type TaskLineKind } from '../../model/schema'
@@ -19,6 +20,7 @@ import { DateInputCell, TextCell } from '../EditableCells'
 import { showNotice } from '../notice'
 import { LazySelect, parseDecimal } from '../resources/catalogCells'
 import { useSelectedId } from '../viewState'
+import { TagsCell } from './TagsCell'
 
 /** Typy řádků v pořadí tlačítek „Přidat“. */
 const ADDABLE: TaskLineKind[] = ['labor', 'machine', 'material', 'oneTime', 'recurring']
@@ -118,6 +120,8 @@ export function TaskDetailBody() {
     () => new Map(task ? task.lines.map((line) => [line.id, lineLoadWarnings(project, scheduled, load, task.id, line)]) : []),
     [project, scheduled, load, task],
   )
+  // Nápověda štítků: všechny štítky v projektu (mění se jen se změnou činností).
+  const tagSuggestions = useMemo(() => allTags(project), [project.tasks])
   if (!task) return null
   if (task.lines.length === 0) return <p className="py-2 text-sm text-slate-500 dark:text-slate-400">{t('detail.empty')}</p>
 
@@ -133,7 +137,8 @@ export function TaskDetailBody() {
           <col style={{ width: '6rem' }} />
           <col style={{ width: '9rem' }} />
           <col style={{ width: '9rem' }} />
-          <col style={{ width: '12rem' }} />
+          <col style={{ width: '11rem' }} />
+          <col style={{ width: '10rem' }} />
           <col style={{ width: '2.5rem' }} />
         </colgroup>
         <thead>
@@ -144,6 +149,9 @@ export function TaskDetailBody() {
             <th className={`${th} text-right`}>{t('detail.columns.hours')}</th>
             <th className={th}>{t('detail.columns.category')}</th>
             <th className={`${th} text-right`}>{t('detail.columns.cost')}</th>
+            <th className={th} title={t('detail.tags.hint')}>
+              {t('detail.columns.tags')}
+            </th>
             <th className={th}>{t('detail.columns.note')}</th>
             <th className={th}>
               <span className="sr-only">{t('resources.delete')}</span>
@@ -152,7 +160,7 @@ export function TaskDetailBody() {
         </thead>
         <tbody>
           {task.lines.map((line) => (
-            <LineRow key={line.id} taskId={task.id} line={line} cost={costs.lines.get(line.id)} warnings={warnings.get(line.id)} />
+            <LineRow key={line.id} taskId={task.id} line={line} cost={costs.lines.get(line.id)} warnings={warnings.get(line.id)} tagSuggestions={tagSuggestions} />
           ))}
         </tbody>
       </table>
@@ -202,11 +210,13 @@ const LineRow = memo(function LineRow({
   line,
   cost,
   warnings,
+  tagSuggestions,
 }: {
   taskId: string
   line: TaskLine
   cost: LineCost | undefined
   warnings: LineLoadWarnings | undefined
+  tagSuggestions: readonly string[]
 }) {
   const { t, i18n } = useTranslation()
   const currency = useProject((s) => s.project.currency)
@@ -251,6 +261,9 @@ const LineRow = memo(function LineRow({
             ⚠
           </span>
         )}
+      </td>
+      <td className="px-1 py-0.5">
+        <TagsCell taskId={taskId} lineId={line.id} tags={line.tags ?? []} suggestions={tagSuggestions} label={label('tags')} />
       </td>
       <td className="px-1 py-0.5">
         <TextCell

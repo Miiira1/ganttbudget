@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { LANGUAGES } from '../i18n/languages'
 import { formatIsoDate } from '../i18n/format'
 import { createSampleProject } from '../samples/automatizace'
-import { projectStore, useCosts, useLoad, useProject, useSchedule } from '../store/useProject'
+import { projectStore, useBudgetStatus, useCosts, useLoad, useProject, useSchedule } from '../store/useProject'
 import { formatMoney } from '../model/money'
 import { applyTheme, loadThemePreference, saveThemePreference, THEME_PREFERENCES, watchSystemTheme, type ThemePreference } from './theme'
 import { CalendarDialog } from './CalendarDialog'
@@ -22,20 +22,22 @@ import { useSelectedId, useViewState } from './viewState'
 import { ShortcutsDialog } from './ShortcutsDialog'
 import { FileMenu } from './FileMenu'
 import { ImportDialog } from './ImportDialog'
+import { BudgetImportDialog } from './costs/BudgetImportDialog'
 import { LibraryDialog } from './resources/LibraryDialog'
 import { ProjectName } from './ProjectName'
 import { isDirty, openProject, saveProject, useFileState } from '../io/fileActions'
 import { startAutosave } from '../io/autosaveRunner'
 import { deleteSelected, duplicateSelected } from './structureCommands'
 import { ResourcesView } from './resources/ResourcesView'
-import { LoadIcon, PlanIcon, ResourcesIcon } from './icons'
+import { CostsIcon, LoadIcon, PlanIcon, ResourcesIcon } from './icons'
 import { LoadView } from './load/LoadView'
+import { CostsView } from './costs/CostsView'
 import { DetailDock } from './detail/DetailDock'
 import { TaskDetailBody, TaskDetailHeader } from './detail/TaskDetail'
 import { loadPreference, savePreference } from './preferences'
 
 /** Hlavní pohledy: Plán (tabulka + graf) a Zdroje (databáze, fáze 6a). */
-const VIEWS = ['plan', 'resources', 'load'] as const
+const VIEWS = ['plan', 'resources', 'load', 'costs'] as const
 type View = (typeof VIEWS)[number]
 
 /** Je kurzor v textovém poli? Tam necháme Ctrl+Z prohlížeči (vrací psaní v poli). */
@@ -51,6 +53,8 @@ export default function App() {
   const { addTask, undo, redo, loadProject } = projectStore.getState()
   const { projectFinish, error: scheduleError } = useSchedule()
   const projectCost = useCosts().project.total
+  const budget = useBudgetStatus()
+  const budgetOver = (budget.project?.over ?? 0) > 0 || budget.categories.some((c) => c.over > 0)
   const notice = useNotice((s) => s.message)
   const clearNotice = useNotice((s) => s.clear)
   const isInfo = useNotice((s) => s.kind === 'info') && notice !== null
@@ -194,6 +198,7 @@ export default function App() {
   return (
     <div className="flex h-screen flex-col">
       <header className="border-b border-slate-200 px-4 py-2 dark:border-slate-700">
+        {/* 1. řádek: logo vlevo, jazyk a vzhled vpravo na stejné úrovni. */}
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
           <div className="mr-auto">
             {/* Logo značky MiRo project (varianta pro světlé / tmavé pozadí). */}
@@ -201,56 +206,69 @@ export default function App() {
               <img src={logoOnLight} alt={t('app.title')} className="h-8 w-auto dark:hidden" />
               <img src={logoOnDark} alt={t('app.title')} className="hidden h-8 w-auto dark:block" />
             </h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              <ProjectName />
-              {fileName && <span title={t('file.fileNameHint')}> ({fileName})</span>}
-              {dirty && (
-                <span className="ml-1 font-medium text-slate-800 dark:text-slate-100" title={t('file.unsavedHint')}>
-                  <span aria-hidden="true" className="text-miro-gold dark:text-miro-yellow">● </span>
-                  {t('file.unsaved')}
-                </span>
-              )}
-              {' · '}
-              {t('project.start', { date: formatIsoDate(project.startDate, i18n.language) })}
-              {' · '}
-              {projectFinish && (
-                <>
-                  {t('project.finish', { date: formatIsoDate(projectFinish, i18n.language) })}
-                  {' · '}
-                </>
-              )}
-              {t('project.taskCount', { count: project.tasks.length })}
-              {projectCost > 0 && (
-                <>
-                  {' · '}
-                  <span title={t('project.costHint')}>
-                    {t('project.cost', { amount: formatMoney(projectCost, project.currency, i18n.language) })}
-                  </span>
-                </>
-              )}
-            </p>
           </div>
-          <label className="flex items-center gap-2 text-sm">
-            {t('toolbar.language')}
-            <select className="field-select" value={i18n.language} onChange={(e) => void i18n.changeLanguage(e.target.value)}>
-              {LANGUAGES.map((l) => (
-                <option key={l.code} value={l.code}>
-                  {l.translation.meta.languageName}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            {t('toolbar.theme')}
-            <select className="field-select" value={theme} onChange={(e) => setTheme(e.target.value as ThemePreference)}>
-              {THEME_PREFERENCES.map((p) => (
-                <option key={p} value={p}>
-                  {t(`theme.${p}`)}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <label className="flex items-center gap-2 text-sm">
+              {t('toolbar.language')}
+              <select className="field-select" value={i18n.language} onChange={(e) => void i18n.changeLanguage(e.target.value)}>
+                {LANGUAGES.map((l) => (
+                  <option key={l.code} value={l.code}>
+                    {l.translation.meta.languageName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              {t('toolbar.theme')}
+              <select className="field-select" value={theme} onChange={(e) => setTheme(e.target.value as ThemePreference)}>
+                {THEME_PREFERENCES.map((p) => (
+                  <option key={p} value={p}>
+                    {t(`theme.${p}`)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
         </div>
+        {/* 2. řádek: údaje o projektu (název, soubor, termíny, náklady a limit). */}
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          <ProjectName />
+          {fileName && <span title={t('file.fileNameHint')}> ({fileName})</span>}
+          {dirty && (
+            <span className="ml-1 font-medium text-slate-800 dark:text-slate-100" title={t('file.unsavedHint')}>
+              <span aria-hidden="true" className="text-miro-gold dark:text-miro-yellow">● </span>
+              {t('file.unsaved')}
+            </span>
+          )}
+          {' · '}
+          {t('project.start', { date: formatIsoDate(project.startDate, i18n.language) })}
+          {' · '}
+          {projectFinish && (
+            <>
+              {t('project.finish', { date: formatIsoDate(projectFinish, i18n.language) })}
+              {' · '}
+            </>
+          )}
+          {t('project.taskCount', { count: project.tasks.length })}
+          {projectCost > 0 && (
+            <>
+              {' · '}
+              <span
+                title={budgetOver ? t('project.budgetOverHint') : t('project.costHint')}
+                className={budgetOver ? 'font-semibold text-red-700 dark:text-red-300' : undefined}
+              >
+                {budgetOver && <span aria-hidden="true">⚠ </span>}
+                {budget.project
+                  ? t('project.costOfLimit', {
+                      amount: formatMoney(projectCost, project.currency, i18n.language),
+                      limit: formatMoney(budget.project.limit, project.currency, i18n.language),
+                    })
+                  : t('project.cost', { amount: formatMoney(projectCost, project.currency, i18n.language) })}
+                {budgetOver && <span className="sr-only"> {t('project.budgetOverHint')}</span>}
+              </span>
+            </>
+          )}
+        </p>
         <div role="toolbar" aria-label={t('toolbar.label')} className="mt-2 flex flex-wrap gap-2">
           <div role="group" aria-label={t('view.label')} className="flex rounded-md border border-slate-300 p-0.5 dark:border-slate-600">
             {VIEWS.map((id) => (
@@ -264,7 +282,7 @@ export default function App() {
                   view === id ? 'bg-miro-graphite text-miro-paper dark:bg-miro-paper dark:text-miro-graphite' : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
                 }`}
               >
-                {id === 'plan' ? <PlanIcon /> : id === 'resources' ? <ResourcesIcon /> : <LoadIcon />}
+                {id === 'plan' ? <PlanIcon /> : id === 'resources' ? <ResourcesIcon /> : id === 'load' ? <LoadIcon /> : <CostsIcon />}
                 {t(`view.${id}`)}
                 {id === 'load' && overloadedCount > 0 && (
                   <span
@@ -279,11 +297,6 @@ export default function App() {
             ))}
           </div>
           <FileMenu />
-          {view === 'plan' && (
-            <button type="button" className="btn-primary" onClick={handleAddTask}>
-              <span aria-hidden="true">＋</span> {t('toolbar.addTask')}
-            </button>
-          )}
           <button type="button" className="btn-secondary" onClick={undo} disabled={!canUndo} title={t('toolbar.undoHint')}>
             <span aria-hidden="true">↶</span> {t('toolbar.undo')}
           </button>
@@ -299,11 +312,19 @@ export default function App() {
           <button type="button" className="btn-secondary" onClick={() => setShortcutsOpen(true)} title={t('toolbar.shortcutsHint')}>
             <span aria-hidden="true">⌨</span> {t('toolbar.shortcuts')}
           </button>
-          {view === 'plan' && project.tasks.length > 0 && <StructureToolbar />}
-          {view === 'plan' && project.tasks.length > 0 && (
-            <div className="ml-auto flex flex-wrap gap-2">
-              <CriticalToggle />
-              <ZoomSwitch />
+          {/* Druhá řada pohledu Plán: přidání činnosti a úpravy struktury, vpravo kritická cesta a měřítko. */}
+          {view === 'plan' && (
+            <div className="flex w-full flex-wrap items-center gap-2">
+              <button type="button" className="btn-primary" onClick={handleAddTask}>
+                <span aria-hidden="true">＋</span> {t('toolbar.addTask')}
+              </button>
+              {project.tasks.length > 0 && <StructureToolbar />}
+              {project.tasks.length > 0 && (
+                <div className="ml-auto flex flex-wrap gap-2">
+                  <CriticalToggle />
+                  <ZoomSwitch />
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -339,6 +360,7 @@ export default function App() {
       <CalendarDialog open={calendarOpen} onClose={() => setCalendarOpen(false)} />
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <ImportDialog />
+      <BudgetImportDialog />
       <LibraryDialog />
 
       {view === 'resources' ? (
@@ -348,6 +370,10 @@ export default function App() {
       ) : view === 'load' ? (
         <main className="min-h-0 flex-1">
           <LoadView onShowPlan={() => setView('plan')} />
+        </main>
+      ) : view === 'costs' ? (
+        <main className="min-h-0 flex-1">
+          <CostsView />
         </main>
       ) : project.tasks.length === 0 ? (
         // Prázdný projekt: jen uvítání přes celou šířku, graf by byl prázdný.

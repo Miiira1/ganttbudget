@@ -61,6 +61,9 @@ export function DeleteCategoryDialog({ category, onClose }: { category: Category
               </select>
             </label>
           )}
+          {project.budget?.categoryLimits.some((c) => c.categoryId === category.id) && (
+            <p className="mt-3 text-sm">{t('resources.deleteCategory.limitNote')}</p>
+          )}
           <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">{t('resources.deleteCategory.undo')}</p>
           <div className="mt-6 flex justify-end gap-2">
             <button type="button" className="btn-secondary" onClick={onClose}>

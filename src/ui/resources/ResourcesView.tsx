@@ -255,7 +255,9 @@ function CategoriesTable() {
   function remove(category: Category) {
     // Používanou kategorii jde smazat jen s výběrem náhradní (dialog); nepoužívanou po potvrzení.
     if (categoryUsage(projectStore.getState().project, category.id).total > 0) return setDeleting(category)
-    confirmDelete(category.name, () => projectStore.getState().deleteCategory(category.id, null), t)
+    const hasLimit = projectStore.getState().project.budget?.categoryLimits.some((c) => c.categoryId === category.id)
+    const message = t('resources.confirmDelete', { name: category.name }) + (hasLimit ? `\n\n${t('resources.deleteCategory.limitNote')}` : '')
+    if (window.confirm(message)) projectStore.getState().deleteCategory(category.id, null)
   }
 
   return (

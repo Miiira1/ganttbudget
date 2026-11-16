@@ -82,9 +82,9 @@
     "saveHint": "Save the project to a file (asks where the first time)",
     "saveAs": "Save as…",
     "saveAsHint": "Save the project to a new file",
-    "exportXlsx": "Export to Excel (XLSX)…",
+    "exportXlsx": "Export tasks to Excel (XLSX)…",
     "exportXlsxHint": "Save the task list as an Excel workbook (recommended for editing in Excel)",
-    "exportCsv": "Export to CSV…",
+    "exportCsv": "Export tasks to CSV…",
     "exportCsvHint": "Save the task list as CSV (for other programs; Excel may convert some values to dates)",
     "fileType": "MiRo project file",
     "fileNameHint": "The file the project is saved to",
@@ -106,7 +106,13 @@
     "exportLibrary": "Export resource library…",
     "exportLibraryHint": "Save the resource database (professions, workers, departments, machines, materials, categories) to a file for other projects",
     "importLibrary": "Load resource library…",
-    "importLibraryHint": "Add to the resource database from a library file (new items are added, changed ones updated, nothing is deleted)"
+    "importLibraryHint": "Add to the resource database from a library file (new items are added, changed ones updated, nothing is deleted)",
+    "exportBudgetXlsx": "Export budget to Excel (XLSX)…",
+    "exportBudgetXlsxHint": "Save the budget to Excel: sheet Lines (all resources and costs of tasks) and sheet Phasing (costs by month and category)",
+    "exportBudgetCsv": "Export budget to CSV…",
+    "exportBudgetCsvHint": "Save the budget lines (resources and costs of tasks) as CSV",
+    "importBudget": "Import budget from Excel / CSV…",
+    "importBudgetHint": "Load resource and cost lines of tasks (sheet Lines from the budget export); replaces the lines of tasks listed in the file"
   },
   "toolbar": {
     "label": "Main tools",
@@ -138,7 +144,9 @@
     "nameLabel": "Project name",
     "renameHint": "Click to rename the project",
     "cost": "Cost: {{amount}}",
-    "costHint": "Total cost of all tasks and phases in the project"
+    "costHint": "Total cost of all tasks and phases in the project",
+    "costOfLimit": "Costs: {{amount}} of {{limit}} limit",
+    "budgetOverHint": "The budget is exceeded – see the Costs view for details."
   },
   "table": {
     "caption": "Project task list",
@@ -594,7 +602,8 @@
       "moveTo": "Move them to category",
       "noOther": "There is no other category – add one first.",
       "undo": "Both the deletion and the move can be undone with Undo (Ctrl+Z).",
-      "confirm": "Move and delete"
+      "confirm": "Move and delete",
+      "limitNote": "The category has a budget limit – it will be deleted with it."
     },
     "noDepartment": "— no department —",
     "tabMoveHint": "Change the tab order by dragging with the mouse or with Alt+Shift+← / →",
@@ -608,7 +617,9 @@
     "resources": "Resources",
     "resourcesHint": "Database of professions, workers, machines, materials and cost categories",
     "load": "Load",
-    "loadHint": "Workload of workers, professions and machines over time; overloads in red"
+    "loadHint": "Workload of workers, professions and machines over time; overloads in red",
+    "costs": "Costs",
+    "costsHint": "Cost phasing: how much the project costs in each week, month or quarter"
   },
   "rate": {
     "title": "Hourly rate – {{name}}",
@@ -718,7 +729,8 @@
       "hours": "Hours",
       "category": "Category",
       "cost": "Cost",
-      "note": "Note"
+      "note": "Note",
+      "tags": "Tags"
     },
     "fieldLabel": "{{field}} – {{kind}}",
     "anyWorker": "— anyone in the profession —",
@@ -761,6 +773,11 @@
       "day": "per work day",
       "week": "per week",
       "month": "per month"
+    },
+    "tags": {
+      "placeholder": "tag…",
+      "hint": "Free tags of the line (e.g. \"grant\", \"stage 1\") – Enter or comma adds, × removes. At most 10 tags of 30 characters.",
+      "remove": "Remove tag {{tag}}"
     }
   },
   "absence": {
@@ -850,6 +867,144 @@
         "dates": "Dates",
         "hours": "Hours"
       }
+    }
+  },
+  "periods": {
+    "quarterShort": "Q{{n}}"
+  },
+  "costs": {
+    "intro": "When the money is spent: labour and machines evenly on working days, material at the task start, one-time and recurring costs as set. Cells show whole currency units ({{currency}}); the exact amount is in the tooltip.",
+    "groupBy": "Rows by",
+    "groups": {
+      "category": "Category",
+      "phase": "Phase",
+      "kind": "Type"
+    },
+    "unit": "Period",
+    "units": {
+      "week": "Weeks",
+      "month": "Months",
+      "quarter": "Quarters"
+    },
+    "mode": "Display",
+    "modes": {
+      "period": "Per period",
+      "cumulative": "Cumulative"
+    },
+    "tag": "Tag",
+    "allTags": "All lines",
+    "skipped_one": "{{count}} line ({{amount}}) is not included because its task has no computed dates (dependency loop).",
+    "skipped_other": "{{count}} lines ({{amount}}) are not included because their tasks have no computed dates (dependency loop).",
+    "caption": "Project costs by period",
+    "current": "Current period",
+    "total": "Total",
+    "totalPeriod": "Total per period",
+    "totalCumulative": "Cumulative total",
+    "empty": "The project has no costs yet. Add resources and costs to tasks in the Task detail panel.",
+    "noRows": "No costs match the selected tag.",
+    "limits": {
+      "button": "Budget limits",
+      "hint": "Limit for the whole project and for individual cost categories",
+      "title": "Budget limits",
+      "intro": "A limit is a ceiling for planned costs ({{currency}}). Empty field = no limit. When planned costs exceed a limit, the app warns in the header and in the Costs view.",
+      "columns": {
+        "item": "Item",
+        "planned": "Planned",
+        "limit": "Limit",
+        "used": "Used"
+      },
+      "project": "Whole project",
+      "limitFor": "Limit – {{name}}",
+      "invalid": "Enter a positive amount (e.g. 250,000) or clear the field to remove the limit.",
+      "undo": "Every change can be undone with Undo (Ctrl+Z).",
+      "close": "Close"
+    },
+    "status": {
+      "project": "Project limit {{limit}} – planned {{spent}} ({{pct}}%).",
+      "projectOver": "Project limit {{limit}} is exceeded by {{over}} (planned {{spent}}). Cumulative costs exceed it on {{date}}.",
+      "projectOverNoDate": "Project limit {{limit}} is exceeded by {{over}} (planned {{spent}}).",
+      "categoryOver": "Category {{name}}: limit {{limit}} exceeded by {{over}} (from {{date}}).",
+      "categoryOverNoDate": "Category {{name}}: limit {{limit}} exceeded by {{over}}.",
+      "categoriesOk_one": "{{count}} category with a limit – within the limit.",
+      "categoriesOk_other": "{{count}} categories with limits – all within limits."
+    },
+    "limitTitle": "Limit {{limit}} – used {{pct}}%",
+    "chart": {
+      "period": "Per period (right axis)",
+      "cumulative": "Cumulative (left axis)",
+      "limit": "Project limit {{amount}}",
+      "summary": "Chart of project costs by period, {{total}} in total",
+      "bar": "{{period}}: {{amount}} (cumulative {{cumulative}})",
+      "exceed": "Cumulative costs exceed the limit in {{period}}"
+    },
+    "filter": {
+      "label": "Filter",
+      "all": "all",
+      "some": "{{count}} of {{total}}",
+      "selectAll": "Select all",
+      "clear": "Clear filters",
+      "note": "Filter: showing {{amount}} of {{total}} in total. Limits and the header apply to the whole project."
+    }
+  },
+  "budgetExport": {
+    "fileSuffix": "budget",
+    "sheetLines": "Lines",
+    "sheetPhasing": "Phasing",
+    "columns": {
+      "wbs": "WBS",
+      "task": "Task",
+      "kind": "Type",
+      "resource": "Resource / name",
+      "worker": "Worker",
+      "quantity": "Share % / quantity",
+      "amount": "Amount / price",
+      "timing": "When / period",
+      "date": "Date",
+      "category": "Category",
+      "tags": "Tags",
+      "note": "Note",
+      "hours": "Hours",
+      "cost": "Cost"
+    },
+    "timing": {
+      "start": "start",
+      "end": "end",
+      "date": "date",
+      "day": "day",
+      "week": "week",
+      "month": "month"
+    }
+  },
+  "budgetImport": {
+    "title": "Budget import",
+    "summary_one": "The file is valid: {{count}} line (tasks: {{tasks}}).",
+    "summary_other": "The file is valid: {{count}} lines (tasks: {{tasks}}).",
+    "replaceWarning": "The import replaces the resource and cost lines of the tasks listed in the file (tasks: {{tasks}}, their current lines: {{count}}). Other tasks stay unchanged. The import can be undone with Undo (Ctrl+Z).",
+    "confirm": "Replace lines",
+    "error": {
+      "missingColumns": "The first row lacks the columns \"WBS\", \"Type\" or \"Resource / name\" (header of the Lines sheet from the budget export).",
+      "empty": "The table contains no budget lines.",
+      "tooManyRows": "The table has more than 20,000 rows – the app cannot process that many.",
+      "invalid": "The table data did not pass the check.",
+      "unknownTask": "there is no task with this WBS in the plan.",
+      "badKind": "unknown type (allowed: Person, Machine, Material, One-off, Recurring).",
+      "lineNotAllowed": "a milestone may only have material and one-time costs.",
+      "missingName": "the resource or name is missing.",
+      "nameTooLong": "the name is longer than 200 characters.",
+      "noteTooLong": "the note is longer than 500 characters.",
+      "unknownCategory": "there is no category with this name in the database.",
+      "unknownProfession": "there is no profession with this name in the database.",
+      "unknownWorker": "there is no worker with this name in the database.",
+      "workerProfessionMismatch": "the worker does not belong to the given profession.",
+      "unknownMachine": "there is no machine with this name in the database.",
+      "unknownMaterial": "there is no material with this name in the database.",
+      "badShare": "the share must be a number 1–100 (%).",
+      "badQuantity": "the quantity must be a positive number (at most 3 decimals).",
+      "badAmount": "invalid amount (positive number, at most 2 decimals).",
+      "badTiming": "unknown timing (one-off: start, end, date; recurring: day, week, month).",
+      "missingDate": "the date is missing for timing \"date\".",
+      "badDate": "invalid date (use e.g. 2026-11-18).",
+      "badTags": "more than 10 tags, or a tag longer than 30 characters."
     }
   }
 }

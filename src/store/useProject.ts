@@ -7,6 +7,7 @@ import i18n from '../i18n'
 import { schedule, type ScheduleResult } from '../engine/schedule'
 import { computeCosts, type CostsResult } from '../model/costs'
 import { computeLoad, type LoadResult } from '../model/load'
+import { budgetStatus, computeCostTimeline, type BudgetStatus, type CostTimeline } from '../model/costTimeline'
 import { createEmptyProject, type Project } from '../model/schema'
 import { createProjectStore, type ProjectState } from './projectStore'
 
@@ -70,4 +71,38 @@ export function getLoad(project: Project): LoadResult {
 /** Vytížení aktuálního projektu. */
 export function useLoad(): LoadResult {
   return getLoad(useProject((s) => s.project))
+}
+
+// Časový náběh nákladů (fáze 7) – také jen jednou pro každou verzi projektu.
+const costTimelineCache = new WeakMap<Project, CostTimeline>()
+
+/** Rozpad nákladů projektu do dnů (pro pohled Náklady, limity a export). */
+export function getCostTimeline(project: Project): CostTimeline {
+  let result = costTimelineCache.get(project)
+  if (!result) {
+    result = computeCostTimeline(project, getSchedule(project), getCosts(project))
+    costTimelineCache.set(project, result)
+  }
+  return result
+}
+
+/** Časový náběh nákladů aktuálního projektu. */
+export function useCostTimeline(): CostTimeline {
+  return getCostTimeline(useProject((s) => s.project))
+}
+
+// Stav limitů rozpočtu (fáze 7) – pro záhlaví, pohled Náklady a dialog limitů.
+const budgetCache = new WeakMap<Project, BudgetStatus>()
+
+export function getBudgetStatus(project: Project): BudgetStatus {
+  let result = budgetCache.get(project)
+  if (!result) {
+    result = budgetStatus(project, getCostTimeline(project))
+    budgetCache.set(project, result)
+  }
+  return result
+}
+
+export function useBudgetStatus(): BudgetStatus {
+  return getBudgetStatus(useProject((s) => s.project))
 }
