@@ -24,7 +24,9 @@ import {
   type Timeline,
 } from '../../gantt/timeline'
 import { todayIso } from '../../model/dates'
-import { usePercents, useProject, useSchedule } from '../../store/useProject'
+import { useCosts, usePercents, useProject, useSchedule } from '../../store/useProject'
+import { buildBarLabels, labelsTrailingPx } from '../../gantt/barLabels'
+import { barLabelFormat } from './barLabelFormat'
 import { BarDragLayer } from './BarDragLayer'
 import { LinkDragLayer } from './LinkDragLayer'
 import { DependencyArrows } from './DependencyArrows'
@@ -143,9 +145,20 @@ export function GanttChart() {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
 
+  // Popisky vedle úseček (volba „Popisky“): text pro každý řádek a místo, které potřebují vpravo.
+  const percents = usePercents()
+  const costs = useCosts()
+  const barLabelFields = useDisplayOptions((s) => s.barLabels)
+  const barLabels = useMemo(
+    () =>
+      buildBarLabels(rows, dates, percents, (id) => costs.byTask.get(id)?.total.total ?? 0, barLabelFields, barLabelFormat(t, i18n.language, project.currency)),
+    [rows, dates, percents, costs, barLabelFields, t, i18n.language, project.currency],
+  )
+  // Zaokrouhleno na 100 px, aby se osa nepřepočítávala při každé změně textu.
+  const trailingPx = Math.ceil(labelsTrailingPx(barLabels) / 100) * 100
   const tl = useMemo(
-    () => createTimeline({ zoom, projectStart: project.startDate, projectFinish }),
-    [zoom, project.startDate, projectFinish],
+    () => createTimeline({ zoom, projectStart: project.startDate, projectFinish, trailingPx }),
+    [zoom, project.startDate, projectFinish, trailingPx],
   )
   const calendar = useMemo(() => createWorkCalendar(project.calendar), [project.calendar])
   // V měřítku Měsíce/Čtvrtletí by víkendy byly jen proužky přes celý graf – ukážeme jen svátky a odstávky.
@@ -175,7 +188,6 @@ export function GanttChart() {
     return ends
   }, [showCritical, rows, dates, tl])
   // % hotovo (fáze spočítané) a stínové úsečky vybrané baseline (fáze 9, G-08).
-  const percents = usePercents()
   const showBaseline = useDisplayOptions((s) => s.showBaseline)
   const baseline = activeBaseline(project)
   const baselineBars = useMemo(() => {
@@ -296,7 +308,7 @@ export function GanttChart() {
 
         {/* Šipky vazeb pod úsečkami, úsečky nad čárou dneška, aby byly čitelné. */}
         <DependencyArrows rows={rows} bars={bars} critical={critical} />
-        <TaskBars rows={rows} bars={bars} dates={dates} critical={critical} slackEnds={slackEnds} percents={percents} baseline={baselineBars} baselineName={baseline?.name ?? ''} selectedIds={selectedSet} />
+        <TaskBars rows={rows} bars={bars} dates={dates} critical={critical} slackEnds={slackEnds} percents={percents} baseline={baselineBars} baselineName={baseline?.name ?? ''} selectedIds={selectedSet} labels={barLabels} />
 
         {/* Náhled při tažení úsečky (G-02) – nad vším ostatním. */}
         <BarDragLayer svgRef={svgRef} tl={tl} calendar={calendar} rows={rows} dates={dates} />

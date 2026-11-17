@@ -27,6 +27,7 @@ import { TrackingChart } from './TrackingChart'
 import { TrackingTable } from './TrackingTable'
 import { exportTracking } from './trackingActions'
 import { NameDialog } from '../NameDialog'
+import { useReadOnly } from '../readOnly'
 import { showNotice } from '../notice'
 
 const TERMS = ['bac', 'pv', 'ev', 'ac', 'spi', 'cpi', 'eac', 'vac'] as const
@@ -38,6 +39,7 @@ type Unit = (typeof UNITS)[number]
 
 export function TrackingView() {
   const { t, i18n } = useTranslation()
+  const readOnly = useReadOnly()
   const lang = i18n.language
   const project = useProject((s) => s.project)
   const ev = useEarnedValue()
@@ -101,10 +103,12 @@ export function TrackingView() {
   if (!baseline || !ev) {
     return (
       <>
-        <Empty title={t('tracking.emptyTitle')} text={t('tracking.empty')}>
-          <button type="button" className="btn-primary mt-4" onClick={openSave}>
-            {t('tracking.baseline.save')}
-          </button>
+        <Empty title={t('tracking.emptyTitle')} text={readOnly ? t('mobile.trackingEmpty') : t('tracking.empty')}>
+          {!readOnly && (
+            <button type="button" className="btn-primary mt-4" onClick={openSave}>
+              {t('tracking.baseline.save')}
+            </button>
+          )}
         </Empty>
         {dialog}
       </>
@@ -123,60 +127,62 @@ export function TrackingView() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* Baseline a datum stavu */}
-      <div className="flex flex-wrap items-end gap-x-4 gap-y-2 border-b border-slate-200 px-4 py-2 dark:border-slate-700">
-        <p className="min-w-60 flex-1 self-center text-sm text-slate-600 dark:text-slate-400">{t('tracking.intro')}</p>
-        <label className="flex flex-col gap-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
-          {t('tracking.baseline.label')}
-          <select className="field-select" aria-label={t('tracking.baseline.label')} value={baseline.id} onChange={(e) => store.setActiveBaseline(e.target.value)} title={t('tracking.baseline.selectHint')}>
-            {project.baselines.map((b) => (
-              <option key={b.id} value={b.id}>
-                {t('tracking.baseline.option', { name: b.name, date: date(b.savedAt) })}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="flex flex-wrap gap-1">
-          <button type="button" className="btn-secondary" onClick={openSave} title={t('tracking.baseline.saveHint')}>
-            {t('tracking.baseline.save')}
-          </button>
-          <button type="button" className="btn-secondary" onClick={() => setNaming({ mode: 'rename', name: baseline.name })}>
-            {t('tracking.baseline.rename')}
-          </button>
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => {
-              if (window.confirm(t('tracking.baseline.confirmDelete', { name: baseline.name }))) store.deleteBaseline(baseline.id)
-            }}
-          >
-            {t('tracking.baseline.delete')}
-          </button>
-        </div>
-        <label className="flex flex-col gap-0.5 text-xs font-medium text-slate-600 dark:text-slate-300" title={t('tracking.statusHint')}>
-          {t('tracking.status')}
-          <span className="flex items-center gap-1">
-            <input
-              type="date"
-              aria-label={t('tracking.status')}
-              className="rounded-md border border-slate-300 bg-white px-2 py-1 text-sm tabular-nums focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:border-slate-600 dark:bg-slate-800"
-              value={statusIso}
-              min="1900-01-01"
-              max="2199-12-31"
-              onChange={(e) => {
-                const value = e.target.value
-                if (value === '' || value === today) store.setStatusDate(null)
-                else if (isValidIsoDate(value)) store.setStatusDate(value)
+      {/* Baseline a datum stavu (na telefonu jen prohlížení – údaje jsou ve větě níže) */}
+      {!readOnly && (
+        <div className="flex flex-wrap items-end gap-x-4 gap-y-2 border-b border-slate-200 px-4 py-2 dark:border-slate-700">
+          <p className="min-w-60 flex-1 self-center text-sm text-slate-600 dark:text-slate-400">{t('tracking.intro')}</p>
+          <label className="flex flex-col gap-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
+            {t('tracking.baseline.label')}
+            <select className="field-select" aria-label={t('tracking.baseline.label')} value={baseline.id} onChange={(e) => store.setActiveBaseline(e.target.value)} title={t('tracking.baseline.selectHint')}>
+              {project.baselines.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {t('tracking.baseline.option', { name: b.name, date: date(b.savedAt) })}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex flex-wrap gap-1">
+            <button type="button" className="btn-secondary" onClick={openSave} title={t('tracking.baseline.saveHint')}>
+              {t('tracking.baseline.save')}
+            </button>
+            <button type="button" className="btn-secondary" onClick={() => setNaming({ mode: 'rename', name: baseline.name })}>
+              {t('tracking.baseline.rename')}
+            </button>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => {
+                if (window.confirm(t('tracking.baseline.confirmDelete', { name: baseline.name }))) store.deleteBaseline(baseline.id)
               }}
-            />
-            {project.statusDate !== undefined && (
-              <button type="button" className="btn-secondary !px-2 !py-1" onClick={() => store.setStatusDate(null)} title={t('tracking.todayHint')}>
-                {t('tracking.today')}
-              </button>
+            >
+              {t('tracking.baseline.delete')}
+            </button>
+          </div>
+          <label className="flex flex-col gap-0.5 text-xs font-medium text-slate-600 dark:text-slate-300" title={t('tracking.statusHint')}>
+            {t('tracking.status')}
+            <span className="flex items-center gap-1">
+              <input
+                type="date"
+                aria-label={t('tracking.status')}
+                className="rounded-md border border-slate-300 bg-white px-2 py-1 text-sm tabular-nums focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:border-slate-600 dark:bg-slate-800"
+                value={statusIso}
+                min="1900-01-01"
+                max="2199-12-31"
+                onChange={(e) => {
+                  const value = e.target.value
+                  if (value === '' || value === today) store.setStatusDate(null)
+                  else if (isValidIsoDate(value)) store.setStatusDate(value)
+                }}
+              />
+              {project.statusDate !== undefined && (
+                <button type="button" className="btn-secondary !px-2 !py-1" onClick={() => store.setStatusDate(null)} title={t('tracking.todayHint')}>
+                  {t('tracking.today')}
+                </button>
             )}
           </span>
         </label>
       </div>
+      )}
 
       <div className="min-h-0 flex-1 overflow-auto px-4 py-3">
         <p className="text-sm text-slate-700 dark:text-slate-300">
@@ -185,7 +191,8 @@ export function TrackingView() {
         </p>
 
         {/* Ukazatele Earned Value */}
-        <div className="mt-2 flex flex-wrap items-stretch gap-2">
+        {/* Na telefonu pravidelná mřížka po dvou dlaždicích. */}
+        <div className={readOnly ? 'mt-2 grid grid-cols-2 gap-2' : 'mt-2 flex flex-wrap items-stretch gap-2'}>
           <Kpi label={t('tracking.terms.bac.short')} value={money(totals.bac)} hint={t('tracking.hint.bac')} help={info('bac')} />
           <Kpi label={t('tracking.terms.pv.short')} value={money(totals.pv)} hint={t('tracking.hint.pv', { date: date(statusIso) })} help={info('pv')} />
           <Kpi label={t('tracking.terms.ev.short')} value={money(totals.ev)} hint={t('tracking.hint.ev', { pct: evPct })} help={info('ev')} />
@@ -223,14 +230,16 @@ export function TrackingView() {
         <section aria-label={t('tracking.table.label')} className="mt-4">
           <div className="mb-1 flex flex-wrap items-center gap-x-4 gap-y-2">
             <h2 className="text-sm font-semibold">{t('tracking.table.label')}</h2>
-            <div className="ml-auto flex gap-1">
-              <button type="button" className="btn-secondary" onClick={() => void exportTracking('xlsx', ev, wbs, t, lang)} title={t('tracking.export.hint')}>
-                {t('analysis.exportXlsx')}
-              </button>
-              <button type="button" className="btn-secondary" onClick={() => void exportTracking('csv', ev, wbs, t, lang)} title={t('tracking.export.hint')}>
-                {t('analysis.exportCsv')}
-              </button>
-            </div>
+            {!readOnly && (
+              <div className="ml-auto flex gap-1">
+                <button type="button" className="btn-secondary" onClick={() => void exportTracking('xlsx', ev, wbs, t, lang)} title={t('tracking.export.hint')}>
+                  {t('analysis.exportXlsx')}
+                </button>
+                <button type="button" className="btn-secondary" onClick={() => void exportTracking('csv', ev, wbs, t, lang)} title={t('tracking.export.hint')}>
+                  {t('analysis.exportCsv')}
+                </button>
+              </div>
+            )}
           </div>
           <TrackingTable ev={ev} wbs={wbs} currency={project.currency} />
         </section>

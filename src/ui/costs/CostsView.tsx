@@ -19,6 +19,8 @@ import { splitPeriods, type PeriodUnit } from '../../model/periods'
 import { allTags } from '../../model/tags'
 import { useBudgetStatus, useCostTimeline, useProject } from '../../store/useProject'
 import { BudgetDialog } from './BudgetDialog'
+import { useReadOnly } from '../readOnly'
+import { SettingsWrap } from '../mobile/SettingsWrap'
 import { CHART_MODES, CostsChart, type ChartSeries } from './CostsChart'
 import { MultiSelect, NOTHING, type MultiOption } from './MultiSelect'
 import { seriesColor } from './palette'
@@ -47,6 +49,7 @@ function usePreference<T extends string>(key: string, allowed: readonly T[], fal
 
 export function CostsView() {
   const { t, i18n } = useTranslation()
+  const readOnly = useReadOnly()
   const lang = i18n.language
   const project = useProject((s) => s.project)
   const timeline = useCostTimeline()
@@ -130,55 +133,61 @@ export function CostsView() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-slate-200 px-4 py-2 dark:border-slate-700">
-        <p className="min-w-60 flex-1 text-sm text-slate-600 dark:text-slate-400">
-          {t('costs.intro', { currency: project.currency })} <HelpTip term="costTimeline" className="align-middle" />
-        </p>
-        <Segmented label={t('costs.groupBy')} options={GROUPS} value={groupBy} onChange={setGroupBy} text={(g) => t(`costs.groups.${g}`)} />
-        <Segmented label={t('costs.unit')} options={UNITS} value={unit} onChange={setUnit} text={(u) => t(`costs.units.${u}`)} />
-        <Segmented label={t('costs.mode')} options={MODES} value={mode} onChange={setMode} text={(m) => t(`costs.modes.${m}`)} />
-        <button type="button" className="btn-secondary" onClick={() => setBudgetOpen(true)} title={t('costs.limits.hint')}>
-          {t('costs.limits.button')}
-          {(status.project || status.categories.length > 0) && (
-            <span className={`ml-0.5 inline-block h-2 w-2 rounded-full ${anyOver ? 'bg-red-600 dark:bg-red-400' : 'bg-miro-turquoise-dark dark:bg-miro-turquoise'}`} aria-hidden="true" />
+      {/* Na telefonu přepínače a filtry sbalené pod „Nastavení zobrazení“. */}
+      <SettingsWrap collapsible={readOnly} summary={t('mobile.viewSettings')}>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-slate-200 px-4 py-2 dark:border-slate-700">
+          <p className="min-w-60 flex-1 text-sm text-slate-600 dark:text-slate-400">
+            {t('costs.intro', { currency: project.currency })} <HelpTip term="costTimeline" className="align-middle" />
+          </p>
+          <Segmented label={t('costs.groupBy')} options={GROUPS} value={groupBy} onChange={setGroupBy} text={(g) => t(`costs.groups.${g}`)} />
+          <Segmented label={t('costs.unit')} options={UNITS} value={unit} onChange={setUnit} text={(u) => t(`costs.units.${u}`)} />
+          <Segmented label={t('costs.mode')} options={MODES} value={mode} onChange={setMode} text={(m) => t(`costs.modes.${m}`)} />
+          {/* Limity rozpočtu se mění jen v plné verzi (na telefonu jen prohlížení). */}
+          {!readOnly && (
+            <button type="button" className="btn-secondary" onClick={() => setBudgetOpen(true)} title={t('costs.limits.hint')}>
+              {t('costs.limits.button')}
+              {(status.project || status.categories.length > 0) && (
+                <span className={`ml-0.5 inline-block h-2 w-2 rounded-full ${anyOver ? 'bg-red-600 dark:bg-red-400' : 'bg-miro-turquoise-dark dark:bg-miro-turquoise'}`} aria-hidden="true" />
+              )}
+            </button>
           )}
-        </button>
-      </div>
+        </div>
 
-      {/* Filtry s více volbami – omezí tabulku i graf (limity a záhlaví platí dál pro celý projekt). */}
-      <div role="group" aria-label={t('costs.filter.label')} className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-2 dark:border-slate-700">
-        <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('costs.filter.label')}</span>
-        <MultiSelect label={t('costs.groups.category')} options={options('category')} selected={filter.categories} onChange={setFilterCategories} />
-        <MultiSelect label={t('costs.groups.phase')} options={options('phase')} selected={filter.phases} onChange={setFilterPhases} />
-        <MultiSelect label={t('costs.groups.kind')} options={options('kind')} selected={filter.kinds} onChange={setFilterKinds} />
-        {tags.length > 0 && (
-          <label className="flex items-center gap-2 text-sm">
-            {t('costs.tag')}
-            <select className="field-select" value={tag} onChange={(e) => setTag(e.target.value)}>
-              <option value="">{t('costs.allTags')}</option>
-              {tags.map((x) => (
-                <option key={x} value={x}>
-                  {x}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-        {filtersActive && (
-          <button
-            type="button"
-            className="rounded px-2 py-1 text-sm underline decoration-miro-turquoise decoration-2 underline-offset-4 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:bg-slate-800"
-            onClick={() => {
-              setFilterCategories(new Set())
-              setFilterPhases(new Set())
-              setFilterKinds(new Set())
-              setTag('')
-            }}
-          >
-            {t('costs.filter.clear')}
-          </button>
-        )}
-      </div>
+        {/* Filtry s více volbami – omezí tabulku i graf (limity a záhlaví platí dál pro celý projekt). */}
+        <div role="group" aria-label={t('costs.filter.label')} className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-2 dark:border-slate-700">
+          <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('costs.filter.label')}</span>
+          <MultiSelect label={t('costs.groups.category')} options={options('category')} selected={filter.categories} onChange={setFilterCategories} />
+          <MultiSelect label={t('costs.groups.phase')} options={options('phase')} selected={filter.phases} onChange={setFilterPhases} />
+          <MultiSelect label={t('costs.groups.kind')} options={options('kind')} selected={filter.kinds} onChange={setFilterKinds} />
+          {tags.length > 0 && (
+            <label className="flex items-center gap-2 text-sm">
+              {t('costs.tag')}
+              <select className="field-select" value={tag} onChange={(e) => setTag(e.target.value)}>
+                <option value="">{t('costs.allTags')}</option>
+                {tags.map((x) => (
+                  <option key={x} value={x}>
+                    {x}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {filtersActive && (
+            <button
+              type="button"
+              className="rounded px-2 py-1 text-sm underline decoration-miro-turquoise decoration-2 underline-offset-4 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:bg-slate-800"
+              onClick={() => {
+                setFilterCategories(new Set())
+                setFilterPhases(new Set())
+                setFilterKinds(new Set())
+                setTag('')
+              }}
+            >
+              {t('costs.filter.clear')}
+            </button>
+          )}
+        </div>
+      </SettingsWrap>
 
       {(timeline.skippedLines > 0 || filtersActive) && (
         <div className="space-y-1 border-b border-slate-200 px-4 py-1.5 text-sm dark:border-slate-700">
@@ -238,7 +247,7 @@ export function CostsView() {
       {periods.length > 0 && (
         <div className="shrink-0 border-b border-slate-200 dark:border-slate-700">
           {/* Dashboard (A-03): ukazatele a graf S-křivka / Cash flow. */}
-          <div className="flex flex-wrap items-stretch gap-2 px-4 pt-3">
+          <div className={readOnly ? 'grid grid-cols-2 gap-2 px-3 pt-3' : 'flex flex-wrap items-stretch gap-2 px-4 pt-3'}>
             <Kpi label={t('costs.kpi.total')} value={money(kpis.total)} hint={filtersActive ? t('costs.kpi.filtered') : undefined} />
             <Kpi label={t('costs.kpi.toDate')} value={money(kpis.toDate)} hint={t('costs.kpi.toDateHint', { date: formatIsoDate(todayIso(), lang) })} />
             <Kpi label={t('costs.kpi.remaining')} value={money(kpis.remaining)} />

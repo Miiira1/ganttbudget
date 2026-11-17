@@ -13,7 +13,9 @@ import type { Zoom } from '../gantt/timeline'
 import { formatIsoDate } from '../i18n/format'
 import { visibleRows, wbsNumbers } from '../model/hierarchy'
 import { todayIso } from '../model/dates'
-import { getPercents, getSchedule, projectStore } from '../store/useProject'
+import { getCosts, getPercents, getSchedule, projectStore } from '../store/useProject'
+import { buildBarLabels, type BarLabelField } from '../gantt/barLabels'
+import { barLabelFormat } from '../ui/gantt/barLabelFormat'
 import { useDisplayOptions } from '../ui/displayOptions'
 import { useZoom } from '../ui/gantt/zoom'
 import { segmentLabel } from '../ui/gantt/TimelineHeader'
@@ -33,6 +35,10 @@ export interface GanttSvgOptions {
   rowRange?: { from: number; to: number }
   zoom?: Zoom
   critical?: boolean
+  /** Úsporná varianta pro telefon (bez tabulky a nadpisu). */
+  compact?: boolean
+  /** Údaje v popiscích vedle úseček; chybí = podle volby „Popisky“. */
+  labelFields?: BarLabelField[]
 }
 
 /** Počet řádků, které se do obrázku kreslí (viditelné – bez řádků ve sbalených fázích). */
@@ -46,12 +52,26 @@ export function currentGanttSvg(t: TFunction, language: string, options: GanttSv
   const project = projectStore.getState().project
   const scheduled = getSchedule(project)
   const date = (iso: string) => formatIsoDate(iso, language)
+  const rows = visibleRows(project, useViewState.getState().collapsed)
+  const percents = getPercents(project)
+  const costs = getCosts(project)
+  // Stejné popisky vedle úseček jako na obrazovce (volba „Popisky“).
+  const barLabels = buildBarLabels(
+    rows,
+    scheduled.tasks,
+    percents,
+    (id) => costs.byTask.get(id)?.total.total ?? 0,
+    options.labelFields ?? useDisplayOptions.getState().barLabels,
+    barLabelFormat(t, language, project.currency),
+  )
   return renderGanttSvg({
     project,
     scheduled,
-    rows: visibleRows(project, useViewState.getState().collapsed),
+    rows,
     wbs: wbsNumbers(project),
-    percents: getPercents(project),
+    percents,
+    barLabels,
+    compact: options.compact,
     calendar: createWorkCalendar(project.calendar),
     zoom: options.zoom ?? useZoom.getState().zoom,
     critical: options.critical ?? useDisplayOptions.getState().showCritical,

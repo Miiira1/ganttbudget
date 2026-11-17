@@ -459,7 +459,17 @@
     "shiftLater_other": "finish {{count}} days later",
     "shiftEarlier_one": "finish {{count}} day earlier",
     "shiftEarlier_other": "finish {{count}} days earlier",
-    "createHint": "Drag here horizontally = new task"
+    "createHint": "Drag here horizontally = new task",
+    "barLabels": "Labels",
+    "barLabelsHint": "Which details to show next to the bars (also in image and PDF export)",
+    "barLabelsLegend": "Show next to bars",
+    "barLabel": {
+      "name": "Name",
+      "dates": "Dates",
+      "duration": "Duration",
+      "percent": "% complete",
+      "cost": "Cost"
+    }
   },
   "notice": {
     "close": "Close notice"
@@ -2429,5 +2439,25 @@
   },
   "a11y": {
     "skipToContent": "Skip to content"
+  },
+  "mobile": {
+    "menu": "Menu",
+    "menuHint": "Open project, sample project, glossary and switch to the full version",
+    "navLabel": "Views",
+    "open": "Open project…",
+    "fullVersion": "Full version (editing)",
+    "mobileVersion": "Mobile version",
+    "emptyHint": "Open a project via menu ⋯ → Open project (.ganttbudget.json file), or look at the sample project. Plans are created on a computer.",
+    "percent": "{{percent}}% complete",
+    "percentValue": "{{percent}}%",
+    "critical": "Critical",
+    "lines": "Resources and costs",
+    "planMode": "Plan display",
+    "list": "List",
+    "gantt": "Gantt",
+    "ganttAlt": "Gantt chart of project {{name}} – the same data is in the list",
+    "trackingEmpty": "The project has no saved baseline yet. Save one in the full version on a computer (Tracking → Save baseline).",
+    "analysisSettings": "Analysis settings and filters",
+    "viewSettings": "Display settings and filters"
   }
 }

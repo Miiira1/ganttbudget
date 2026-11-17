@@ -108,14 +108,19 @@ const HEADER_UNITS: Record<Zoom, [Unit, Unit]> = {
   quarter: ['year', 'quarter'],
 }
 
-export function createTimeline(options: { zoom: Zoom; projectStart: string; projectFinish: string | null }): Timeline {
+/**
+ * `trailingPx` = kolik px je potřeba za koncem projektu (popisky vedle posledních úseček); osa se
+ * prodlouží, jen když nestačí běžná rezerva DAYS_AFTER.
+ */
+export function createTimeline(options: { zoom: Zoom; projectStart: string; projectFinish: string | null; trailingPx?: number }): Timeline {
   const { zoom } = options
   const start = isoToDay(options.projectStart)
   const finish = Math.max(start, options.projectFinish ? isoToDay(options.projectFinish) : start)
   const unit = ALIGN_UNIT[zoom]
   const startDay = unitStart(start - DAYS_BEFORE, unit)
-  const endDay = nextUnitStart(finish + DAYS_AFTER, unit)
   const dayWidth = DAY_WIDTH[zoom]
+  const extraDays = Math.ceil(Math.max(0, (options.trailingPx ?? 0) - DAYS_AFTER * dayWidth) / dayWidth)
+  const endDay = nextUnitStart(finish + DAYS_AFTER + extraDays, unit)
   return { zoom, startDay, endDay, dayWidth, width: (endDay - startDay) * dayWidth }
 }
 

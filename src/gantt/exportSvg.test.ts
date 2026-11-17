@@ -56,6 +56,29 @@ describe('export Gantta do SVG', () => {
     expect(svg).toContain('&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; &amp; „A“')
   })
 
+  it('popisky vedle úseček: jsou v SVG, escapované, a osa se kvůli nim prodlouží', () => {
+    const p = createEmptyProject({ name: 'P', language: 'cs', startDate: '2026-11-23' })
+    p.tasks = [{ ...createTask({ id: 'a', name: 'A', order: 0 }) } as Task]
+    const plain = renderGanttSvg(input(p))
+    const long = '<b>Montáž</b> & ' + 'x'.repeat(120)
+    const labelled = renderGanttSvg(input(p, { barLabels: new Map([['a', long]]) }))
+    expect(labelled.svg).not.toContain('<b>')
+    expect(labelled.svg).toContain('&lt;b&gt;Montáž&lt;/b&gt; &amp; ')
+    expect(labelled.width).toBeGreaterThan(plain.width)
+    expect(plain.svg).not.toContain('Montáž')
+  })
+
+  it('úsporná varianta pro telefon: bez tabulky a nadpisu, užší a nižší, úsečky zůstanou', () => {
+    const p = sample()
+    const full = renderGanttSvg(input(p))
+    const compact = renderGanttSvg(input(p, { compact: true }))
+    expect(compact.width).toBeLessThan(full.width)
+    expect(compact.height).toBeLessThan(full.height)
+    expect(compact.svg).not.toContain('>Projekt<')
+    expect(compact.svg).not.toContain('>WBS<')
+    expect(count(compact.svg, 'data-bar=')).toBe(p.tasks.length)
+  })
+
   it('dlouhý název se zkrátí výpustkou', () => {
     const p = createEmptyProject({ name: 'P', language: 'cs', startDate: '2026-11-23' })
     p.tasks = [createTask({ id: 'a', name: 'x'.repeat(120), order: 0 })]

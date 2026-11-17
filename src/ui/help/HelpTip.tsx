@@ -66,7 +66,7 @@ export function InfoTip({ title, text, extra, className = '' }: { title: string;
         // Kliknutí nemá spustit akci rodiče (výběr řádku, třídění…).
         onClick={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
-        className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-normal normal-case leading-none tracking-normal text-miro-turquoise-dark hover:bg-miro-turquoise-light focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:text-miro-turquoise dark:hover:bg-slate-700 ${className}`}
+        className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-normal normal-case pointer-coarse:h-7 pointer-coarse:w-7 leading-none tracking-normal text-miro-turquoise-dark hover:bg-miro-turquoise-light focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:text-miro-turquoise dark:hover:bg-slate-700 ${className}`}
       >
         <span aria-hidden="true">ⓘ</span>
       </button>

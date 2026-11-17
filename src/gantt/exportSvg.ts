@@ -15,6 +15,7 @@ import type { ScheduleResult } from '../engine/schedule'
 import type { Project, Task } from '../model/schema'
 import { BAR_HALF_HEIGHT, HEADER_HEIGHT, MILESTONE_HALF, ROW_HEIGHT, barGeometry, dependencyPoints, pointsToPath, type Bar } from './geometry'
 import { createTimeline, dayToX, headerRows, nonWorkingRuns, type HeaderSegment, type Zoom } from './timeline'
+import { LABEL_GAP, labelsTrailingPx } from './barLabels'
 
 export interface GanttSvgLabels {
   title: string
@@ -39,6 +40,10 @@ export interface GanttSvgInput {
   labels: GanttSvgLabels
   /** Jen část řádků (stránka tisku): od – do (bez „do“). */
   rowRange?: { from: number; to: number }
+  /** Popisky vedle úseček (id → text), stejné jako na obrazovce; chybí = bez popisků. */
+  barLabels?: ReadonlyMap<string, string>
+  /** Úsporná varianta pro telefon: bez tabulky vlevo a bez nadpisu (názvy jsou v popiscích). */
+  compact?: boolean
 }
 
 export interface GanttSvg {
@@ -79,7 +84,6 @@ const COLUMNS = [
   { key: 'finish', width: 78, align: 'start' },
   { key: 'duration', width: 66, align: 'end' },
 ] as const
-const TABLE_WIDTH = COLUMNS.reduce((sum, c) => sum + c.width, 0)
 /** Kolik znaků názvu se vejde (odhad pro písmo 11 px). */
 const NAME_CHARS = 38
 const INDENT = 10
@@ -99,11 +103,14 @@ export function renderGanttSvg(input: GanttSvgInput): GanttSvg {
   const rows = input.rows.slice(from, to)
   const depths = depthOf(input.rows)
 
-  const tl = createTimeline({ zoom: input.zoom, projectStart: project.startDate, projectFinish: scheduled.projectFinish })
-  const chartX = TABLE_WIDTH
-  const top = TITLE_HEIGHT
+  const barLabels = input.barLabels ?? new Map<string, string>()
+  const tl = createTimeline({ zoom: input.zoom, projectStart: project.startDate, projectFinish: scheduled.projectFinish, trailingPx: labelsTrailingPx(barLabels) })
+  const columns = input.compact ? [] : COLUMNS
+  const tableWidth = columns.reduce((sum, c) => sum + c.width, 0)
+  const chartX = tableWidth
+  const top = input.compact ? 0 : TITLE_HEIGHT
   const bodyTop = top + HEADER_HEIGHT
-  const width = Math.ceil(TABLE_WIDTH + tl.width)
+  const width = Math.ceil(tableWidth + tl.width)
   const height = bodyTop + rows.length * ROW_HEIGHT + 1
 
   const out: string[] = []
@@ -116,14 +123,16 @@ export function renderGanttSvg(input: GanttSvgInput): GanttSvg {
       `<marker id="ac" viewBox="0 0 6 6" refX="6" refY="3" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L6 3L0 6z" fill="${C.criticalArrow}"/></marker></defs>`,
   )
 
-  // Název a podtitul.
-  out.push(`<text x="8" y="20" font-size="15" font-weight="700" fill="${C.ink}">${escapeXml(labels.title)}</text>`)
-  out.push(`<text x="8" y="36" fill="${C.muted}">${escapeXml(labels.subtitle)}</text>`)
+  // Název a podtitul (v úsporné variantě ne – název projektu je v záhlaví aplikace).
+  if (!input.compact) {
+    out.push(`<text x="8" y="20" font-size="15" font-weight="700" fill="${C.ink}">${escapeXml(labels.title)}</text>`)
+    out.push(`<text x="8" y="36" fill="${C.muted}">${escapeXml(labels.subtitle)}</text>`)
+  }
 
   // Hlavička tabulky a osy.
   out.push(`<rect x="0" y="${top}" width="${width}" height="${HEADER_HEIGHT}" fill="${C.headerBg}"/>`)
   let colX = 0
-  for (const col of COLUMNS) {
+  for (const col of columns) {
     const x = col.align === 'end' ? colX + col.width - 6 : colX + 6
     out.push(`<text x="${x}" y="${top + HEADER_HEIGHT - 10}" font-weight="700" fill="${C.muted}" text-anchor="${col.align}">${escapeXml(labels.columns[col.key])}</text>`)
     colX += col.width
@@ -147,8 +156,11 @@ export function renderGanttSvg(input: GanttSvgInput): GanttSvg {
   }
   out.push(`<line x1="0" y1="${top + half}" x2="${width}" y2="${top + half}" stroke="${C.grid}"/>`)
 
-  // Volné dny (víkendy, svátky, odstávky) přes celou výšku těla.
+  // Volné dny přes celou výšku těla. V měřítku Měsíce / Čtvrtletí jen svátky a odstávky – víkendy by
+  // byly jen husté proužky (stejně jako graf na obrazovce).
+  const showWeekends = input.zoom === 'day' || input.zoom === 'week'
   for (const run of nonWorkingRuns(tl, input.calendar)) {
+    if (!showWeekends && run.info.kind === 'weekend') continue
     const x = chartX + dayToX(tl, run.startDay)
     const w = (run.endDay - run.startDay) * tl.dayWidth
     out.push(`<rect x="${r1(x)}" y="${bodyTop}" width="${r1(w)}" height="${rows.length * ROW_HEIGHT}" fill="${run.info.kind === 'weekend' ? C.nonWorking : C.holiday}"/>`)
@@ -170,7 +182,7 @@ export function renderGanttSvg(input: GanttSvgInput): GanttSvg {
       duration: s?.durationDays === null || s?.durationDays === undefined ? '' : String(s.durationDays),
     }
     let x = 0
-    for (const col of COLUMNS) {
+    for (const col of columns) {
       const indent = col.key === 'name' ? (depths.get(task.id) ?? 0) * INDENT : 0
       const tx = col.align === 'end' ? x + col.width - 6 : x + 6 + indent
       out.push(
@@ -230,6 +242,15 @@ export function renderGanttSvg(input: GanttSvgInput): GanttSvg {
         )
       }
     }
+  }
+
+  // Popisky vedle úseček (volba „Popisky“) – text je escapovaný.
+  for (const task of rows) {
+    const bar = bars.get(task.id)
+    const text = barLabels.get(task.id)
+    if (!bar || !text) continue
+    const end = Math.max(bar.xEnd, bar.xStart + (task.kind === 'milestone' ? 2 * MILESTONE_HALF : 2))
+    out.push(`<text x="${r1(end + LABEL_GAP)}" y="${r1(bar.centerY + 4)}" fill="${C.muted}">${escapeXml(text)}</text>`)
   }
 
   out.push('</svg>')

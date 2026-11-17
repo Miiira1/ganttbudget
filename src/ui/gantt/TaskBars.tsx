@@ -14,6 +14,7 @@ import { useCoarsePointer } from '../useCoarsePointer'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { cachedT } from '../../i18n/cachedT'
+import { LABEL_GAP } from '../../gantt/barLabels'
 import type { ScheduledTask } from '../../engine/schedule'
 import { formatIsoDate } from '../../i18n/format'
 import { BAR_HALF_HEIGHT, MILESTONE_HALF, ROW_HEIGHT, type Bar } from '../../gantt/geometry'
@@ -273,9 +274,11 @@ interface TaskBarsProps {
   baselineName: string
   /** Vybrané řádky (na dotykovém displeji u nich zůstanou vidět kolečka vazeb). */
   selectedIds: ReadonlySet<string>
+  /** Popisky vedle úseček (id → text); prázdná mapa = bez popisků. */
+  labels: ReadonlyMap<string, string>
 }
 
-export const TaskBars = memo(function TaskBars({ rows, bars, dates, critical, slackEnds, percents, baseline, baselineName, selectedIds }: TaskBarsProps) {
+export const TaskBars = memo(function TaskBars({ rows, bars, dates, critical, slackEnds, percents, baseline, baselineName, selectedIds, labels }: TaskBarsProps) {
   const { t: translate, i18n } = useTranslation()
   // Hotové texty bublin z paměti (13c – výkon): 300 úseček × několik překladů při každé změně plánu.
   const t = ((key: string, options?: Record<string, string | number>) => cachedT(translate, i18n.language, key, options)) as unknown as TFunction
@@ -311,6 +314,17 @@ export const TaskBars = memo(function TaskBars({ rows, bars, dates, critical, sl
             <Progress bar={bar} percent={percent} critical={isCritical} />
             <DragHandles bar={bar} taskId={task.id} touch={touch} />
             <LinkHandles bar={bar} taskId={task.id} label={t('gantt.linkHandle')} touch={touch} selected={selectedIds.has(task.id)} />
+            {labels.has(task.id) && (
+              // Popisek vpravo od úsečky (za kolečkem vazby); jen text, myš jím prochází na graf.
+              <text
+                x={Math.max(bar.xEnd, bar.xStart + (bar.kind === 'milestone' ? 2 * MILESTONE_HALF : MIN_WIDTH)) + (touch ? LINK_OFFSET_TOUCH + LINK_RADIUS_TOUCH : LABEL_GAP)}
+                y={bar.centerY + 4}
+                aria-hidden="true"
+                className="pointer-events-none select-none fill-slate-700 text-[11px] dark:fill-slate-300"
+              >
+                {labels.get(task.id)}
+              </text>
+            )}
           </g>
         )
       })}

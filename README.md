@@ -45,7 +45,9 @@ Je určená studentům a praktikům bez zkušenosti s projektovým řízením. B
 > (větší úchyty, dlouhý stisk = výběr), **novou činnost tažením** v pruhu pod plánem, ukládání **sbalených fází**
 > do souboru i zálohy a zrychlení pro plány s 300 činnostmi. Fáze 13d přidala **státní svátky Slovenska, Polska,
 > Německa a Rakouska**, kontrolu přístupnosti (kontrast, popisky, „Přeskočit na obsah“) a vzhled podle **brand kitu 2.0**
-> (nové logo, písma Inter, přehlednější záhlaví s menu Nápověda) – viz [ZADANI.md](ZADANI.md), kap. 8.
+> (nové logo, písma Inter, přehlednější záhlaví s menu Nápověda). Doplňky po fázi 13: **popisky vedle úseček**
+> Gantta (Název, Termín, Délka, % hotovo, Náklady) a **mobilní verze jen pro prohlížení** – na telefonu spodní lišta
+> pohledů, Plán jako seznam karet nebo Gantt (viz [ZADANI.md](ZADANI.md), kap. 8 a N-05).
 
 ## Soubory: co kdy použít
 
@@ -128,7 +130,7 @@ requesty. Nic se nesloučí samo: u každého počkejte, až projdou testy, a sl
 | `src/io/` | soubor projektu, automatická záloha (IndexedDB), export a import CSV/XLSX (činnosti, rozpočet, celý projekt – `workbookExport.ts`, `workbookImport.ts`; export analýzy – `analysisExport.ts`, sledování – `trackingExport.ts`), knihovna zdrojů, export Gantta (`ganttExportActions.ts`), import plánu z MS Project / GanttProject (`msProjectImport.ts`, `ganttProjectImport.ts`, bezpečný čtenář XML `xml.ts`), kontrola archivu XLSX (`zipGuard.ts`) – kontrola dat s testy |
 | `src/model/` | formát projektu (schéma Zod), strom fází a přesuny (`hierarchy.ts`), práce s daty a zápis předchůdců, peníze v haléřích (`money.ts`), kalkulace sazby (`rates.ts`), náklady činností (`costs.ts`), vytížení zdrojů (`load.ts`), časový náběh nákladů, limity a ukazatele (`costTimeline.ts`), období (`periods.ts`), štítky (`tags.ts`), data pro analýzu (`facts.ts`), kontingenční tabulka (`pivot.ts`) a její grafy (`pivotChart.ts`), snímek baseline (`baseline.ts`) a Earned Value (`earnedValue.ts`), kontrola kvality plánu (`planCheck.ts`), průvodce prvním projektem (`wizard.ts`), formát odpovědi AI a jeho převod na projekt (`aiPlan.ts`) a prompty a export pro AI (`aiPrompts.ts`), myšlenková mapa – úpravy (`mindMap.ts`), rozložení (`mindMapLayout.ts`), převod na plán (`mindMapToPlan.ts`) a odsazený text (`outline.ts`) |
 | `src/store/` | stav aplikace s historií změn (Zpět / Znovu) |
-| `src/ui/` | obrazovky a komponenty (React); `src/ui/gantt/` kreslí Ganttův graf (SVG), `src/ui/resources/` obrazovku Zdroje, `src/ui/detail/` panel Detail činnosti, `src/ui/load/` pohled Vytížení, `src/ui/costs/` pohled Náklady, `src/ui/analysis/` pohled Analýza, `src/ui/tracking/` pohled Sledování, `src/ui/help/` nápověda ⓘ a Slovníček, `src/ui/check/` okno Kontrola plánu, `src/ui/ai/` okno AI, `src/ui/mindmap/` pohled Mapa |
+| `src/ui/` | obrazovky a komponenty (React); `src/ui/gantt/` kreslí Ganttův graf (SVG), `src/ui/resources/` obrazovku Zdroje, `src/ui/detail/` panel Detail činnosti, `src/ui/load/` pohled Vytížení, `src/ui/costs/` pohled Náklady, `src/ui/analysis/` pohled Analýza, `src/ui/tracking/` pohled Sledování, `src/ui/help/` nápověda ⓘ a Slovníček, `src/ui/check/` okno Kontrola plánu, `src/ui/ai/` okno AI, `src/ui/mindmap/` pohled Mapa, `src/ui/mobile/` mobilní verze (jen prohlížení) |
 | `src/i18n/` | překlady (`locales/cs.json`, `locales/en.json`) a formát data a čísel |
 | `src/samples/` | šablony projektů (`templates.ts` – seznam, `template.ts` – společný stavitel) a jejich data: vzorový projekt „Zavedení automatizace do výroby“ (`automatizace.ts`), vývoj výrobku, výrobní linka, investiční akce, odstávka |
 | `pruvodce/` | výuková case study – jedna kapitola na fázi vývoje |

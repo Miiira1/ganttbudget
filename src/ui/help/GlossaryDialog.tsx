@@ -62,9 +62,20 @@ export function GlossaryDialog({ open, onClose }: { open: boolean; onClose: () =
       className="m-auto max-h-[90vh] w-[min(42rem,calc(100vw-2rem))] overflow-y-auto rounded-lg border border-slate-300 bg-white p-0 text-slate-900 shadow-xl backdrop:bg-slate-900/50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
     >
       <div className="p-5">
-        <h2 id={titleId} className="text-lg font-semibold">
-          {t('glossary.title')}
-        </h2>
+        {/* Nadpis s ✕ zůstává nahoře i při posouvání – na telefonu (bez Esc) jde okno zavřít kdykoli. */}
+        <div className="sticky top-0 z-10 -mx-5 -mt-5 flex items-start justify-between gap-3 border-b border-slate-200 bg-white px-5 pb-2 pt-5 dark:border-slate-700 dark:bg-slate-900">
+          <h2 id={titleId} className="text-lg font-semibold">
+            {t('glossary.title')}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t('glossary.close')}
+            className="rounded px-2 py-0.5 text-slate-600 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:text-slate-300 dark:hover:bg-slate-800"
+          >
+            <span aria-hidden="true">✕</span>
+          </button>
+        </div>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{t('glossary.intro')}</p>
 
         <label htmlFor={searchId} className="mt-4 block text-sm font-medium">

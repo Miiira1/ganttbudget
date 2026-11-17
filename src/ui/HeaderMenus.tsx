@@ -13,7 +13,7 @@ const itemClass =
 const panelClass = 'absolute right-0 z-30 mt-1 min-w-56 whitespace-nowrap rounded-md border border-slate-300 bg-white py-1 shadow-lg dark:border-slate-600 dark:bg-slate-800'
 
 /** Otevřené / zavřené menu: zavře se klepnutím mimo nebo klávesou Esc. */
-function useDropdown() {
+export function useDropdown() {
   const [open, setOpen] = useState(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement & HTMLUListElement>(null)
@@ -41,8 +41,10 @@ export interface HelpMenuItem {
   shortcut?: string
 }
 
-export function HelpMenu({ items }: { items: HelpMenuItem[] }) {
+/** Menu Nápověda; s `label` / `button` jde použít i jako jiné menu (např. mobilní ⋯). */
+export function HelpMenu({ items, label, button, title }: { items: HelpMenuItem[]; label?: string; button?: ReactNode; title?: string }) {
   const { t } = useTranslation()
+  const menuLabel = label ?? t('toolbar.help')
   const menuId = useId()
   const { open, setOpen, buttonRef, panelRef, close } = useDropdown()
 
@@ -71,13 +73,18 @@ export function HelpMenu({ items }: { items: HelpMenuItem[] }) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={menuId}
-        title={t('toolbar.helpHint')}
+        aria-label={button ? menuLabel : undefined}
+        title={title ?? t('toolbar.helpHint')}
         onClick={() => setOpen((o) => !o)}
       >
-        <span aria-hidden="true">?</span> {t('toolbar.help')} <span aria-hidden="true">▾</span>
+        {button ?? (
+          <>
+            <span aria-hidden="true">?</span> {menuLabel} <span aria-hidden="true">▾</span>
+          </>
+        )}
       </button>
       {open && (
-        <ul ref={panelRef} id={menuId} role="menu" aria-label={t('toolbar.help')} onKeyDown={onKeyDown} className={panelClass}>
+        <ul ref={panelRef} id={menuId} role="menu" aria-label={menuLabel} onKeyDown={onKeyDown} className={panelClass}>
           {items.map((item) => (
             <li key={item.id} role="none">
               <button

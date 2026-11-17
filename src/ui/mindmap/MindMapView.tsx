@@ -24,6 +24,7 @@ import { showNotice } from '../notice'
 import { useElementSize } from '../useElementSize'
 import { PlanFromMapDialog } from './PlanFromMapDialog'
 import { OutlineDialog } from './OutlineDialog'
+import { useReadOnly } from '../readOnly'
 import { mindMapToOutline } from '../../model/outline'
 
 /** Barvy hlavních větví (odstíny značky s kontrastem ≥ 3 : 1 ve světlém i tmavém vzhledu). */
@@ -45,6 +46,7 @@ export function MindMapView({ onShowPlan }: { onShowPlan: () => void }) {
   const [outlineOpen, setOutlineOpen] = useState(false)
   const project = useProject((s) => s.project)
   const setMindMap = useProject((s) => s.setMindMap)
+  const readOnly = useReadOnly()
   // Bez uložené mapy výchozí mapa se středním tématem = název projektu (uloží se první úpravou).
   const map: MindMap = useMemo(() => project.mindMap ?? createMindMap(project.name, () => 'mm-root'), [project.mindMap, project.name])
   const layout = useMemo(() => layoutMindMap(map), [map])
@@ -128,6 +130,7 @@ export function MindMapView({ onShowPlan }: { onShowPlan: () => void }) {
 
   /** Zapíše výsledek úpravy (jeden krok Zpět), nebo ukáže, proč nejde. */
   function apply(result: MapResult): string | null {
+    if (readOnly) return null // telefon: jen prohlížení
     if (!result.ok) {
       showNotice(t(`mindMap.errors.${result.reason}`))
       return null
@@ -137,6 +140,7 @@ export function MindMapView({ onShowPlan }: { onShowPlan: () => void }) {
   }
 
   function startEdit(id: string, draft?: string) {
+    if (readOnly) return
     const node = nodeOf(map, id)
     if (!node) return
     setEditing({ id, draft: draft ?? node.text, selectAll: draft === undefined })
@@ -154,6 +158,7 @@ export function MindMapView({ onShowPlan }: { onShowPlan: () => void }) {
   }
 
   function remove() {
+    if (readOnly) return
     const descendants = subtreeIds(map, selected.id).size - 1
     if (selected.side === 'root') return void showNotice(t('mindMap.errors.root'))
     if (descendants > 0 && !window.confirm(t('mindMap.confirmDelete', { name: selected.text, count: descendants }))) return
@@ -241,7 +246,7 @@ export function MindMapView({ onShowPlan }: { onShowPlan: () => void }) {
       const id = nodeElement.getAttribute('data-node-id')!
       setSelectedId(id)
       containerRef.current?.focus()
-      if (layout.byId.get(id)?.side !== 'root') nodeDrag.current = { id, startX: event.clientX, startY: event.clientY, pointerId: event.pointerId }
+      if (!readOnly && layout.byId.get(id)?.side !== 'root') nodeDrag.current = { id, startX: event.clientX, startY: event.clientY, pointerId: event.pointerId }
       return
     }
     pan.current = { x: event.clientX, y: event.clientY, cx: view.cx, cy: view.cy }
@@ -314,40 +319,44 @@ export function MindMapView({ onShowPlan }: { onShowPlan: () => void }) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div role="toolbar" aria-label={t('mindMap.toolbar')} className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-2 dark:border-slate-700">
-        <button type="button" className={button} onClick={() => add('child')} title={t('mindMap.addChildHint')}>
-          <span aria-hidden="true">＋</span> {t('mindMap.addChild')}
-        </button>
-        <button type="button" className={button} onClick={() => add('sibling')} disabled={selected.side === 'root'} title={t('mindMap.addSiblingHint')}>
-          {t('mindMap.addSibling')}
-        </button>
-        <button type="button" className={button} onClick={() => startEdit(selected.id)} title={t('mindMap.renameHint')}>
-          {t('mindMap.rename')}
-        </button>
-        <button type="button" className={button} onClick={remove} disabled={selected.side === 'root'} title={t('mindMap.deleteHint')}>
-          {t('mindMap.delete')}
-        </button>
-        <button type="button" className={button} onClick={toggle} disabled={selected.childCount === 0} title={t('mindMap.toggleHint')}>
-          {selected.collapsed ? t('mindMap.expand') : t('mindMap.collapse')}
-        </button>
-        <button type="button" className="btn-primary" onClick={() => setPlanOpen(true)} title={t('mindMap.plan.buttonHint')}>
-          {t('mindMap.plan.button')}
-        </button>
-        <PlanFromMapDialog open={planOpen} map={map} onClose={() => setPlanOpen(false)} onDone={onShowPlan} />
-        <button type="button" className={button} onClick={() => setOutlineOpen(true)} title={t('mindMap.outline.buttonHint')}>
-          {t('mindMap.outline.button')}
-        </button>
-        <button type="button" className={button} onClick={() => void copyOutline()} title={t('mindMap.outline.copyHint')}>
-          {t('mindMap.outline.copy')}
-        </button>
-        <OutlineDialog
-          open={outlineOpen}
-          currentNodes={map.nodes.length}
-          onClose={() => setOutlineOpen(false)}
-          onReplaced={() => {
-            // Nová mapa: znovu vycentrovat (vybraný uzel se sám vrátí na střední téma).
-            fitted.current = false
-          }}
-        />
+        {!readOnly && (
+          <>
+            <button type="button" className={button} onClick={() => add('child')} title={t('mindMap.addChildHint')}>
+              <span aria-hidden="true">＋</span> {t('mindMap.addChild')}
+            </button>
+            <button type="button" className={button} onClick={() => add('sibling')} disabled={selected.side === 'root'} title={t('mindMap.addSiblingHint')}>
+              {t('mindMap.addSibling')}
+            </button>
+            <button type="button" className={button} onClick={() => startEdit(selected.id)} title={t('mindMap.renameHint')}>
+              {t('mindMap.rename')}
+            </button>
+            <button type="button" className={button} onClick={remove} disabled={selected.side === 'root'} title={t('mindMap.deleteHint')}>
+              {t('mindMap.delete')}
+            </button>
+            <button type="button" className={button} onClick={toggle} disabled={selected.childCount === 0} title={t('mindMap.toggleHint')}>
+              {selected.collapsed ? t('mindMap.expand') : t('mindMap.collapse')}
+            </button>
+            <button type="button" className="btn-primary" onClick={() => setPlanOpen(true)} title={t('mindMap.plan.buttonHint')}>
+              {t('mindMap.plan.button')}
+            </button>
+            <PlanFromMapDialog open={planOpen} map={map} onClose={() => setPlanOpen(false)} onDone={onShowPlan} />
+            <button type="button" className={button} onClick={() => setOutlineOpen(true)} title={t('mindMap.outline.buttonHint')}>
+              {t('mindMap.outline.button')}
+            </button>
+            <button type="button" className={button} onClick={() => void copyOutline()} title={t('mindMap.outline.copyHint')}>
+              {t('mindMap.outline.copy')}
+            </button>
+            <OutlineDialog
+              open={outlineOpen}
+              currentNodes={map.nodes.length}
+              onClose={() => setOutlineOpen(false)}
+              onReplaced={() => {
+                // Nová mapa: znovu vycentrovat (vybraný uzel se sám vrátí na střední téma).
+                fitted.current = false
+              }}
+            />
+          </>
+        )}
         <div className="ml-auto flex items-center gap-2">
           <button type="button" className={button} onClick={() => zoomAt(1 / 1.2)} aria-label={t('mindMap.zoomOut')} title={t('mindMap.zoomOut')}>
             <span aria-hidden="true">−</span>
@@ -361,7 +370,7 @@ export function MindMapView({ onShowPlan }: { onShowPlan: () => void }) {
           <HelpTip term="mindMap" />
         </div>
       </div>
-      <p className="border-b border-slate-200 px-4 py-1 text-xs text-slate-600 dark:border-slate-700 dark:text-slate-400">{t('mindMap.keysHint')}</p>
+      {!readOnly && <p className="border-b border-slate-200 px-4 py-1 text-xs text-slate-600 dark:border-slate-700 dark:text-slate-400">{t('mindMap.keysHint')}</p>}
 
       <div
         ref={containerRef}

@@ -26,6 +26,8 @@ import { exportPivot } from './analysisActions'
 import { makeDimLabel } from './labels'
 import { PivotChart } from './PivotChart'
 import { ViewsMenu, type ActiveView } from './ViewsMenu'
+import { useReadOnly } from '../readOnly'
+import { SettingsWrap } from '../mobile/SettingsWrap'
 
 const DEFAULT_CONFIG: PivotConfig = { rows: ['category'], column: 'period', metric: 'cost', agg: 'sum', period: 'month', filters: {} }
 const AGGS: readonly PivotAgg[] = ['sum', 'avg', 'count', 'min', 'max']
@@ -46,6 +48,7 @@ function loadConfig(): PivotConfig {
 
 export function AnalysisView() {
   const { t, i18n } = useTranslation()
+  const readOnly = useReadOnly()
   const lang = i18n.language
   const project = useProject((s) => s.project)
   const facts = useFacts()
@@ -214,104 +217,107 @@ export function AnalysisView() {
   const selectClass = 'field-select'
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* Nastavení tabulky */}
-      <div className="flex flex-wrap items-end gap-x-4 gap-y-2 border-b border-slate-200 px-4 py-2 dark:border-slate-700">
-        <ViewsMenu config={config} active={activeView} onApply={applyView} />
-        <label className="flex flex-col gap-0.5 text-xs font-medium text-slate-600 dark:text-slate-400">
-          {t('analysis.rows')}
-          <span className="flex items-center gap-1">
-            <select className={selectClass} value={config.rows[0]} onChange={(e) => {
-                const dim = e.target.value as PivotDim
-                patch((prev) => ({ rows: [dim, ...prev.rows.slice(1).filter((d) => d !== dim)], column: prev.column === dim ? null : prev.column }))
-              }}>
-              {PIVOT_DIMS.map((d) => (
-                <option key={d} value={d}>
-                  {dimText(d)}
-                </option>
-              ))}
-            </select>
-            <span aria-hidden="true">›</span>
-            <select
-              className={selectClass}
-              aria-label={t('analysis.rows2')}
-              value={config.rows[1] ?? ''}
-              onChange={(e) => {
-                const dim = e.target.value as PivotDim | ''
-                patch((prev) => ({ rows: dim ? [prev.rows[0]!, dim] : [prev.rows[0]!], column: prev.column === dim ? null : prev.column }))
-              }}
-            >
+      {/* Nastavení tabulky a filtry; na telefonu sbalené pod „Nastavení analýzy“. */}
+      <SettingsWrap collapsible={readOnly} summary={t('mobile.analysisSettings')}>
+        <div className="flex flex-wrap items-end gap-x-4 gap-y-2 border-b border-slate-200 px-4 py-2 dark:border-slate-700">
+          {!readOnly && <ViewsMenu config={config} active={activeView} onApply={applyView} />}
+          <label className="flex flex-col gap-0.5 text-xs font-medium text-slate-600 dark:text-slate-400">
+            {t('analysis.rows')}
+            <span className="flex items-center gap-1">
+              <select className={selectClass} value={config.rows[0]} onChange={(e) => {
+                  const dim = e.target.value as PivotDim
+                  patch((prev) => ({ rows: [dim, ...prev.rows.slice(1).filter((d) => d !== dim)], column: prev.column === dim ? null : prev.column }))
+                }}>
+                {PIVOT_DIMS.map((d) => (
+                  <option key={d} value={d}>
+                    {dimText(d)}
+                  </option>
+                ))}
+              </select>
+              <span aria-hidden="true">›</span>
+              <select
+                className={selectClass}
+                aria-label={t('analysis.rows2')}
+                value={config.rows[1] ?? ''}
+                onChange={(e) => {
+                  const dim = e.target.value as PivotDim | ''
+                  patch((prev) => ({ rows: dim ? [prev.rows[0]!, dim] : [prev.rows[0]!], column: prev.column === dim ? null : prev.column }))
+                }}
+              >
+                <option value="">{t('analysis.noDim')}</option>
+                {PIVOT_DIMS.filter((d) => d !== config.rows[0]).map((d) => (
+                  <option key={d} value={d}>
+                    {dimText(d)}
+                  </option>
+                ))}
+              </select>
+            </span>
+          </label>
+          <label className="flex flex-col gap-0.5 text-xs font-medium text-slate-600 dark:text-slate-400">
+            {t('analysis.columns')}
+            <select className={selectClass} value={config.column ?? ''} onChange={(e) => patch({ column: (e.target.value || null) as PivotDim | null })}>
               <option value="">{t('analysis.noDim')}</option>
-              {PIVOT_DIMS.filter((d) => d !== config.rows[0]).map((d) => (
+              {PIVOT_DIMS.filter((d) => !config.rows.includes(d)).map((d) => (
                 <option key={d} value={d}>
                   {dimText(d)}
                 </option>
               ))}
             </select>
-          </span>
-        </label>
-        <label className="flex flex-col gap-0.5 text-xs font-medium text-slate-600 dark:text-slate-400">
-          {t('analysis.columns')}
-          <select className={selectClass} value={config.column ?? ''} onChange={(e) => patch({ column: (e.target.value || null) as PivotDim | null })}>
-            <option value="">{t('analysis.noDim')}</option>
-            {PIVOT_DIMS.filter((d) => !config.rows.includes(d)).map((d) => (
-              <option key={d} value={d}>
-                {dimText(d)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="flex flex-col gap-0.5 text-xs font-medium text-slate-600 dark:text-slate-400">
-          {t('analysis.metric')}
-          <Segmented label={t('analysis.metric')} options={['cost', 'hours'] as const} value={config.metric} onChange={(metric) => patch({ metric })} text={(m) => t(`analysis.metrics.${m}`)} />
-        </div>
-        <label className="flex flex-col gap-0.5 text-xs font-medium text-slate-600 dark:text-slate-400">
-          {t('analysis.agg')}
-          <select className={selectClass} value={config.agg} onChange={(e) => patch({ agg: e.target.value as PivotAgg })}>
-            {AGGS.map((a) => (
-              <option key={a} value={a}>
-                {t(`analysis.aggs.${a}`)}
-              </option>
-            ))}
-          </select>
-        </label>
-        {usesPeriod && (
+          </label>
           <div className="flex flex-col gap-0.5 text-xs font-medium text-slate-600 dark:text-slate-400">
-            {t('analysis.period')}
-            <Segmented label={t('analysis.period')} options={PERIODS} value={config.period} onChange={(period) => patch({ period })} text={(p) => t(`costs.units.${p}`)} />
+            {t('analysis.metric')}
+            <Segmented label={t('analysis.metric')} options={['cost', 'hours'] as const} value={config.metric} onChange={(metric) => patch({ metric })} text={(m) => t(`analysis.metrics.${m}`)} />
           </div>
-        )}
-        <div className="ml-auto flex gap-2">
-          <button type="button" className="btn-secondary" onClick={() => void exportPivot('xlsx', result, config, label, t, lang)} title={t('analysis.exportHint')}>
-            {t('analysis.exportXlsx')}
-          </button>
-          <button type="button" className="btn-secondary" onClick={() => void exportPivot('csv', result, config, label, t, lang)} title={t('analysis.exportHint')}>
-            {t('analysis.exportCsv')}
-          </button>
+          <label className="flex flex-col gap-0.5 text-xs font-medium text-slate-600 dark:text-slate-400">
+            {t('analysis.agg')}
+            <select className={selectClass} value={config.agg} onChange={(e) => patch({ agg: e.target.value as PivotAgg })}>
+              {AGGS.map((a) => (
+                <option key={a} value={a}>
+                  {t(`analysis.aggs.${a}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+          {usesPeriod && (
+            <div className="flex flex-col gap-0.5 text-xs font-medium text-slate-600 dark:text-slate-400">
+              {t('analysis.period')}
+              <Segmented label={t('analysis.period')} options={PERIODS} value={config.period} onChange={(period) => patch({ period })} text={(p) => t(`costs.units.${p}`)} />
+            </div>
+          )}
+          <div className={`ml-auto gap-2 ${readOnly ? 'hidden' : 'flex'}`}>
+            <button type="button" className="btn-secondary" onClick={() => void exportPivot('xlsx', result, config, label, t, lang)} title={t('analysis.exportHint')}>
+              {t('analysis.exportXlsx')}
+            </button>
+            <button type="button" className="btn-secondary" onClick={() => void exportPivot('csv', result, config, label, t, lang)} title={t('analysis.exportHint')}>
+              {t('analysis.exportCsv')}
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Filtry */}
-      <div role="group" aria-label={t('costs.filter.label')} className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-2 dark:border-slate-700">
-        <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('costs.filter.label')}</span>
-        {FACT_DIMS.map((dim) => (
-          <MultiSelect
-            key={dim}
-            label={dimText(dim)}
-            options={filterOptions[dim]}
-            selected={activeFilter(dim)}
-            onChange={(next) => patch((prev) => ({ filters: { ...prev.filters, [dim]: [...next] } }))}
-          />
-        ))}
-        {filtersActive && (
-          <button
-            type="button"
-            className="rounded px-2 py-1 text-sm underline decoration-miro-turquoise decoration-2 underline-offset-4 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:bg-slate-800"
-            onClick={() => patch({ filters: {} })}
-          >
-            {t('costs.filter.clear')}
-          </button>
-        )}
-      </div>
+        {/* Filtry */}
+        <div role="group" aria-label={t('costs.filter.label')} className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-2 dark:border-slate-700">
+          <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('costs.filter.label')}</span>
+          {FACT_DIMS.map((dim) => (
+            <MultiSelect
+              key={dim}
+              label={dimText(dim)}
+              options={filterOptions[dim]}
+              selected={activeFilter(dim)}
+              onChange={(next) => patch((prev) => ({ filters: { ...prev.filters, [dim]: [...next] } }))}
+            />
+          ))}
+          {filtersActive && (
+            <button
+              type="button"
+              className="rounded px-2 py-1 text-sm underline decoration-miro-turquoise decoration-2 underline-offset-4 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:bg-slate-800"
+              onClick={() => patch({ filters: {} })}
+            >
+              {t('costs.filter.clear')}
+            </button>
+          )}
+        </div>
+
+      </SettingsWrap>
 
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 border-b border-slate-200 px-4 py-1.5 dark:border-slate-700">
         <div className="min-w-60 flex-1 space-y-0.5 text-sm text-slate-600 dark:text-slate-400">
@@ -341,7 +347,7 @@ export function AnalysisView() {
                 </button>
               )
             })}
-            {shownChart !== 'none' && (
+            {shownChart !== 'none' && !readOnly && (
             <span className="ml-3">
               <Segmented label={t('analysis.layout')} options={['side', 'stacked'] as const} value={layout} onChange={setLayout} text={(l) => t(`analysis.layouts.${l}`)} />
             </span>
@@ -355,7 +361,7 @@ export function AnalysisView() {
         {shownChart === 'none' || result.rows.length === 0 ? (
           tableNode
         ) : (
-          layout === 'side' ? (
+          layout === 'side' && !readOnly ? (
             <SplitView
               key="side"
               left={tableNode}

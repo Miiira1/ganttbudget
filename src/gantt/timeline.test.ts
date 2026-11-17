@@ -30,6 +30,13 @@ describe('rozsah časové osy', () => {
     expect(tl.width).toBe((tl.endDay - tl.startDay) * 12)
   })
 
+  it('popisky vedle úseček: osa se prodlouží, jen když nestačí rezerva 30 dní', () => {
+    // Týdny: rezerva 30 dní × 12 px = 360 px stačí na 300 px popisku – beze změny.
+    expect(iso(createTimeline({ zoom: 'week', projectStart: START, projectFinish: FINISH, trailingPx: 300 }).endDay)).toBe('2027-05-03')
+    // 600 px: chybí 240 px = 20 dní → konec + 50 dní = čt 20. 5. → dorovnáno do neděle 23. 5.
+    expect(iso(createTimeline({ zoom: 'week', projectStart: START, projectFinish: FINISH, trailingPx: 600 }).endDay)).toBe('2027-05-24')
+  })
+
   it('Dny: zarovnání stejně jako Týdny, širší den', () => {
     const tl = createTimeline({ zoom: 'day', projectStart: START, projectFinish: FINISH })
     expect(iso(tl.startDay)).toBe('2026-11-09')

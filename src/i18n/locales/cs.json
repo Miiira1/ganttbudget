@@ -499,7 +499,17 @@
     "shiftEarlier_few": "konec o {{count}} dny dříve",
     "shiftEarlier_many": "konec o {{count}} dne dříve",
     "shiftEarlier_other": "konec o {{count}} dnů dříve",
-    "createHint": "Táhněte sem vodorovně = nová činnost"
+    "createHint": "Táhněte sem vodorovně = nová činnost",
+    "barLabels": "Popisky",
+    "barLabelsHint": "Které údaje ukázat vedle úseček v grafu (i v exportu obrázku a PDF)",
+    "barLabelsLegend": "Ukázat vedle úseček",
+    "barLabel": {
+      "name": "Název",
+      "dates": "Termín",
+      "duration": "Délka",
+      "percent": "% hotovo",
+      "cost": "Náklady"
+    }
   },
   "notice": {
     "close": "Zavřít upozornění"
@@ -2513,5 +2523,25 @@
   },
   "a11y": {
     "skipToContent": "Přeskočit na obsah"
+  },
+  "mobile": {
+    "menu": "Menu",
+    "menuHint": "Otevřít projekt, vzorový projekt, slovníček a přepnutí na plnou verzi",
+    "navLabel": "Pohledy",
+    "open": "Otevřít projekt…",
+    "fullVersion": "Plná verze (úpravy)",
+    "mobileVersion": "Mobilní verze",
+    "emptyHint": "Projekt otevřete v menu ⋯ → Otevřít projekt (soubor .ganttbudget.json), nebo si prohlédněte vzorový projekt. Plán se tvoří na počítači.",
+    "percent": "Hotovo {{percent}} %",
+    "percentValue": "{{percent}} %",
+    "critical": "Kritická",
+    "lines": "Zdroje a náklady",
+    "planMode": "Zobrazení plánu",
+    "list": "Seznam",
+    "gantt": "Gantt",
+    "ganttAlt": "Ganttův diagram projektu {{name}} – stejné údaje jsou v seznamu",
+    "trackingEmpty": "Projekt zatím nemá uloženou baseline. Uložte ji v plné verzi na počítači (Sledování → Uložit baseline).",
+    "analysisSettings": "Nastavení analýzy a filtry",
+    "viewSettings": "Nastavení zobrazení a filtry"
   }
 }

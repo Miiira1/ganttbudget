@@ -12,13 +12,14 @@ import { projectStore, useBudgetStatus, useCosts, useLoad, usePlanIssues, usePro
 import { formatMoney } from '../model/money'
 import { applyTheme, loadThemePreference, saveThemePreference, THEME_PREFERENCES, watchSystemTheme, type ThemePreference } from './theme'
 import { CalendarDialog } from './CalendarDialog'
-import { useNotice } from './notice'
+import { showNotice, useNotice } from './notice'
 import { TaskTable } from './TaskTable'
 import { SplitView } from './SplitView'
 import { GanttChart } from './gantt/GanttChart'
 import { ZoomSwitch } from './gantt/ZoomSwitch'
 import { BaselineToggle } from './gantt/BaselineToggle'
 import { CriticalToggle } from './gantt/CriticalToggle'
+import { BarLabelsMenu } from './gantt/BarLabelsMenu'
 import { StructureToolbar } from './StructureToolbar'
 import { runStructureCommand, STRUCTURE_COMMANDS, STRUCTURE_SHORTCUTS } from './structureCommands'
 import { useSelectedId, useViewState } from './viewState'
@@ -49,6 +50,10 @@ import { TrackingView } from './tracking/TrackingView'
 import { DetailDock } from './detail/DetailDock'
 import { TaskDetailBody, TaskDetailHeader } from './detail/TaskDetail'
 import { loadPreference, savePreference } from './preferences'
+import { MobileShell } from './mobile/MobileShell'
+import { MobilePlan } from './mobile/MobilePlan'
+import { mobileView } from './mobile/layout'
+import { useLayoutMode } from './mobile/useLayoutMode'
 
 /** Hlavní pohledy: Plán (tabulka + graf) a Zdroje (databáze, fáze 6a). */
 /** O kolik týdnů dřív začíná vzorový projekt (aby bylo co sledovat). */
@@ -91,6 +96,7 @@ export default function App() {
   const dirty = useFileState((s) => s.savedProject) !== project
   const selectedId = useSelectedId(project)
   const selectRow = useViewState((s) => s.select)
+  const layout = useLayoutMode()
   // Patička s informací o datech: skrytí si pamatuje prohlížeč.
   const [privacyHidden, setPrivacyHiddenState] = useState(() => loadPreference('privacyHidden') === 'true')
   const setPrivacyHidden = (hidden: boolean) => {
@@ -238,6 +244,105 @@ export default function App() {
     loadProject(sample)
   }
 
+  // Upozornění (chybný zápis, nespočitatelné termíny) – čtečka obrazovky ho přečte hned.
+  const noticeBar = (
+    <div aria-live="assertive">
+      {(notice ?? (scheduleError ? t(`schedule.${scheduleError}`) : null)) && (
+        <div
+          className={`flex items-start justify-between gap-3 border-b border-b-slate-300 px-4 py-2 text-sm dark:border-b-slate-700 ${
+            isInfo
+              ? 'border-l-4 border-l-miro-turquoise-dark bg-white text-slate-800 dark:border-l-miro-turquoise dark:bg-slate-800 dark:text-slate-100'
+              : 'border-l-4 border-l-miro-gold bg-miro-yellow-light/50 text-miro-graphite dark:border-l-miro-yellow dark:bg-slate-800 dark:text-miro-yellow-light'
+          }`}
+        >
+          <p>
+            <span aria-hidden="true">{isInfo ? 'ℹ ' : '⚠ '}</span>
+            {notice ?? t(`schedule.${scheduleError}`)}
+          </p>
+          {notice && (
+            <button
+              type="button"
+              onClick={clearNotice}
+              aria-label={t('notice.close')}
+              className="rounded px-2 hover:bg-slate-900/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:bg-slate-100/10"
+            >
+              <span aria-hidden="true">✕</span>
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+
+  // --- Mobilní verze (displej pod 768 px): jen prohlížení, spodní lišta pohledů ---
+  const projectMeta = [
+    t('project.start', { date: formatIsoDate(project.startDate, i18n.language) }),
+    projectFinish ? t('project.finish', { date: formatIsoDate(projectFinish, i18n.language) }) : null,
+    projectCost > 0 ? t('project.cost', { amount: formatMoney(projectCost, project.currency, i18n.language) }) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+  const displaySettings = (
+    <>
+      <label className="flex items-center justify-between gap-3 text-sm">
+        {t('toolbar.language')}
+        <select className="field-select" value={i18n.language} onChange={(e) => void i18n.changeLanguage(e.target.value)}>
+          {LANGUAGES.map((l) => (
+            <option key={l.code} value={l.code}>
+              {l.translation.meta.languageName}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="flex items-center justify-between gap-3 text-sm">
+        {t('toolbar.theme')}
+        <select className="field-select" value={theme} onChange={(e) => setTheme(e.target.value as ThemePreference)}>
+          {THEME_PREFERENCES.map((pref) => (
+            <option key={pref} value={pref}>
+              {t(`theme.${pref}`)}
+            </option>
+          ))}
+        </select>
+      </label>
+    </>
+  )
+  if (layout.mobile) {
+    const shown = mobileView(view)
+    return (
+      <>
+        <MobileShell
+          projectName={project.name}
+          meta={projectMeta}
+          dirty={dirty}
+          view={shown}
+          onView={setView}
+          settings={displaySettings}
+          notice={noticeBar}
+          menuItems={[
+            { id: 'open', label: t('mobile.open'), icon: '📂', onSelect: () => void openProject(t) },
+            { id: 'sample', label: t('toolbar.loadSample'), icon: '🧪', onSelect: handleLoadSample },
+            { id: 'glossary', label: t('toolbar.glossary'), icon: '📖', onSelect: () => setGlossaryOpen(true) },
+            { id: 'privacy', label: t('app.privacyMenu'), icon: '🔒', onSelect: () => showNotice(`${t('app.privacy')} ${t('app.notSavedYet')}`, 'info') },
+            { id: 'full', label: t('mobile.fullVersion'), icon: '🖥', onSelect: () => layout.setPreference('full') },
+          ]}
+        >
+          {shown === 'costs' ? (
+            <CostsView />
+          ) : shown === 'tracking' ? (
+            <TrackingView />
+          ) : shown === 'analysis' ? (
+            <AnalysisView />
+          ) : shown === 'mindmap' ? (
+            <MindMapView onShowPlan={() => setView('plan')} />
+          ) : (
+            <MobilePlan />
+          )}
+        </MobileShell>
+        <GlossaryDialog open={glossaryOpen} onClose={() => setGlossaryOpen(false)} />
+      </>
+    )
+  }
+
   return (
     <div className="flex h-screen flex-col">
       {/* „Přeskočit na obsah“ (13d – přístupnost): první zastávka klávesy Tab, vidět jen při fokusu. */}
@@ -359,30 +464,10 @@ export default function App() {
                 { id: 'wizard', label: t('toolbar.wizard'), icon: '🧭', onSelect: () => setWizardOpen(true) },
                 { id: 'sample', label: t('toolbar.loadSample'), icon: '📂', onSelect: handleLoadSample },
                 { id: 'privacy', label: t('app.privacyMenu'), icon: '🔒', onSelect: () => setPrivacyHidden(false) },
+                ...(layout.narrow ? [{ id: 'mobile', label: t('mobile.mobileVersion'), icon: '📱', onSelect: () => layout.setPreference('auto') }] : []),
               ]}
             />
-            <DisplaySettings>
-              <label className="flex items-center justify-between gap-3 text-sm">
-                {t('toolbar.language')}
-                <select className="field-select" value={i18n.language} onChange={(e) => void i18n.changeLanguage(e.target.value)}>
-                  {LANGUAGES.map((l) => (
-                    <option key={l.code} value={l.code}>
-                      {l.translation.meta.languageName}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex items-center justify-between gap-3 text-sm">
-                {t('toolbar.theme')}
-                <select className="field-select" value={theme} onChange={(e) => setTheme(e.target.value as ThemePreference)}>
-                  {THEME_PREFERENCES.map((pref) => (
-                    <option key={pref} value={pref}>
-                      {t(`theme.${pref}`)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </DisplaySettings>
+            <DisplaySettings>{displaySettings}</DisplaySettings>
           </div>
         </div>
         {/* 2. řada: přepínač pohledů (záložky). */}
@@ -427,39 +512,14 @@ export default function App() {
             <div className="ml-auto flex flex-wrap gap-2">
               <CriticalToggle />
               <BaselineToggle />
+              <BarLabelsMenu />
               <ZoomSwitch />
             </div>
           )}
         </div>
       )}
 
-      {/* Upozornění (chybný zápis, nespočitatelné termíny) – čtečka obrazovky ho přečte hned. */}
-      <div aria-live="assertive">
-        {(notice ?? (scheduleError ? t(`schedule.${scheduleError}`) : null)) && (
-          <div
-            className={`flex items-start justify-between gap-3 border-b border-b-slate-300 px-4 py-2 text-sm dark:border-b-slate-700 ${
-              isInfo
-                ? 'border-l-4 border-l-miro-turquoise-dark bg-white text-slate-800 dark:border-l-miro-turquoise dark:bg-slate-800 dark:text-slate-100'
-                : 'border-l-4 border-l-miro-gold bg-miro-yellow-light/50 text-miro-graphite dark:border-l-miro-yellow dark:bg-slate-800 dark:text-miro-yellow-light'
-            }`}
-          >
-            <p>
-              <span aria-hidden="true">{isInfo ? 'ℹ ' : '⚠ '}</span>
-              {notice ?? t(`schedule.${scheduleError}`)}
-            </p>
-            {notice && (
-              <button
-                type="button"
-                onClick={clearNotice}
-                aria-label={t('notice.close')}
-                className="rounded px-2 hover:bg-slate-900/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:bg-slate-100/10"
-              >
-                <span aria-hidden="true">✕</span>
-              </button>
-            )}
-          </div>
-        )}
-      </div>
+      {noticeBar}
       <CalendarDialog open={calendarOpen} onClose={() => setCalendarOpen(false)} />
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <GlossaryDialog open={glossaryOpen} onClose={() => setGlossaryOpen(false)} />
