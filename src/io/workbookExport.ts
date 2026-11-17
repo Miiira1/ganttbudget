@@ -17,6 +17,7 @@ import type { Project } from '../model/schema'
 import { dayToIso } from '../engine/calendar'
 import { formatMonth } from '../i18n/format'
 import { BUDGET_COLUMNS, BUDGET_COMPUTED_COLUMNS, BUDGET_DATE_COLUMNS, BUDGET_MONEY_COLUMNS, buildBudgetLines, buildBudgetPhasing, type BudgetLabels } from './budgetExport'
+import { treeOrder, wbsNumbers } from '../model/hierarchy'
 import { buildExportTable, DATE_COLUMNS, EXPORT_COLUMNS, type Cell } from './tableExport'
 
 export const WORKBOOK_SHEETS = [
@@ -24,6 +25,7 @@ export const WORKBOOK_SHEETS = [
   'calendar',
   'tasks',
   'lines',
+  'actuals',
   'categories',
   'departments',
   'professions',
@@ -64,6 +66,7 @@ export const SHEET_COLUMNS = {
   absences: ['worker', 'from', 'to', 'note'],
   machines: ['name', 'category', 'machineRate', 'rateUnit', 'capacity'],
   materials: ['name', 'code', 'unit', 'unitPrice', 'category', 'supplier'],
+  actuals: ['wbs', 'task', 'date', 'amount', 'note'],
 } as const
 
 /** Vypočtené sloupce listů databáze. */
@@ -71,9 +74,10 @@ const COMPUTED: Partial<Record<WorkbookSheetKey, readonly string[]>> = {
   categories: ['planned'],
   professions: ['rate', 'rateSource'],
   workers: ['rate', 'rateSource', 'absenceDays'],
+  actuals: ['task'],
 }
-const MONEY = new Set(['limit', 'planned', 'manualRate', 'monthlyWage', 'rate', 'machineRate', 'unitPrice'])
-const DATES = new Set(['from', 'to'])
+const MONEY = new Set(['limit', 'planned', 'manualRate', 'monthlyWage', 'rate', 'machineRate', 'unitPrice', 'amount'])
+const DATES = new Set(['from', 'to', 'date'])
 
 const toUnits = (minor: number | undefined) => (minor === undefined ? null : Math.round(minor) / 100)
 
@@ -246,6 +250,13 @@ export function buildWorkbook(
     project.materials.map((m) => [m.name, m.code ?? null, m.unit, toUnits(m.unitPrice), nameOf(project.costCategories, m.categoryId), m.supplier ?? null]),
   )
 
+  // --- Skutečné náklady (fáze 9): činnost podle WBS, název jen pro orientaci ---
+  const wbs = wbsNumbers(project)
+  const actualsSheet = catalog(
+    'actuals',
+    treeOrder(project).flatMap((task) => (task.actuals ?? []).map((a) => [wbs.get(task.id) ?? '', task.name, a.date, toUnits(a.amount), a.note ?? null])),
+  )
+
   // --- Náběh (celý vypočtený) ---
   const phasing = timeline.range ? buildBudgetPhasing(project, timeline, splitPeriods(timeline.range, 'month'), budgetLabels) : { headers: [''], rows: [] }
   const all = new Set(phasing.headers.map((_, i) => i))
@@ -266,6 +277,7 @@ export function buildWorkbook(
     calendarSheet,
     tasksSheet,
     linesSheet,
+    actualsSheet,
     categoriesSheet,
     departmentsSheet,
     professionsSheet,

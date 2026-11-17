@@ -4,6 +4,7 @@
  * Každá změna je jeden krok Zpět. Text od uživatele se zobrazuje jen jako text.
  * Fáze 6c: u řádku člověk / stroj varování, když je pracovník během činnosti nepřítomný
  * nebo je zdroj přetížený (model/load.ts) – termíny se tím nemění.
+ * Fáze 9: pod řádky část Skutečné náklady (ActualsSection.tsx).
  */
 import { memo, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -20,6 +21,7 @@ import { DateInputCell, TextCell } from '../EditableCells'
 import { showNotice } from '../notice'
 import { LazySelect, parseDecimal } from '../resources/catalogCells'
 import { useSelectedId } from '../viewState'
+import { ActualsSection } from './ActualsSection'
 import { TagsCell } from './TagsCell'
 
 /** Typy řádků v pořadí tlačítek „Přidat“. */
@@ -123,7 +125,13 @@ export function TaskDetailBody() {
   // Nápověda štítků: všechny štítky v projektu (mění se jen se změnou činností).
   const tagSuggestions = useMemo(() => allTags(project), [project.tasks])
   if (!task) return null
-  if (task.lines.length === 0) return <p className="py-2 text-sm text-slate-500 dark:text-slate-400">{t('detail.empty')}</p>
+  if (task.lines.length === 0)
+    return (
+      <>
+        <p className="py-2 text-sm text-slate-500 dark:text-slate-400">{t('detail.empty')}</p>
+        <ActualsSection task={task} />
+      </>
+    )
 
   const th = 'border-b border-slate-300 px-1.5 py-1 text-left text-xs font-semibold uppercase tracking-wide text-slate-600 dark:border-slate-600 dark:text-slate-300'
   return (
@@ -165,6 +173,7 @@ export function TaskDetailBody() {
         </tbody>
       </table>
       <LoadWarnings task={task} project={project} warnings={warnings} />
+      <ActualsSection task={task} />
     </>
   )
 }

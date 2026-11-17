@@ -11,7 +11,7 @@ import { formatIsoDate } from '../i18n/format'
 import { useProject } from '../store/useProject'
 
 const MAX_ERRORS = 25
-const SUMMARY_SHEETS: (keyof WorkbookSummary)[] = ['tasks', 'lines', 'categories', 'departments', 'professions', 'workers', 'absences', 'machines', 'materials']
+const SUMMARY_SHEETS: (keyof WorkbookSummary)[] = ['tasks', 'lines', 'actuals', 'categories', 'departments', 'professions', 'workers', 'absences', 'machines', 'materials']
 const SHEET_OF: Record<keyof WorkbookSummary, string> = {
   tasks: 'tasks',
   lines: 'lines',
@@ -22,6 +22,7 @@ const SHEET_OF: Record<keyof WorkbookSummary, string> = {
   absences: 'absences',
   machines: 'machines',
   materials: 'materials',
+  actuals: 'actuals',
 }
 
 export function WorkbookImportDialog() {

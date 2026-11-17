@@ -9,6 +9,10 @@ import { computeCosts, type CostsResult } from '../model/costs'
 import { computeLoad, type LoadResult } from '../model/load'
 import { budgetStatus, computeCostTimeline, type BudgetStatus, type CostTimeline } from '../model/costTimeline'
 import { buildFacts, type Facts } from '../model/facts'
+import { activeBaseline, baselineBac } from '../model/baseline'
+import { earnedValue, rollupPercent, type EarnedValueResult } from '../model/earnedValue'
+import { isoToDay } from '../engine/calendar'
+import { todayIso } from '../model/dates'
 import { createEmptyProject, type Project } from '../model/schema'
 import { createProjectStore, type ProjectState } from './projectStore'
 
@@ -122,4 +126,38 @@ export function getFacts(project: Project): Facts {
 
 export function useFacts(): Facts {
   return getFacts(useProject((s) => s.project))
+}
+
+// % hotovo (fáze 9) – fáze spočítaná z činností, vážená plánovaným nákladem vybrané baseline (jinak délkou).
+const percentCache = new WeakMap<Project, Map<string, number>>()
+
+export function getPercents(project: Project): Map<string, number> {
+  let result = percentCache.get(project)
+  if (!result) {
+    const baseline = activeBaseline(project)
+    result = rollupPercent(project, baseline ? baselineBac(baseline) : null)
+    percentCache.set(project, result)
+  }
+  return result
+}
+
+export function usePercents(): Map<string, number> {
+  return getPercents(useProject((s) => s.project))
+}
+
+// Earned Value (fáze 9) k datu stavu (bez něj dnes) a vybrané baseline; null = baseline není.
+const evCache = new WeakMap<Project, { day: number; result: EarnedValueResult | null }>()
+
+export function getEarnedValue(project: Project): EarnedValueResult | null {
+  const day = isoToDay(project.statusDate ?? todayIso())
+  const cached = evCache.get(project)
+  if (cached && cached.day === day) return cached.result
+  const baseline = activeBaseline(project)
+  const result = baseline ? earnedValue(project, getSchedule(project), baseline, day) : null
+  evCache.set(project, { day, result })
+  return result
+}
+
+export function useEarnedValue(): EarnedValueResult | null {
+  return getEarnedValue(useProject((s) => s.project))
 }

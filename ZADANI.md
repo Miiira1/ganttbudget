@@ -1,7 +1,7 @@
 # ZADÁNÍ: Aplikace pro Ganttovy diagramy s navázaným rozpočtem
 
 > Název aplikace: **MiRo project** (pracovní název do v1.10: GanttBudget)
-> Verze zadání: 1.15 · Datum: 17. 11. 2026 (změny viz kap. 14)
+> Verze zadání: 1.16 · Datum: 17. 11. 2026 (změny viz kap. 14)
 > Dokument je zároveň vstupem pro Claude Code (vibe coding) a osnovou výukové case study.
 
 ---
@@ -84,7 +84,7 @@ Priorita: **M** = MVP (verze 1.0), **D** = další fáze (viz kap. 8).
 | G-05 | **Undo/Redo** (Ctrl+Z / Ctrl+Y) napříč všemi operacemi. | M |
 | G-06 | Klávesové zkratky (nová činnost, odsadit, smazat, duplikovat), přehled zkratek v aplikaci. | M |
 | G-07 | Zobrazení vazeb šipkami, milníků kosočtverci, fází jako sumárních úseček. | M |
-| G-08 | Zobrazení baseline (stínová úsečka pod plánem) a % hotovo (výplň úsečky). | D |
+| G-08 | Zobrazení baseline a % hotovo: **% hotovo** = tmavší výplň úsečky zleva; u činnosti se zadává ručně, u fáze se počítá z jejích činností (váha = plánovaný náklad z vybrané baseline, bez něj délka, u samých milníků prostý průměr) a je jen ke čtení; milník má zaškrtávátko „splněno“ (0 / 100 %). Přepínač **Baseline** vedle Kritické cesty (pamatuje si ho prohlížeč) ukáže pod úsečkami tenkou šedou stínovou úsečku s termíny vybrané baseline; bublina úsečky ukáže % hotovo, termíny baseline a posun konce v kalendářních dnech. | D (fáze 9) |
 | G-09 | Funkční na tabletu (dotyk). | D |
 
 **Pravidlo posunu úsečky.** Při tažení činnosti s předchůdci se nastaví omezení „začít nejdříve k datu". Skutečný začátek = pozdější z (omezení, vyplývající z vazeb). Aplikace to uživateli srozumitelně vysvětlí (např. ikonou a tooltipem). Přesné chování se ověří ve fázi 4b roadmapy.
@@ -130,7 +130,7 @@ Státní svátky ČR k zakódování: 1. 1.; Velký pátek; Velikonoční pondě
 | A-02 | K tabulce přiložené **grafy** (sloupcový, čárový, koláčový, skládaný, nebo bez grafu), přepínání jedním klikem; SVG bez knihovny, odstíny značky v pevném pořadí (skupiny nad 9 se sloučí do „Ostatní“), legenda a bubliny s přesnými čísly. Typ, který by klamal, je zablokovaný s vysvětlením (čárový a skládaný potřebují sloupce; průměr, minimum a maximum nejde sčítat do celku; štítky v řádcích se překrývají). Tabulka a graf **vedle sebe** (výchozí poměr 2/3 : 1/3) nebo **pod sebou**, podíl se mění rozdělovníkem; volba se pamatuje v prohlížeči. | D |
 | A-03 | **Dashboard „Náklady v čase"** v pohledu Náklady: ukazatele celkem, plánováno do dneška (včetně), zbývá, nejdražší období, průměr za období (všechny podle filtrů) a čerpání limitu (vždy za celý projekt, při překročení červeně). Graf s přepínačem **S-křivka** (kumulativní náklady, čára limitu a bod překročení – jen bez filtrů) / **Cash flow** (výdaje za období skládané podle členění); každý má **jedinou osu** (graf se dvěma osami z fáze 7 zrušen); tyrkysová čára „Dnes“. Cash flow zatím jen výdaje, příjmy později. | D |
 | A-04 | **Dashboard „Vytížení zdrojů"** v pohledu Vytížení: filtry druh zdroje, středisko (mají ho jen pracovníci; profese, stroje a lidé bez střediska = „(bez střediska)“) a „jen přetížené“; ukazatele přetížené zdroje, přetížené dny celkem, nejvyšší a průměrné vytížení (naplánováno / kapacita) za celý plán. Spodní panel přepíná **Vybraný zdroj / Souhrn skupiny**: souhrnný histogram (součet poptávky proti součtu kapacit po obdobích, přetížení červeně) zvlášť pro každý druh zdroje – profese obsahuje hodiny svých pracovníků, sčítání by je zdvojilo; profese bez pracovníků se do souhrnu s kapacitou nezapočte (falešné přetížení). | D |
-| A-05 | **Dashboard „Plán vs. skutečnost"**: baseline vs. aktuální plán, % dokončení, **Earned Value** (PV, EV, AC, CPI, SPI, EAC) s vysvětlením pojmů. | D (fáze 9) |
+| A-05 | **Dashboard „Plán vs. skutečnost"** – šestý pohled **Sledování**: až 10 pojmenovaných **baseline** (snímek termínů a plánovaného nákladu po dnech; uložit, vybrat ke srovnání, přejmenovat, smazat – každé jeden krok Zpět); **datum stavu** (prázdné = dnes); dlaždice **BAC, PV, EV, AC, SPI, CPI, EAC (ETC), VAC** – u každé ⓘ s názvem, významem a vzorcem a box „Jak číst Earned Value“ (U-03); index pod 0,95 a záporné VAC červeně s ikonou a textem; dělení nulou = „–“ s vysvětlením. Graf v Kč s jedinou osou (týdny / měsíce / čtvrtletí): PV čárkovaně za celé období, AC do data stavu, EV jako bod v datu stavu (historie % hotovo se neukládá), svislá čára data stavu. Tabulka činností: termíny baseline a plánu, posun konce, % hotovo, BAC, PV, EV, AC, CV, SV, Celkem; export XLSX / CSV. Činnost přidaná po uložení baseline má BAC 0 (skutečnost se počítá), smazaná zůstává pod svou fází (PV běží, hotovo 0 %). | D (fáze 9) |
 | A-06 | Nabídka **Pohled** v Analýze: pět přednastavených pohledů pro začátečníky (náklady podle kategorií po měsících, podle fází a druhu, hodiny lidí po týdnech, mzdové náklady podle středisek po čtvrtletích, štítky × kategorie) a vlastní pohledy uložené **v souboru projektu** (uložit jako nový, uložit změny, přejmenovat, smazat – každé jeden krok Zpět; nejvýš 50). | D |
 
 ### 4.7 Import a export
@@ -143,7 +143,7 @@ Státní svátky ČR k zakódování: 1. 1.; Velký pátek; Velikonoční pondě
 | I-04 | **Export a import rozpočtu a časového náběhu nákladů do CSV a XLSX**: export XLSX má list **Řádky** (WBS, Činnost, Typ, Zdroj / název, Pracovník, Podíl % / množství, Částka / cena, Kdy / období, Datum, Kategorie, Štítky, Poznámka a vypočtené h/den, Sazba Kč/h, Hodiny, Náklad) a list **Náběh** (kategorie × měsíce, Celkem, kumulativně); CSV obsahuje Řádky. Import (CSV nebo list Řádky) s náhledem: činnost podle WBS, zdroje a kategorie podle názvu (nic se nevytvoří samo), Hodiny a Náklad se ignorují; **nahradí řádky činností uvedených v souboru**, ostatní zůstanou; jakákoli chyba (s číslem řádku) import zablokuje; jeden krok Zpět; limit 5 MB / 20 000 řádků; české i anglické hlavičky. | D (fáze 7) |
 | I-05 | Export Gantta do **PDF** a obrázku (PNG/SVG) pro odevzdávání úkolů. | D (fáze 13) |
 | I-06 | Import ze souborů MS Project (XML) a GanttProject. | D (fáze 13) |
-| I-07 | **Celý projekt v jednom sešitu Excelu**: export s listy Projekt, Kalendář, Činnosti, Řádky, Kategorie, Střediska, Profese, Pracovníci (s kalkulací sazby), Nepřítomnosti, Stroje, Materiály a Náběh; **vypočtené sloupce** (termíny, sazby, h/den, hodiny, náklady, plánováno, celý Náběh) šedé s dovětkem „(vypočteno)“ – import je ignoruje a spočítá znovu, takže náklad se mění jen přes vstupy. Import (jen .xlsx) s náhledem počtů za listy: listy se propojují názvy (jedinečné) a WBS, položky databáze se stejným názvem si ponechají ID, chybějící list nebo jakákoli chyba (s listem a řádkem) import zablokuje; **nahradí celý projekt** jedním krokem Zpět; limity 5 MB, 2 000 řádků na list databáze; ověření schématem Zod. Soubor projektu (.json, I-01) zůstává hlavním formátem pro zálohu a přenos. | D (doplněk po fázi 7) |
+| I-07 | **Celý projekt v jednom sešitu Excelu**: export s listy Projekt, Kalendář, Činnosti, Řádky, Kategorie, Střediska, Profese, Pracovníci (s kalkulací sazby), Nepřítomnosti, Stroje, Materiály a Náběh; **vypočtené sloupce** (termíny, sazby, h/den, hodiny, náklady, plánováno, celý Náběh) šedé s dovětkem „(vypočteno)“ – import je ignoruje a spočítá znovu, takže náklad se mění jen přes vstupy. Fáze 9 přidala list **Skutečnost** (WBS, činnost, datum, částka, poznámka; nepovinný kvůli starším sešitům – bez něj zůstanou skutečné náklady činností beze změny, s ním nahradí skutečné náklady všech činností). Import (jen .xlsx) s náhledem počtů za listy: listy se propojují názvy (jedinečné) a WBS, položky databáze se stejným názvem si ponechají ID, **činnost se stejným WBS, názvem a druhem si ponechá ID i skutečné náklady** (baseline ji tak dál pozná; totéž platí pro import činností I-03); baseline, datum stavu a uložené pohledy zůstávají, chybějící list nebo jakákoli chyba (s listem a řádkem) import zablokuje; **nahradí celý projekt** jedním krokem Zpět; limity 5 MB, 2 000 řádků na list databáze; ověření schématem Zod. Soubor projektu (.json, I-01) zůstává hlavním formátem pro zálohu a přenos. | D (doplněk po fázi 7) |
 
 ### 4.8 Uživatelská přívětivost
 
@@ -260,8 +260,9 @@ Task
   durationDays             // pracovní dny; 0 pro milník
   constraintStart?         // "začít nejdříve k datu"
   dependencies: [{ predecessorId, type: FS|SS|FF|SF, lagDays }]
-  percentComplete, notes, color
+  percentComplete, notes, color   // % hotovo zadané u činnosti; u fáze se počítá (fáze 9)
   lines: TaskLine[]        // zdroje a náklady činnosti – jeden řádek = jeden zdroj / položka
+  actuals?: [{ id, date, amount, note? }]   // skutečné náklady k datu v haléřích, max. 200 (fáze 9)
   // vypočteno enginem, neukládá se: start, finish, lateStart, lateFinish, totalSlack, freeSlack, critical, náklady, vytížení
 
 RateCalc     monthlyWage, employerContribPct (33,8), overhead (Kč/rok | % ze mzdy),
@@ -281,7 +282,10 @@ TaskLine     id, categoryId, note?, tags?[] (max 10 × 30 znaků), + podle typu:
   oneTime    name, amount, timing: start|end|date, date?
   recurring  name, amount, period: day|week|month
 
-Baseline     id, name, savedAt, snapshot (termíny a náklady)
+Baseline     id, name, savedAt, tasks: [{ taskId, parentId, name, kind, start, finish, durationDays,
+             costStart?, costs[] }]   // snímek plánu: termíny a vlastní náklad po dnech (haléře) od costStart;
+             // max. 10 baseline, 3 660 dnů na položku, 500 000 čísel na baseline (fáze 9)
+Project      … activeBaselineId? (baseline ke srovnání), statusDate? (datum stavu; chybí = dnes)
 ```
 
 **Verze souborů.** Projekt `schemaVersion: 2` (fáze 6a); soubor ve formátu 1 (fáze 5) se při otevření
@@ -383,6 +387,8 @@ Fáze: Analýza a studie proveditelnosti → Výběr dodavatele (výběrové ř�
 
 Má obsahovat všechny typy vazeb (včetně SS s prodlevou, např. příprava haly začíná 10 dní po zahájení výroby), několik milníků (podpis smlouvy, FAT, SAT, předání), zdroje (projektant, konstruktér, elektrikář, programátor PLC, externí dodavatel) a rozpočet (investice do zařízení jednorázově v platebních milnících, mzdy průběžně, školení, rezerva).
 
+Od fáze 9 je vzorový projekt **„v běhu“**: začíná 8 týdnů před dneškem, má baseline „Schválený plán“ uloženou k začátku, % hotovo odpovídá stavu o týden pozadu a skutečné náklady do včerejška jsou o 6 % vyšší než hodnota hotové práce (milníky přesně) – pohled Sledování tak ukazuje mírné zpoždění a předražení.
+
 ---
 
 ## 12. Kritéria přijetí (verze 1.0 / MVP)
@@ -410,7 +416,7 @@ Technicky: build bez chyb, testy plánovacího jádra projdou, aplikace je nasaz
 | 2 | Zdroje a rozpočet: mzda se počítá z hodin zdroje, nebo z celkové délky činnosti | Hodiny = délka činnosti × kapacita × podíl úvazku; ověřit ve fázi 6–7 |
 | 3 | Zaokrouhlování peněz | ✅ Rozhodnuto (v1.1): celá čísla v nejmenší jednotce měny, zobrazení na 2 desetinná místa |
 | 4 | Průběžný náklad „za měsíc" u činnosti, která nezačíná na začátku měsíce | ✅ Rozhodnuto (v1.13): poměrně po kalendářních dnech – každý den = částka ÷ počet dní jeho měsíce (stejně v nákladech i v náběhu) |
-| 5 | Skutečné náklady (AC) pro Earned Value | Zadávají se ručně jako položky k datu; upřesnit ve fázi 9 |
+| 5 | Skutečné náklady (AC) pro Earned Value | ✅ Rozhodnuto (v1.16): ručně jako položky k datu u činností (datum, částka, poznámka; panel Detail činnosti a list Skutečnost v sešitu); do AC se počítají jen položky do data stavu včetně |
 | 6 | Pracovní název a logo aplikace | ✅ Rozhodnuto (v1.11): **MiRo project**, logo a barvy podle brand kitu (N-13). Přípony souborů `.ganttbudget.json` / `.ganttbudget-lib.json` a klíče v prohlížeči zůstávají kvůli kompatibilitě s uloženými projekty |
 | 7 | Licence | MIT, pokud zadavatel (fakulta) nevyžaduje jinak |
 | 8 | Použití ve výuce: potřeba odevzdávat projekty učiteli | Zatím soubor projektu (.json), sešit celého projektu (XLSX, I-07) nebo PDF e-mailem či přes LMS |
@@ -439,3 +445,4 @@ Technicky: build bez chyb, testy plánovacího jádra projdou, aplikace je nasaz
 | 1.13 | 16. 11. 2026 | Fáze 7 – rozpočet v čase: R-03 (štítky), R-04 (náběh na haléř, materiál v den začátku, pohled **Náklady** jako čtvrtý pohled s tabulkou, skládaným grafem v odstínech značky a filtry s více volbami), R-06 (limity projektu a kategorií, varování s datem překročení) a I-04 (export XLSX s listy Řádky a Náběh, CSV; import řádků s náhledem, nahrazení řádků činností ze souboru) upřesněny podle implementace; A-03 má základní graf; datový model: `TaskLine.tags`, `Project.budget`; otevřená otázka 4 uzavřena. Úpravy rozhraní: tlačítko „Přidat činnost“ v druhé řadě před „Předsadit“, jazyk a vzhled na řádku loga, ikona Náklady (euro + křivka) |
 | 1.14 | 16. 11. 2026 | Doplněk po fázi 7 – celý projekt v Excelu: nový požadavek **I-07** (export sešitu se všemi daty projektu, vypočtené sloupce šedé a při importu ignorované, import celého sešitu s náhledem a nahrazením projektu); I-04 – list Řádky má navíc vypočtené h/den a Sazba Kč/h, aby bylo vidět, jak náklad vznikl; otevřená otázka 8 doplněna o sešit XLSX. Výpočet náběhu nákladů zrychlen (≈ 33 → 12 ms pro 300 činností) – rezerva pro testy výkonu i automatické nasazení |
 | 1.15 | 17. 11. 2026 | Fáze 8 – analytika a dashboardy: A-01 (pohled **Analýza**; dimenze rozšířeny o druh nákladu, profesi a středisko, metrika Kč / hodiny, agregace, filtry „Vybrat vše / Odebrat vše“, štítky v Celkem jednou, export XLSX/CSV), A-02 (4 typy grafů, blokace klamavých typů, rozložení vedle sebe / pod sebou s rozdělovníkem), A-03 (ukazatele, S-křivka / Cash flow s jedinou osou, čára Dnes; cash flow jen výdaje), A-04 (filtry, ukazatele, souhrnný histogram po druzích zdrojů) a A-06 (5 přednastavených a vlastní pohledy v projektu) upřesněny podle implementace; datový model: `Project.views` |
+| 1.16 | 17. 11. 2026 | Fáze 9 – baseline a sledování: G-08 (% hotovo jako výplň úsečky, % fáze spočítané, milník splněno, přepínač Baseline se stínovou úsečkou a posunem v bublině) a A-05 (pohled **Sledování**: až 10 baseline, datum stavu, Earned Value s vysvětlivkami, graf PV / AC / EV, tabulka a export) upřesněny podle implementace; I-07 doplněn o list Skutečnost a pravidlo, že činnost se stejným WBS, názvem a druhem si při importu (i I-03) ponechá ID a skutečné náklady; datový model: `Task.actuals`, `Baseline` (snímek po dnech s limity), `Project.activeBaselineId`, `Project.statusDate`; vzorový projekt „v běhu“ (kap. 11); otevřená otázka 5 uzavřena |

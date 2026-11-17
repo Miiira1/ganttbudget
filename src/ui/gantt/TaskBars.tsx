@@ -5,6 +5,8 @@
  *  - milník  = kosočtverec na konci svého dne.
  * Typ poznáte podle tvaru, ne jen podle barvy (U-06).
  * Činnosti bez termínu (např. v kruhu vazeb) se nekreslí.
+ * Fáze 9 (G-08): % hotovo = tmavší výplň zleva; po zapnutí přepínače Baseline tenká šedá
+ * stínová úsečka pod úsečkou s termíny vybrané baseline (posun konce v bublině).
  */
 import { memo } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -21,6 +23,24 @@ const PHASE_BAR_HEIGHT = 6
 const PHASE_TIP = 5
 /** I jednodenní činnost v měřítku Čtvrtletí musí být vidět. */
 const MIN_WIDTH = 2
+
+/** Řádky bubliny navíc: % hotovo a termíny baseline s posunem konce. */
+function progressLines(task: Task, percent: number, baseline: BaselineBar | undefined, baselineName: string, t: TFunction, lang: string): string {
+  let text = task.kind === 'milestone' ? (percent >= 100 ? `\n✓ ${t('gantt.milestoneDone')}` : '') : `\n${t('gantt.barPercent', { pct: percent })}`
+  if (baseline) {
+    const from = formatIsoDate(baseline.start, lang)
+    const to = formatIsoDate(baseline.finish, lang)
+    const range = from === to ? from : t('gantt.range', { from, to })
+    const shift =
+      baseline.finishShift === null
+        ? ''
+        : baseline.finishShift === 0
+          ? t('gantt.shiftNone')
+          : t(baseline.finishShift > 0 ? 'gantt.shiftLater' : 'gantt.shiftEarlier', { count: Math.abs(baseline.finishShift) })
+    text += `\n${t('gantt.barBaseline', { name: baselineName, range })}${shift ? ` – ${shift}` : ''}`
+  }
+  return text
+}
 
 function barTitle(task: Task, dates: { start: string; finish: string }, t: TFunction, lang: string): string {
   const from = formatIsoDate(dates.start, lang)
@@ -67,6 +87,49 @@ function DragHandles({ bar, taskId }: { bar: Bar; taskId: string }) {
       <rect {...common} x={bar.xStart - edge / 2} width={edge} data-drag-mode="start" className="cursor-ew-resize" />
       <rect {...common} x={bar.xStart + width - edge / 2} width={edge} data-drag-mode="end" className="cursor-ew-resize" />
     </>
+  )
+}
+
+/** Úsečka baseline pod řádkem: tenký šedý pruh (u milníku malý kosočtverec). */
+export interface BaselineBar {
+  bar: Bar
+  start: string
+  finish: string
+  /** Posun aktuálního konce proti baseline v kalendářních dnech; null = nejde porovnat. */
+  finishShift: number | null
+}
+
+const BASELINE_HEIGHT = 4
+
+function BaselineShape({ bar }: { bar: Bar }) {
+  const y = bar.centerY + BAR_HALF_HEIGHT + 2
+  const cls = 'fill-slate-400 dark:fill-slate-500'
+  if (bar.kind === 'milestone') {
+    const cx = bar.xStart + MILESTONE_HALF
+    const h = 3
+    return <polygon points={`${cx},${y - 1} ${cx + h},${y + h - 1} ${cx},${y + 2 * h - 1} ${cx - h},${y + h - 1}`} className={cls} pointerEvents="none" />
+  }
+  return <rect x={bar.xStart} y={y} width={Math.max(MIN_WIDTH, bar.xEnd - bar.xStart)} height={BASELINE_HEIGHT} rx={1.5} className={cls} pointerEvents="none" />
+}
+
+/** Výplň % hotovo zleva (činnost a fáze; milník je hotový celý, nebo vůbec). */
+function Progress({ bar, percent, critical }: { bar: Bar; percent: number; critical: boolean | null }) {
+  if (bar.kind === 'milestone' || percent <= 0) return null
+  const width = Math.max(MIN_WIDTH, bar.xEnd - bar.xStart)
+  const filled = (width * Math.min(100, percent)) / 100
+  if (bar.kind === 'phase') {
+    return <rect x={bar.xStart} y={bar.centerY - TASK_BAR_HEIGHT / 2 + 1.5} width={filled} height={PHASE_BAR_HEIGHT - 3} className="fill-miro-turquoise" pointerEvents="none" />
+  }
+  return (
+    <rect
+      x={bar.xStart + 1}
+      y={bar.centerY - TASK_BAR_HEIGHT / 2 + 3}
+      width={Math.max(0, filled - 2)}
+      height={TASK_BAR_HEIGHT - 6}
+      rx={2}
+      className={critical ? 'fill-miro-graphite/70 dark:fill-miro-yellow' : 'fill-miro-turquoise-dark dark:fill-miro-turquoise'}
+      pointerEvents="none"
+    />
   )
 }
 
@@ -180,16 +243,24 @@ interface TaskBarsProps {
   critical: ReadonlySet<string> | null
   /** Kam sahá rezerva (x konce pruhu rezervy) u nekritických položek. */
   slackEnds: Map<string, number> | null
+  /** % hotovo každé položky (fáze spočítané). */
+  percents: Map<string, number>
+  /** Stínové úsečky baseline (null = přepínač vypnutý nebo baseline není). */
+  baseline: Map<string, BaselineBar> | null
+  baselineName: string
 }
 
-export const TaskBars = memo(function TaskBars({ rows, bars, dates, critical, slackEnds }: TaskBarsProps) {
+export const TaskBars = memo(function TaskBars({ rows, bars, dates, critical, slackEnds, percents, baseline, baselineName }: TaskBarsProps) {
   const { t, i18n } = useTranslation()
   return (
     <g>
       {rows.map((task) => {
         const d = dates.get(task.id)
         const bar = bars.get(task.id)
-        if (!bar || !d?.start || !d.finish) return null
+        const shadow = baseline?.get(task.id)
+        if (!bar || !d?.start || !d.finish) return shadow ? <BaselineShape key={task.id} bar={shadow.bar} /> : null
+        const percent = percents.get(task.id) ?? task.percentComplete
+        const isCritical = critical === null ? null : critical.has(task.id)
         const hoverZone =
           bar.kind === 'phase' ? null : (
             <rect
@@ -202,10 +273,12 @@ export const TaskBars = memo(function TaskBars({ rows, bars, dates, critical, sl
           )
         return (
           <g key={task.id} data-task-id={task.id} className="group">
-            <title>{barTitle(task, { start: d.start, finish: d.finish }, t, i18n.language)}</title>
+            <title>{barTitle(task, { start: d.start, finish: d.finish }, t, i18n.language) + progressLines(task, percent, shadow, baselineName, t, i18n.language)}</title>
             {hoverZone}
+            {shadow && <BaselineShape bar={shadow.bar} />}
             {slackEnds?.has(task.id) && <SlackBar bar={bar} to={slackEnds.get(task.id) as number} title={t('gantt.slackBar', { count: d.totalSlack ?? 0 })} />}
-            <Shape bar={bar} critical={critical === null ? null : critical.has(task.id)} />
+            <Shape bar={bar} critical={isCritical} />
+            <Progress bar={bar} percent={percent} critical={isCritical} />
             <DragHandles bar={bar} taskId={task.id} />
             <LinkHandles bar={bar} taskId={task.id} label={t('gantt.linkHandle')} />
           </g>

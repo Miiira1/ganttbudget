@@ -5,9 +5,17 @@
  * Obsahuje i vzorovou databázi zdrojů (fáze 6a): střediska, profese a pracovníky se sazbami
  * (ruční, kalkulace, podle profese), stroje a materiály, a zdroje a náklady na činnostech (fáze 6b).
  *
+ * Fáze 9: addSampleTracking z něj udělá rozběhnutý projekt (baseline, % hotovo, skutečné náklady).
+ *
  * Názvy jsou v překladových souborech (sample.tasks.*, sample.resources.*), aby šel projekt
  * vytvořit v každém jazyce. Jména lidí jsou smyšlená. Peníze v haléřích.
  */
+import { dayToIso, isoToDay } from '../engine/calendar'
+import { schedule } from '../engine/schedule'
+import { baselineBac, createBaseline } from '../model/baseline'
+import { rollupPercent } from '../model/earnedValue'
+import { computeCostTimeline } from '../model/costTimeline'
+import { computeCosts } from '../model/costs'
 import { defaultCategoryId } from '../model/defaultCategories'
 import { createDefaultRateCalc, type RateCalc } from '../model/rates'
 import { createEmptyProject, createTask, type DependencyType, type Project, type TaskKind, type TaskLine } from '../model/schema'
@@ -240,4 +248,43 @@ function addSampleLines(project: Project, translate: (key: string) => string): v
     })
     return lines.length > 0 ? { ...task, lines } : task
   })
+}
+
+/**
+ * Vzorový projekt „v běhu“ (fáze 9): baseline uložená k začátku projektu, % hotovo a skutečné
+ * náklady do včerejška – aby pohled Sledování měl co ukázat. Práce je zhruba o týden pozadu
+ * (% hotovo podle uplynulého času před 7 dny). Skutečnost = hodnota hotové práce (EV) o 6 %
+ * dráž (milníky přesně), jedna souhrnná položka na položku k jejímu konci, nejpozději včera.
+ * Volá se po createSampleProject se začátkem v minulosti.
+ */
+/** O kolik dní je práce ve vzorovém projektu pozadu. */
+const SAMPLE_DELAY_DAYS = 7
+
+export function addSampleTracking(project: Project, translate: (key: string) => string, today: string): void {
+  const scheduled = schedule(project)
+  const snapshot = createBaseline(project, scheduled, computeCostTimeline(project, scheduled, computeCosts(project, scheduled)), project.startDate)
+  const id = 'sample-baseline'
+  const baseline = { id, name: translate('sample.baselineName'), ...snapshot }
+  project.baselines = [baseline]
+  project.activeBaselineId = id
+  const yesterday = isoToDay(today) - 1
+  const progressDay = isoToDay(today) - SAMPLE_DELAY_DAYS
+  for (const task of project.tasks) {
+    const s = scheduled.tasks.get(task.id)
+    if (task.kind === 'phase' || !s?.start || !s.finish) continue
+    const startDay = isoToDay(s.start)
+    const finishDay = isoToDay(s.finish)
+    const fraction = finishDay < progressDay ? 1 : startDay >= progressDay ? 0 : (progressDay - startDay) / (finishDay - startDay + 1)
+    task.percentComplete = fraction >= 1 ? 100 : task.kind === 'milestone' ? 0 : Math.round((fraction * 100) / 5) * 5
+  }
+  const bac = baselineBac(baseline)
+  const percent = rollupPercent(project, bac)
+  let seq = 0
+  for (const task of project.tasks) {
+    const s = scheduled.tasks.get(task.id)
+    const ev = Math.round(((bac.get(task.id) ?? 0) * (percent.get(task.id) ?? 0)) / 100)
+    if (ev <= 0 || !s?.finish) continue
+    const factor = task.kind === 'milestone' ? 1 : 1.06
+    task.actuals = [{ id: `sample-a${++seq}`, date: dayToIso(Math.min(isoToDay(s.finish), yesterday)), amount: Math.round((ev * factor) / 100) * 100 }]
+  }
 }

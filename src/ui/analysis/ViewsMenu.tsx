@@ -7,6 +7,7 @@ import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { PivotConfig } from '../../model/pivot'
 import { projectStore, useProject } from '../../store/useProject'
+import { NameDialog } from '../NameDialog'
 import { PRESETS, sameConfig } from './presets'
 
 /** Co je právě použité: přednastavený pohled, vlastní pohled, nebo nic. */
@@ -110,66 +111,17 @@ export function ViewsMenu({ config, active, onApply }: { config: PivotConfig; ac
           <p className="px-2 pt-1 text-xs text-slate-500 dark:text-slate-400">{t('analysis.views.note')}</p>
         </div>
       )}
-      <NameDialog naming={naming} onChange={(name) => setNaming((n) => (n ? { ...n, name } : n))} onSubmit={submitName} onClose={() => setNaming(null)} />
+      <NameDialog
+        open={naming !== null}
+        title={t(naming?.mode === 'rename' ? 'analysis.views.renameTitle' : 'analysis.views.saveTitle')}
+        name={naming?.name ?? ''}
+        label={t('analysis.views.name')}
+        confirm={t(naming?.mode === 'rename' ? 'analysis.views.renameConfirm' : 'analysis.views.save')}
+        hint={t('analysis.views.undo')}
+        onChange={(name) => setNaming((n) => (n ? { ...n, name } : n))}
+        onSubmit={submitName}
+        onClose={() => setNaming(null)}
+      />
     </div>
-  )
-}
-
-function NameDialog({
-  naming,
-  onChange,
-  onSubmit,
-  onClose,
-}: {
-  naming: { mode: 'save' | 'rename'; name: string } | null
-  onChange: (name: string) => void
-  onSubmit: (event: FormEvent) => void
-  onClose: () => void
-}) {
-  const { t } = useTranslation()
-  const dialogRef = useRef<HTMLDialogElement>(null)
-  const titleId = useId()
-  useEffect(() => {
-    const dialog = dialogRef.current
-    if (!dialog) return
-    if (naming && !dialog.open) dialog.showModal()
-    if (!naming && dialog.open) dialog.close()
-  }, [naming])
-  return (
-    <dialog
-      ref={dialogRef}
-      aria-labelledby={titleId}
-      onClose={onClose}
-      className="m-auto w-[min(26rem,calc(100vw-2rem))] rounded-lg border border-slate-300 bg-white p-0 text-slate-900 shadow-xl backdrop:bg-slate-900/50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-    >
-      {naming && (
-        <form onSubmit={onSubmit} className="p-5">
-          <h2 id={titleId} className="text-lg font-semibold">
-            {t(naming.mode === 'save' ? 'analysis.views.saveTitle' : 'analysis.views.renameTitle')}
-          </h2>
-          <label className="mt-3 flex flex-col gap-1 text-sm">
-            {t('analysis.views.name')}
-            <input
-              type="text"
-              autoFocus
-              required
-              maxLength={100}
-              value={naming.name}
-              onChange={(e) => onChange(e.target.value)}
-              className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:border-slate-600 dark:bg-slate-800"
-            />
-          </label>
-          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{t('analysis.views.undo')}</p>
-          <div className="mt-5 flex justify-end gap-2">
-            <button type="button" className="btn-secondary" onClick={onClose}>
-              {t('import.cancel')}
-            </button>
-            <button type="submit" className="btn-primary" disabled={naming.name.trim() === ''}>
-              {t(naming.mode === 'save' ? 'analysis.views.save' : 'analysis.views.renameConfirm')}
-            </button>
-          </div>
-        </form>
-      )}
-    </dialog>
   )
 }

@@ -17,8 +17,9 @@ import { schedule } from '../engine/schedule'
 import cs from '../i18n/locales/cs.json'
 import en from '../i18n/locales/en.json'
 import { isValidIsoDate } from '../model/dates'
+import { wbsNumbers } from '../model/hierarchy'
 import { parsePredecessors, type PredecessorItem } from '../model/predecessors'
-import { createTask, MAX_TREE_DEPTH, ProjectSchema, type Project, type Task, type TaskKind } from '../model/schema'
+import { createTask, MAX_TREE_DEPTH, nameKey, ProjectSchema, type Project, type Task, type TaskKind } from '../model/schema'
 import { EXPORT_COLUMNS, type ExportColumn } from './tableExport'
 
 /** Nejvíc řádků činností v jednom importu. */
@@ -216,16 +217,52 @@ export function importTable(rawRows: unknown[][], base: Project, makeId: () => s
   if (errors.length > 0) return { ok: false, errors }
 
   // --- Vrstva 4: kruhy ve vazbách ---
-  const candidate: Project = { ...base, tasks }
+  const { tasks: kept, rename } = keepIdentity(base, tasks)
+  const candidate: Project = { ...base, tasks: kept }
   const cycle = schedule(candidate).cycleTaskIds
   if (cycle.size > 0) {
-    return { ok: false, errors: parsed.filter((_, i) => cycle.has(ids[i] as string)).map((row) => ({ row: row.fileRow, code: 'cycle' })) }
+    return { ok: false, errors: parsed.filter((_, i) => cycle.has(rename.get(ids[i] as string) ?? (ids[i] as string))).map((row) => ({ row: row.fileRow, code: 'cycle' })) }
   }
 
   // --- Vrstva 5: celý projekt ještě jednou schématem (pojistka) ---
   const result = ProjectSchema.safeParse(candidate)
   if (!result.success) return fail(1, 'invalid')
   return { ok: true, project: result.data }
+}
+
+/**
+ * Činnost se stejným WBS, názvem (bez ohledu na velikost písmen) a druhem jako v současném projektu
+ * si ponechá své ID a skutečné náklady (fáze 9) – uložená baseline ji tak dál pozná a utracené
+ * peníze se neztratí. Ostatní dostanou nová ID. Vrací i převod nové ID → ponechané ID.
+ */
+export function keepIdentity(base: Project, tasks: Task[]): { tasks: Task[]; rename: Map<string, string> } {
+  const baseWbs = wbsNumbers(base)
+  const byWbs = new Map(base.tasks.map((t) => [baseWbs.get(t.id) ?? '', t]))
+  const newWbs = wbsNumbers({ ...base, tasks })
+  const rename = new Map<string, string>()
+  const kept = new Map<string, Task>()
+  for (const task of tasks) {
+    const old = byWbs.get(newWbs.get(task.id) ?? '')
+    if (old && old.kind === task.kind && nameKey(old.name) === nameKey(task.name)) {
+      rename.set(task.id, old.id)
+      kept.set(task.id, old)
+    }
+  }
+  if (rename.size === 0) return { tasks, rename }
+  const id = (value: string) => rename.get(value) ?? value
+  return {
+    rename,
+    tasks: tasks.map((task) => {
+      const old = kept.get(task.id)
+      return {
+        ...task,
+        id: id(task.id),
+        parentId: task.parentId === null ? null : id(task.parentId),
+        dependencies: task.dependencies.map((d) => ({ ...d, predecessorId: id(d.predecessorId) })),
+        ...(old?.actuals ? { actuals: old.actuals } : {}),
+      }
+    }),
+  }
 }
 
 /** Text CSV → tabulka. Oddělovač (středník / čárka / tabulátor) se pozná sám. */

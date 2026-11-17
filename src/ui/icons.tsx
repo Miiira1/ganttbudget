@@ -73,3 +73,15 @@ export function AnalysisIcon({ className = '' }: { className?: string }) {
     </svg>
   )
 }
+
+/** Sledování: plánovaná (čárkovaná) a skutečná křivka s bodem data stavu. */
+export function TrackingIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg {...common} className={className}>
+      <path d="M1.5 1.5v13h13" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" opacity="0.55" />
+      <path d="M3 12.5C6 12 8 8 13.5 3.5" stroke="currentColor" strokeWidth="1.2" strokeDasharray="1.6 1.6" strokeLinecap="round" />
+      <path d="M3 12.5C5.5 12.2 7.5 10.5 9.5 8.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <circle cx="9.5" cy="8.5" r="1.7" fill="currentColor" />
+    </svg>
+  )
+}

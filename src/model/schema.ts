@@ -103,6 +103,17 @@ export const TaskLineSchema = z.discriminatedUnion('kind', [
 /** Typy řádků, které smí mít milník (nulová délka – časově závislé řádky by byly vždy 0). */
 export const MILESTONE_LINE_KINDS = ['oneTime', 'material'] as const
 
+/** Nejvíc položek skutečných nákladů u jedné činnosti (fáze 9). */
+export const MAX_ACTUALS = 200
+
+/** Skutečný náklad k datu (fáze 9, Earned Value – AC): částka v haléřích, nepovinná poznámka. */
+export const ActualCostSchema = z.object({
+  id: LineIdSchema,
+  date: IsoDateSchema,
+  amount: LineMoneySchema,
+  note: z.string().max(500).optional(),
+})
+
 export const TaskSchema = z
   .object({
     id: z.string().min(1),
@@ -125,6 +136,8 @@ export const TaskSchema = z
       .optional(),
     /** Řádky zdrojů a nákladů (fáze 6b). */
     lines: z.array(TaskLineSchema).max(200),
+    /** Skutečné náklady k datu (fáze 9) – nepovinné, starší soubory je nemají. */
+    actuals: z.array(ActualCostSchema).max(MAX_ACTUALS).optional(),
   })
   .refine((t) => t.kind !== 'milestone' || t.durationDays === 0, {
     message: 'milestoneDuration',
@@ -156,11 +169,6 @@ export const CalendarSchema = z.object({
 /** Nejvíc úrovní stromu fází (F-03) – stejné číslo jako MAX_DEPTH v hierarchy.ts. */
 export const MAX_TREE_DEPTH = 6
 
-/**
- * Části, které přijdou v pozdějších fázích (baseline 9).
- * Zatím musí být prázdné – z.never() nepustí žádnou položku. Upřesní se v dané fázi.
- */
-const futureList = z.array(z.never())
 
 // ---------------------------------------------------------------------------
 // Databáze (číselníky) zdrojů – fáze 6a (Z-01, Z-04, R-03). Peníze = celá čísla v haléřích.
@@ -404,6 +412,55 @@ export const BudgetSchema = z.object({
   categoryLimits: z.array(z.object({ categoryId: IdSchema, limit: LimitSchema })).max(MAX_CATALOG_ITEMS).default([]),
 })
 
+// ---------------------------------------------------------------------------
+// Baseline – uložený snímek plánu ke srovnání (fáze 9, G-08, A-05).
+// ---------------------------------------------------------------------------
+
+/** Nejvíc baseline v projektu. */
+export const MAX_BASELINES = 10
+/** Nejdelší náběh nákladů jedné položky v baseline (dny, ≈ 10 let). */
+export const MAX_BASELINE_DAYS = 3660
+/** Nejvíc čísel náběhu v jedné baseline dohromady (ochrana proti obřím souborům). */
+export const MAX_BASELINE_COSTS = 500_000
+
+/** Položka plánu v okamžiku uložení baseline: termíny, délka a plánovaný náklad po dnech. */
+export const BaselineTaskSchema = z
+  .object({
+    taskId: IdSchema,
+    parentId: IdSchema.nullable(),
+    /** Název v okamžiku uložení – ukáže se, i když činnost mezitím zmizí z plánu. */
+    name: z.string().max(200),
+    kind: TaskKindSchema,
+    start: IsoDateSchema,
+    finish: IsoDateSchema,
+    durationDays: z.number().int().min(0).max(10000),
+    /** První den náběhu nákladů (může ležet mimo termín – jednorázový náklad k datu). */
+    costStart: IsoDateSchema.optional(),
+    /** Plánovaný náklad po dnech od costStart (haléře) – jen vlastní řádky položky; fáze sčítá své podřízené. */
+    costs: z.array(MoneySchema).max(MAX_BASELINE_DAYS),
+  })
+  .refine((t) => t.start <= t.finish, { message: 'rangeEndBeforeStart', path: ['finish'] })
+  .refine((t) => t.costs.length === 0 || t.costStart !== undefined, { message: 'missingCostStart', path: ['costStart'] })
+
+export const BaselineSchema = z
+  .object({
+    id: IdSchema,
+    name: z.string().trim().min(1).max(100),
+    /** Den uložení. */
+    savedAt: IsoDateSchema,
+    tasks: z.array(BaselineTaskSchema).max(5000),
+  })
+  .superRefine((baseline, ctx) => {
+    const ids = new Set<string>()
+    let costs = 0
+    baseline.tasks.forEach((t, index) => {
+      if (ids.has(t.taskId)) ctx.addIssue({ code: 'custom', message: 'duplicateTaskId', path: ['tasks', index, 'taskId'] })
+      ids.add(t.taskId)
+      costs += t.costs.length
+    })
+    if (costs > MAX_BASELINE_COSTS) ctx.addIssue({ code: 'custom', message: 'baselineTooLarge', path: ['tasks'] })
+  })
+
 export const ProjectSchema = z
   .object({
     schemaVersion: z.literal(SCHEMA_VERSION),
@@ -422,7 +479,12 @@ export const ProjectSchema = z
     workers: z.array(WorkerSchema).max(MAX_CATALOG_ITEMS),
     machines: z.array(MachineSchema).max(MAX_CATALOG_ITEMS),
     materials: z.array(MaterialSchema).max(MAX_CATALOG_ITEMS),
-    baselines: futureList,
+    /** Uložené baseline (fáze 9); starší soubory mají []. */
+    baselines: z.array(BaselineSchema).max(MAX_BASELINES),
+    /** Baseline vybraná ke srovnání (fáze 9). */
+    activeBaselineId: IdSchema.optional(),
+    /** Datum stavu pro Earned Value (fáze 9); chybí = dnes. */
+    statusDate: IsoDateSchema.optional(),
     /** Limity rozpočtu (fáze 7) – nepovinné, starší soubory je nemají. */
     budget: BudgetSchema.optional(),
     /** Uložené pohledy analýzy (fáze 8) – nepovinné. */
@@ -430,6 +492,9 @@ export const ProjectSchema = z
   })
   .superRefine((project, ctx) => {
     checkCatalogs(project, ctx)
+    if (project.activeBaselineId !== undefined && !project.baselines.some((b) => b.id === project.activeBaselineId)) {
+      ctx.addIssue({ code: 'custom', message: 'unknownBaseline', path: ['activeBaselineId'] })
+    }
     checkTaskLines(project, ctx)
     // Limit kategorie míří na existující kategorii a každá kategorie má nejvýš jeden limit.
     const categoryIds = new Set(project.costCategories.map((c) => c.id))
@@ -503,6 +568,9 @@ export type Worker = z.infer<typeof WorkerSchema>
 export type Department = z.infer<typeof DepartmentSchema>
 export type Absence = z.infer<typeof AbsenceSchema>
 export type SavedView = z.infer<typeof SavedViewSchema>
+export type Baseline = z.infer<typeof BaselineSchema>
+export type BaselineTask = z.infer<typeof BaselineTaskSchema>
+export type ActualCost = z.infer<typeof ActualCostSchema>
 export type Machine = z.infer<typeof MachineSchema>
 export type Material = z.infer<typeof MaterialSchema>
 

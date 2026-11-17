@@ -26,7 +26,7 @@ import {
 import { TASK_KINDS, type Task, type TaskKind } from '../model/schema'
 import { EMPTY_SCHEDULED, type ScheduledTask } from '../engine/schedule'
 import { ROW_HEIGHT } from '../gantt/geometry'
-import { getSchedule, projectStore, useCosts, useProject, useSchedule } from '../store/useProject'
+import { getSchedule, projectStore, useCosts, usePercents, useProject, useSchedule } from '../store/useProject'
 import { formatMoney } from '../model/money'
 import { milestoneAllows } from '../model/catalogs'
 import { DateInputCell, NumberCell, TextCell } from './EditableCells'
@@ -95,6 +95,8 @@ interface TaskRowProps {
   critical: boolean
   /** Náklad položky v haléřích (u fáze včetně podřízených) a jeho rozpad – jednotlivá čísla, aby fungovalo memo. */
   costTotal: number
+  /** % hotovo k zobrazení (u fáze spočítané z činností). */
+  percent: number
   costLabor: number
   costMachines: number
   costMaterial: number
@@ -177,7 +179,7 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
   const { task, number, depth, wbs, start, finish, computedDuration, inCycle, predecessorsText } = props
   const { hasChildren, collapsed, selected, dropIndicator: indicator, dragging, drag, constraintIgnored } = props
   const { costTotal, costLabor, costMachines, costMaterial, costOther } = props
-  const { totalSlack, freeSlack, critical } = props
+  const { totalSlack, freeSlack, critical, percent } = props
   const { t, i18n } = useTranslation()
   const select = useViewState((s) => s.select)
   // Řádek nesleduje celý projekt (jinak by se překresloval při každé změně kdekoli);
@@ -393,13 +395,28 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
         )}
       </td>
       <td className={`${td}`}>
-        <NumberCell
-          value={task.percentComplete}
-          label={label('table.percentComplete')}
-          min={0}
-          max={100}
-          onCommit={(percentComplete) => updateTask(task.id, { percentComplete })}
-        />
+        {task.kind === 'milestone' ? (
+          <label className="flex h-full items-center justify-end gap-1.5 px-2" title={t('table.milestoneDoneHint')}>
+            <input
+              type="checkbox"
+              aria-label={label('table.milestoneDone')}
+              checked={task.percentComplete >= 100}
+              onChange={(e) => updateTask(task.id, { percentComplete: e.target.checked ? 100 : 0 })}
+              className="h-4 w-4 accent-miro-turquoise-dark"
+            />
+            <span className="text-xs text-slate-600 dark:text-slate-400">{t('table.milestoneDone')}</span>
+          </label>
+        ) : (
+          <NumberCell
+            value={isPhase ? percent : task.percentComplete}
+            label={label('table.percentComplete')}
+            min={0}
+            max={100}
+            disabled={isPhase}
+            title={isPhase ? t('table.percentComputed') : undefined}
+            onCommit={(percentComplete) => updateTask(task.id, { percentComplete })}
+          />
+        )}
       </td>
       <td className={`${td} px-2 text-right tabular-nums ${isPhase ? 'font-semibold' : ''}`}>
         {costTotal > 0 && (
@@ -517,6 +534,7 @@ export function TaskTable({ onAddTask, onLoadSample }: { onAddTask: () => void; 
   const project = useProject((s) => s.project)
   const result = useSchedule()
   const costs = useCosts()
+  const percents = usePercents()
   // Čísla řádků se počítají ze všech řádků (i skrytých), aby se sbalením neměnila.
   const numbers = useMemo(() => rowNumbers(project), [project])
   const rows = useVisibleRows(project)
@@ -572,6 +590,7 @@ export function TaskTable({ onAddTask, onLoadSample }: { onAddTask: () => void; 
               freeSlack={dates.freeSlack}
               critical={dates.critical}
               costTotal={costs.byTask.get(task.id)?.total.total ?? 0}
+              percent={percents.get(task.id) ?? task.percentComplete}
               costLabor={costs.byTask.get(task.id)?.total.labor ?? 0}
               costMachines={costs.byTask.get(task.id)?.total.machines ?? 0}
               costMaterial={costs.byTask.get(task.id)?.total.material ?? 0}

@@ -231,7 +231,10 @@
     "confirmMilestoneLines_other": "Milník smí mít jen jednorázový náklad a materiál. Odebere se {{count}} řádků zdrojů. Pokračovat? (Lze vrátit Ctrl+Z.)",
     "slack": "Rezerva",
     "slackHint": "Celková rezerva v pracovních dnech: o kolik se položka smí zpozdit, aniž se posune konec projektu. 0 = kritická cesta (žlutě).",
-    "slackCell": "Celková rezerva {{total}} prac. dní (konec projektu se neposune); volná rezerva {{free}} prac. dní (neposune ani žádného následníka)."
+    "slackCell": "Celková rezerva {{total}} prac. dní (konec projektu se neposune); volná rezerva {{free}} prac. dní (neposune ani žádného následníka).",
+    "percentComputed": "U fáze se % hotovo počítá z jejích činností – vážené plánovaným nákladem z baseline, bez něj délkou. Zadává se u činností.",
+    "milestoneDone": "splněno",
+    "milestoneDoneHint": "Milník je buď splněný (100 %), nebo ne (0 %)"
   },
   "kind": {
     "task": "Činnost",
@@ -385,7 +388,22 @@
     "slackBar_one": "Rezerva {{count}} pracovní den – o tolik se činnost smí zpozdit, aniž se posune konec projektu",
     "slackBar_few": "Rezerva {{count}} pracovní dny – o tolik se činnost smí zpozdit, aniž se posune konec projektu",
     "slackBar_many": "Rezerva {{count}} pracovních dnů – o tolik se činnost smí zpozdit, aniž se posune konec projektu",
-    "slackBar_other": "Rezerva {{count}} pracovních dnů – o tolik se činnost smí zpozdit, aniž se posune konec projektu"
+    "slackBar_other": "Rezerva {{count}} pracovních dnů – o tolik se činnost smí zpozdit, aniž se posune konec projektu",
+    "baseline": "Baseline",
+    "baselineHint": "Pod úsečkami ukázat šedě termíny baseline „{{name}}“ (uloženého výchozího plánu) – hned je vidět, co se posunulo",
+    "baselineNone": "Zatím není uložená žádná baseline (výchozí plán). Uložíte ji v pohledu Sledování.",
+    "barPercent": "Hotovo {{pct}} %",
+    "milestoneDone": "Splněno",
+    "barBaseline": "Baseline „{{name}}“: {{range}}",
+    "shiftNone": "konec beze změny",
+    "shiftLater_one": "konec o {{count}} den později",
+    "shiftLater_few": "konec o {{count}} dny později",
+    "shiftLater_many": "konec o {{count}} dne později",
+    "shiftLater_other": "konec o {{count}} dnů později",
+    "shiftEarlier_one": "konec o {{count}} den dříve",
+    "shiftEarlier_few": "konec o {{count}} dny dříve",
+    "shiftEarlier_many": "konec o {{count}} dne dříve",
+    "shiftEarlier_other": "konec o {{count}} dnů dříve"
   },
   "notice": {
     "close": "Zavřít upozornění"
@@ -522,7 +540,8 @@
       "training": "Školení obsluhy (dodavatel)",
       "support": "Servisní podpora dodavatele",
       "finalPayment": "Doplatek dodavateli pracoviště (70 %)"
-    }
+    },
+    "baselineName": "Schválený plán"
   },
   "resources": {
     "defaultCategories": {
@@ -663,7 +682,9 @@
     "costs": "Náklady",
     "costsHint": "Časový náběh nákladů: kolik projekt stojí v každém týdnu, měsíci nebo čtvrtletí",
     "analysis": "Analýza",
-    "analysisHint": "Kontingenční tabulka: náklady a hodiny podle fází, kategorií, štítků, zdrojů, středisek a období"
+    "analysisHint": "Kontingenční tabulka: náklady a hodiny podle fází, kategorií, štítků, zdrojů, středisek a období",
+    "tracking": "Sledování",
+    "trackingHint": "Plán vs. skutečnost: baseline, % hotovo, skutečné náklady a Earned Value"
   },
   "rate": {
     "title": "Hodinová sazba – {{name}}",
@@ -1149,7 +1170,8 @@
       "absences": "Nepřítomnosti",
       "machines": "Stroje",
       "materials": "Materiály",
-      "phasing": "Náběh"
+      "phasing": "Náběh",
+      "actuals": "Skutečnost"
     },
     "project": {
       "item": "Položka",
@@ -1193,7 +1215,11 @@
       "rateUnit": "Sazba za",
       "unit": "Jednotka",
       "unitPrice": "Cena za jednotku Kč",
-      "supplier": "Dodavatel"
+      "supplier": "Dodavatel",
+      "wbs": "WBS",
+      "task": "Činnost",
+      "date": "Datum",
+      "amount": "Částka Kč"
     },
     "calendarKind": {
       "custom": "volno / odstávka",
@@ -1209,7 +1235,7 @@
     },
     "importTitle": "Import celého projektu z Excelu",
     "importSummary": "Sešit je v pořádku: projekt „{{name}}“, začátek {{start}}, měna {{currency}}. Obsahuje:",
-    "replaceWarning": "Import nahradí celý současný projekt „{{name}}“ – činnosti, rozpočet, databázi zdrojů, kalendář i limity – obsahem sešitu. Jde vrátit tlačítkem Zpět (Ctrl+Z). Projekt pak uložte do souboru (Ctrl+S).",
+    "replaceWarning": "Import nahradí celý současný projekt „{{name}}“ – činnosti, rozpočet, databázi zdrojů, kalendář i limity – obsahem sešitu. Jde vrátit tlačítkem Zpět (Ctrl+Z). Projekt pak uložte do souboru (Ctrl+S). Baseline a uložené pohledy zůstanou; činnosti se stejným WBS a názvem si k nim ponechají vazbu i skutečné náklady.",
     "importConfirm": "Nahradit projekt",
     "error": {
       "sheetRow": "List „{{sheet}}“, řádek {{row}}: {{message}}",
@@ -1238,7 +1264,10 @@
       "badRateCalc": "chybná kalkulace sazby (zkontrolujte mzdu, odvody, režii, dovolenou, nemoc, hodiny a produktivitu).",
       "badRateUnit": "sazba stroje musí být „za hodinu“, nebo „za den“.",
       "badUnit": "chybí jednotka (nebo je delší než 20 znaků).",
-      "invalid": "Data ze sešitu neprošla kontrolou."
+      "invalid": "Data ze sešitu neprošla kontrolou.",
+      "unknownTask": "činnost s tímto WBS není na listu Činnosti.",
+      "actualNoteTooLong": "poznámka je delší než 500 znaků.",
+      "tooManyActuals": "činnost má víc než 200 skutečných nákladů."
     }
   },
   "analysis": {
@@ -1347,6 +1376,192 @@
       "save": "Uložit",
       "renameConfirm": "Přejmenovat",
       "undo": "Změnu jde vrátit tlačítkem Zpět (Ctrl+Z)."
+    }
+  },
+  "actuals": {
+    "title": "Skutečné náklady",
+    "hint": "Kolik se na činnost opravdu utratilo (faktury, výkazy). Pohled Sledování z nich počítá AC – skutečné náklady k datu stavu.",
+    "total": "zatím {{amount}}",
+    "planned": "plán {{amount}}",
+    "add": "Skutečný náklad",
+    "addHint": "Přidat skutečný náklad s dnešním datem – datum, částku a poznámku pak upravíte v řádku",
+    "full": "Nejvýš {{count}} položek u jedné činnosti",
+    "empty": "Zatím žádné. Až se na činnost něco utratí, zapište to sem (datum a částka).",
+    "caption": "Skutečné náklady činnosti {{name}}",
+    "columns": {
+      "date": "Datum",
+      "amount": "Částka ({{currency}})",
+      "note": "Poznámka"
+    },
+    "fieldLabel": "{{field}} skutečného nákladu",
+    "noteTooLong": "Poznámka může mít nejvýš 500 znaků.",
+    "delete": "Smazat skutečný náklad",
+    "deleteHint": "Smazat skutečný náklad (jde vrátit Ctrl+Z)",
+    "labels": {
+      "date": "Datum",
+      "amount": "Částka",
+      "note": "Poznámka"
+    }
+  },
+  "tracking": {
+    "intro": "Plán vs. skutečnost: srovnání s uloženým výchozím plánem (baseline) a Earned Value k datu stavu.",
+    "noTasksTitle": "Zatím není co sledovat",
+    "noTasks": "Projekt nemá žádné činnosti. Nejdřív sestavte plán v pohledu Plán.",
+    "emptyTitle": "Nejdřív uložte baseline",
+    "empty": "Baseline je snímek schváleného plánu – termíny a plánované náklady. Až se plán změní nebo začne práce, aplikace ukáže, co se posunulo, kolik je hotovo a jestli projekt nepřekročí rozpočet. Uložte ji, až bude plán schválený.",
+    "baseline": {
+      "label": "Baseline ke srovnání",
+      "selectHint": "Se kterou uloženou baseline se má plán srovnávat",
+      "option": "{{name}} (uložena {{date}})",
+      "save": "Uložit baseline…",
+      "saveHint": "Uloží snímek aktuálního plánu (termíny a plánované náklady) a vybere ho ke srovnání. Nejvýš 10 baseline; změnu jde vrátit Ctrl+Z.",
+      "rename": "Přejmenovat…",
+      "delete": "Smazat",
+      "confirmDelete": "Opravdu smazat baseline „{{name}}“? Jde vrátit tlačítkem Zpět (Ctrl+Z).",
+      "saveTitle": "Uložit baseline",
+      "renameTitle": "Přejmenovat baseline",
+      "name": "Název",
+      "saveConfirm": "Uložit",
+      "renameConfirm": "Přejmenovat",
+      "undo": "Změnu jde vrátit tlačítkem Zpět (Ctrl+Z).",
+      "defaultName": "Baseline {{date}}",
+      "tooLarge": "Plán je pro baseline příliš rozsáhlý (náběh nákladů delší než 10 let). Baseline se neuložila.",
+      "limit": "Projekt už má 10 baseline. Nejdřív některou smažte.",
+      "cycles_one": "Baseline uložena, ale {{count}} položka v kruhu vazeb nemá termín, takže v ní chybí.",
+      "cycles_few": "Baseline uložena, ale {{count}} položky v kruhu vazeb nemají termín, takže v ní chybí.",
+      "cycles_many": "Baseline uložena, ale {{count}} položky v kruhu vazeb nemá termín, takže v ní chybí.",
+      "cycles_other": "Baseline uložena, ale {{count}} položek v kruhu vazeb nemá termín, takže v ní chybí."
+    },
+    "status": "Datum stavu",
+    "statusHint": "Ke kterému dni se počítá, co mělo být hotovo (PV), co hotovo je (EV) a kolik se utratilo (AC). Prázdné = dnes.",
+    "statusToday": "(datum stavu = dnešek; posouvá se samo)",
+    "today": "Dnes",
+    "todayHint": "Počítat vždy k dnešku",
+    "summary": "Stav k {{date}} proti baseline „{{name}}“ uložené {{saved}}.",
+    "explain": "Co je {{term}}?",
+    "hint": {
+      "bac": "celý plán podle baseline",
+      "pv": "mělo být hotovo k {{date}}",
+      "ev": "hotovo {{pct}} % plánu",
+      "ac": "utraceno do {{date}}",
+      "spiNone": "zatím nemělo nic být hotovo",
+      "spiLate": "zpoždění proti plánu",
+      "spiSlightly": "mírně pozadu",
+      "spiOk": "podle plánu nebo napřed",
+      "cpiNone": "zatím nic neutraceno",
+      "cpiOver": "dráž, než se plánovalo",
+      "cpiSlightly": "mírně dráž",
+      "cpiOk": "v rozpočtu nebo levněji",
+      "eacNone": "spočítá se po prvních nákladech a hotové práci",
+      "eac": "ještě zbývá utratit {{etc}}",
+      "vacOver": "odhad: rozpočet se překročí",
+      "vacOk": "odhad: úspora proti plánu"
+    },
+    "terms": {
+      "bac": {
+        "short": "BAC",
+        "name": "BAC – rozpočet při dokončení (Budget at Completion)",
+        "text": "Kolik měl celý projekt stát podle uložené baseline. Je to pevný bod, se kterým se všechno ostatní srovnává.",
+        "formula": "BAC = součet plánovaných nákladů všech položek baseline."
+      },
+      "pv": {
+        "short": "PV",
+        "name": "PV – plánovaná hodnota (Planned Value)",
+        "text": "Kolik práce (v Kč) mělo být podle baseline hotovo k datu stavu.",
+        "formula": "PV = plánované náklady baseline od začátku do data stavu včetně."
+      },
+      "ev": {
+        "short": "EV",
+        "name": "EV – získaná hodnota (Earned Value)",
+        "text": "Kolik práce je opravdu hotovo, vyjádřeno plánovanou cenou té práce. Činnost za 10 000 Kč hotová z 40 % má EV 4 000 Kč – bez ohledu na to, kolik se skutečně utratilo.",
+        "formula": "EV = Σ (plánovaný náklad činnosti × % hotovo)."
+      },
+      "ac": {
+        "short": "AC",
+        "name": "AC – skutečné náklady (Actual Cost)",
+        "text": "Kolik se opravdu utratilo do data stavu. Zapisuje se u činností v panelu Detail činnosti (část Skutečné náklady).",
+        "formula": "AC = součet skutečných nákladů s datem do data stavu včetně."
+      },
+      "spi": {
+        "short": "SPI",
+        "name": "SPI – index plnění harmonogramu (Schedule Performance Index)",
+        "text": "Jestli práce postupuje podle plánu. 1 = přesně podle plánu, pod 1 = zpoždění (0,8 = hotovo jen 80 % toho, co mělo být), nad 1 = napřed.",
+        "formula": "SPI = EV / PV; odchylka SV = EV − PV (v Kč)."
+      },
+      "cpi": {
+        "short": "CPI",
+        "name": "CPI – index nákladové výkonnosti (Cost Performance Index)",
+        "text": "Kolik práce dostáváme za každou utracenou korunu. 1 = podle rozpočtu, pod 1 = dráž (0,9 = za 1 Kč jen práce za 0,90 Kč), nad 1 = levněji.",
+        "formula": "CPI = EV / AC; odchylka CV = EV − AC (v Kč)."
+      },
+      "eac": {
+        "short": "EAC",
+        "name": "EAC – odhad nákladů při dokončení (Estimate at Completion)",
+        "text": "Kolik bude projekt nakonec stát, když bude dál hospodařit jako dosud (se stejným CPI). ETC je, kolik ještě zbývá utratit.",
+        "formula": "EAC = BAC / CPI; ETC = EAC − AC."
+      },
+      "vac": {
+        "short": "VAC",
+        "name": "VAC – odchylka při dokončení (Variance at Completion)",
+        "text": "O kolik se konečné náklady podle odhadu liší od plánu. Záporné číslo = překročení rozpočtu, kladné = úspora.",
+        "formula": "VAC = BAC − EAC."
+      }
+    },
+    "learn": {
+      "title": "Jak číst Earned Value",
+      "p1": "Earned Value srovnává tři čísla v korunách: co mělo být hotovo (PV), co hotovo je (EV) a kolik to stálo (AC). Všechna se počítají k datu stavu.",
+      "p2": "Zpoždění poznáte podle EV < PV (SPI pod 1). Předražení podle AC > EV (CPI pod 1). Obojí může nastat zároveň – nebo se navzájem maskovat, proto se dívejte na oba indexy.",
+      "p3": "EV vychází z % hotovo, které zadáváte u činností v plánu. Čím poctivěji je zadáte, tím věrnější je obraz projektu.",
+      "p4": "Když se plán podstatně změní (schválená změna rozsahu), uložte novou baseline a vyberte ji ke srovnání. Starou si můžete nechat pro porovnání."
+    },
+    "chart": {
+      "label": "Plán vs. skutečnost v čase",
+      "pv": "PV – plán podle baseline (kumulativně)",
+      "ac": "AC – skutečné náklady (kumulativně)",
+      "ev": "EV – hotová práce k datu stavu",
+      "status": "Datum stavu",
+      "summary": "Graf: plán podle baseline celkem {{pv}}, hotová práce k datu stavu {{ev}}",
+      "tip": "{{period}}: plán (PV) {{pv}}, skutečnost (AC) {{ac}} – kumulativně",
+      "tipPlan": "{{period}}: plán (PV) {{pv}} – kumulativně; skutečnost jen do data stavu",
+      "evTip": "Hotová práce (EV) k datu stavu: {{ev}}"
+    },
+    "table": {
+      "label": "Činnosti: baseline vs. plán",
+      "caption": "Činnosti – termíny baseline a plánu, % hotovo a Earned Value",
+      "wbs": "WBS",
+      "name": "Název",
+      "baseline": "Baseline",
+      "plan": "Plán",
+      "shift": "Posun (dny)",
+      "shiftHint": "O kolik kalendářních dnů končí položka později (+) nebo dříve (−) než v baseline",
+      "percent": "% hotovo",
+      "cvHint": "CV = EV − AC: kladné = levněji, záporné = dráž, než se plánovalo",
+      "svHint": "SV = EV − PV: kladné = napřed, záporné = pozadu proti plánu (v Kč)",
+      "notInPlan": "není v plánu",
+      "new": "nová",
+      "newHint": "Činnost přibyla po uložení baseline – nemá plánovaný náklad (BAC 0), skutečnost se jí ale počítá"
+    },
+    "export": {
+      "hint": "Uložit tabulku činností s Earned Value (k datu stavu)",
+      "fileSuffix": "sledování",
+      "sheetName": "Sledování",
+      "columns": {
+        "wbs": "WBS",
+        "name": "Název",
+        "status": "Stav",
+        "baselineStart": "Začátek (baseline)",
+        "baselineFinish": "Konec (baseline)",
+        "start": "Začátek (plán)",
+        "finish": "Konec (plán)",
+        "shift": "Posun konce (dny)",
+        "percent": "% hotovo",
+        "bac": "BAC ({{currency}})",
+        "pv": "PV ({{currency}})",
+        "ev": "EV ({{currency}})",
+        "ac": "AC ({{currency}})",
+        "cv": "CV ({{currency}})",
+        "sv": "SV ({{currency}})"
+      }
     }
   }
 }

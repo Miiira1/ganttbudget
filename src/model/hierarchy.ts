@@ -336,7 +336,10 @@ export function duplicateMany(
   const order = treeOrder(project).filter((t) => copied.has(t.id))
   const newIds = new Map(order.map((t) => [t.id, makeId()]))
 
-  const copies: Task[] = order.map((task) => {
+  const copies: Task[] = order.map((original) => {
+    // Skutečné náklady (fáze 9) jsou opravdu utracené peníze – kopie je nepřebírá.
+    const { actuals: _actuals, ...task } = original
+    void _actuals
     const isRoot = rootSet.has(task.id)
     const name = isRoot ? `${task.name}${nameSuffix}`.slice(0, MAX_NAME_LENGTH).trimEnd() || task.name : task.name
     return {

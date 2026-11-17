@@ -27,7 +27,8 @@ import {
   type HierarchyResult,
 } from '../model/hierarchy'
 import { milestoneAllows, syncLaborLines, uniqueName, type CatalogItem } from '../model/catalogs'
-import { createTask, MAX_VIEWS, type Calendar, type CatalogKey, type Dependency, type Project, type SavedView, type Task, type TaskKind, type TaskLine } from '../model/schema'
+import { isValidIsoDate } from '../model/dates'
+import { createTask, MAX_ACTUALS, MAX_BASELINES, MAX_VIEWS, type ActualCost, type Baseline, type Calendar, type CatalogKey, type Dependency, type Project, type SavedView, type Task, type TaskKind, type TaskLine } from '../model/schema'
 
 /** Kolik kroků zpět si aplikace pamatuje. */
 export const HISTORY_LIMIT = 100
@@ -104,6 +105,18 @@ export interface ProjectState {
   deleteTaskLine: (taskId: string, lineId: string) => void
   /** Přejmenuje projekt (ořízne mezery, max. 200 znaků; prázdný název se ignoruje). */
   renameProject: (name: string) => void
+  /** Uloží baseline (snímek plánu); nová se vybere ke srovnání. Vrátí ID, nebo null (prázdný název, limit). */
+  saveBaseline: (name: string, data: Pick<Baseline, 'savedAt' | 'tasks'>) => string | null
+  renameBaseline: (id: string, name: string) => void
+  setActiveBaseline: (id: string) => void
+  /** Smaže baseline; byla-li vybraná, vybere se poslední zbývající. */
+  deleteBaseline: (id: string) => void
+  /** Přidá skutečný náklad k činnosti (seřazeno podle data). Vrátí ID, nebo null (neplatné hodnoty). */
+  addActual: (taskId: string, actual: Omit<ActualCost, 'id'>) => string | null
+  updateActual: (taskId: string, actualId: string, patch: Partial<Omit<ActualCost, 'id'>>) => void
+  deleteActual: (taskId: string, actualId: string) => void
+  /** Datum stavu pro Earned Value; null = dnes. */
+  setStatusDate: (date: string | null) => void
   /** Limit rozpočtu projektu v haléřích; null = zrušit (fáze 7). */
   setBudgetLimit: (limit: number | null) => void
   /** Limit kategorie nákladů v haléřích; null = zrušit. */
@@ -120,6 +133,22 @@ export interface ProjectState {
   resetProject: (project: Project) => void
   undo: () => void
   redo: () => void
+}
+
+/** Skutečný náklad v platném tvaru (oříznutá poznámka, prázdná vynechaná), nebo null. */
+function cleanActual(actual: ActualCost): ActualCost | null {
+  if (!isValidIsoDate(actual.date) || !Number.isInteger(actual.amount) || actual.amount < 0 || actual.amount > 1_000_000_000_000) return null
+  const note = (actual.note ?? '').trim().slice(0, 500).trim()
+  const { note: _old, ...rest } = actual
+  void _old
+  return note === '' ? rest : { ...rest, note }
+}
+
+/** Seznam skutečných nákladů seřazený podle data; prázdný = pole se vynechá. */
+function withActuals(task: Task, actuals: ActualCost[]): Task {
+  const { actuals: _old, ...rest } = task
+  void _old
+  return actuals.length === 0 ? rest : { ...rest, actuals: [...actuals].sort((a, b) => a.date.localeCompare(b.date)) }
 }
 
 function newId(): string {
@@ -438,6 +467,76 @@ export function createProjectStore(initialProject: Project) {
         const { views: _old, ...rest } = project
         void _old
         commit(views.length > 0 ? { ...rest, views } : (rest as Project))
+      },
+
+      saveBaseline(rawName, data) {
+        const { project } = get()
+        const name = rawName.trim().slice(0, 100).trim()
+        if (name === '' || project.baselines.length >= MAX_BASELINES) return null
+        const id = newId()
+        const baseline: Baseline = { id, name: uniqueName(name, project.baselines.map((b) => b.name)), savedAt: data.savedAt, tasks: data.tasks }
+        commit({ ...project, baselines: [...project.baselines, baseline], activeBaselineId: id })
+        return id
+      },
+
+      renameBaseline(id, rawName) {
+        const { project } = get()
+        const baseline = project.baselines.find((b) => b.id === id)
+        const name = rawName.trim().slice(0, 100).trim()
+        if (!baseline || name === '' || name === baseline.name) return
+        const others = project.baselines.filter((b) => b.id !== id).map((b) => b.name)
+        commit({ ...project, baselines: project.baselines.map((b) => (b.id === id ? { ...b, name: uniqueName(name, others) } : b)) })
+      },
+
+      setActiveBaseline(id) {
+        const { project } = get()
+        if (project.activeBaselineId === id || !project.baselines.some((b) => b.id === id)) return
+        commit({ ...project, activeBaselineId: id })
+      },
+
+      deleteBaseline(id) {
+        const { project } = get()
+        if (!project.baselines.some((b) => b.id === id)) return
+        const baselines = project.baselines.filter((b) => b.id !== id)
+        const { activeBaselineId, ...rest } = project
+        const active = activeBaselineId === id || activeBaselineId === undefined ? baselines.at(-1)?.id : activeBaselineId
+        commit(active === undefined ? { ...rest, baselines } : { ...rest, baselines, activeBaselineId: active })
+      },
+
+      addActual(taskId, input) {
+        const { project } = get()
+        const task = project.tasks.find((t) => t.id === taskId)
+        const id = newId()
+        const actual = cleanActual({ ...input, id })
+        if (!task || !actual || (task.actuals?.length ?? 0) >= MAX_ACTUALS) return null
+        commit({ ...project, tasks: project.tasks.map((t) => (t.id === taskId ? withActuals(t, [...(t.actuals ?? []), actual]) : t)) })
+        return id
+      },
+
+      updateActual(taskId, actualId, patch) {
+        const { project } = get()
+        const task = project.tasks.find((t) => t.id === taskId)
+        const current = task?.actuals?.find((a) => a.id === actualId)
+        if (!task || !current) return
+        const next = cleanActual({ ...current, ...patch, id: actualId })
+        if (!next || JSON.stringify(next) === JSON.stringify(current)) return
+        commit({ ...project, tasks: project.tasks.map((t) => (t.id === taskId ? withActuals(t, t.actuals!.map((a) => (a.id === actualId ? next : a))) : t)) })
+      },
+
+      deleteActual(taskId, actualId) {
+        const { project } = get()
+        const task = project.tasks.find((t) => t.id === taskId)
+        if (!task?.actuals?.some((a) => a.id === actualId)) return
+        commit({ ...project, tasks: project.tasks.map((t) => (t.id === taskId ? withActuals(t, t.actuals!.filter((a) => a.id !== actualId)) : t)) })
+      },
+
+      setStatusDate(date) {
+        const { project } = get()
+        if (date !== null && !isValidIsoDate(date)) return
+        if ((project.statusDate ?? null) === date) return
+        const { statusDate: _old, ...rest } = project
+        void _old
+        commit(date === null ? rest : { ...rest, statusDate: date })
       },
 
       renameProject(rawName) {

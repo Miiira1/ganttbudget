@@ -4,7 +4,7 @@ import { translateCs } from '../samples/translateForTests'
 import { schedule } from '../engine/schedule'
 import { depthMap, treeOrder } from '../model/hierarchy'
 import { formatPredecessors } from '../model/predecessors'
-import { createEmptyProject, ProjectSchema, type Project } from '../model/schema'
+import { createEmptyProject, createTask, ProjectSchema, type Project } from '../model/schema'
 import cs from '../i18n/locales/cs.json'
 import en from '../i18n/locales/en.json'
 import { buildExportTable, EXPORT_COLUMNS, toCsv } from './tableExport'
@@ -152,5 +152,19 @@ describe('chyby: nic se nepoužije, seznam s čísly řádků', () => {
   it('příliš mnoho řádků', () => {
     const rows = [['Název'], ...Array.from({ length: 5001 }, (_, i) => [`T${i}`])]
     expect(errors(rows)).toEqual(['1:tooManyRows'])
+  })
+})
+
+describe('import činností – činnosti se stejným WBS a názvem si ponechají ID (fáze 9)', () => {
+  it('baseline je dál pozná; skutečné náklady zůstanou; přejmenovaná činnost dostane nové ID', () => {
+    const p = base()
+    p.tasks = [
+      { ...createTask({ id: 'keep', name: 'Analýza', order: 0 }), actuals: [{ id: 'a1', date: '2026-11-20', amount: 1_000 }] },
+      createTask({ id: 'renamed', name: 'Návrh', order: 1 }),
+    ]
+    const imported = ok(importTable([['Název', 'Předchůdci'], ['Analýza', ''], ['Návrh řešení', '1']], p, makeId))
+    expect(imported.tasks[0]).toMatchObject({ id: 'keep', actuals: [{ id: 'a1', date: '2026-11-20', amount: 1_000 }] })
+    expect(imported.tasks[1]!.id).not.toBe('renamed')
+    expect(imported.tasks[1]!.dependencies[0]!.predecessorId).toBe('keep')
   })
 })

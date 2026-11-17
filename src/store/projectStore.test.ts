@@ -655,3 +655,122 @@ describe('vlastní pohledy analýzy (fáze 8, A-06)', () => {
     expect(ProjectSchema.safeParse({ ...base, views: many }).success).toBe(false)
   })
 })
+
+describe('baseline, skutečné náklady a datum stavu (fáze 9)', () => {
+  const snapshot = (taskId: string) => ({
+    savedAt: '2026-11-17',
+    tasks: [{ taskId, parentId: null, name: 'A', kind: 'task' as const, start: '2026-11-16', finish: '2026-11-18', durationDays: 3, costStart: '2026-11-16', costs: [100, 100, 100] }],
+  })
+
+  it('baseline: uložit (nová je vybraná), přejmenovat, vybrat, smazat – každé jeden krok Zpět', () => {
+    const store = newStore()
+    const task = store.getState().addTask('A')
+    const before = store.getState().past.length
+    const b1 = store.getState().saveBaseline('  Schválený plán ', snapshot(task))!
+    const b2 = store.getState().saveBaseline('schválený plán', snapshot(task))!
+    let p = store.getState().project
+    expect(p.baselines.map((b) => b.name)).toEqual(['Schválený plán', 'schválený plán 2'])
+    expect(p.activeBaselineId).toBe(b2)
+    store.getState().renameBaseline(b2, 'Po změně 1')
+    store.getState().setActiveBaseline(b1)
+    expect(store.getState().project.activeBaselineId).toBe(b1)
+    // Smazání vybrané: vybere se poslední zbývající.
+    store.getState().deleteBaseline(b1)
+    p = store.getState().project
+    expect(p.baselines.map((b) => [b.id, b.name])).toEqual([[b2, 'Po změně 1']])
+    expect(p.activeBaselineId).toBe(b2)
+    expect(ProjectSchema.safeParse(p).success).toBe(true)
+    store.getState().deleteBaseline(b2)
+    expect(store.getState().project.baselines).toEqual([])
+    expect(store.getState().project.activeBaselineId).toBeUndefined()
+    expect(store.getState().past.length - before).toBe(6)
+    store.getState().undo()
+    expect(store.getState().project.activeBaselineId).toBe(b2)
+  })
+
+  it('baseline: prázdný název, 11. baseline, neznámé ID ani nic nového se nezapíše', () => {
+    const store = newStore()
+    const task = store.getState().addTask('A')
+    const id = store.getState().saveBaseline('B', snapshot(task))!
+    const before = store.getState().past.length
+    expect(store.getState().saveBaseline('  ', snapshot(task))).toBeNull()
+    store.getState().renameBaseline(id, 'B')
+    store.getState().renameBaseline('nic', 'C')
+    store.getState().setActiveBaseline(id)
+    store.getState().setActiveBaseline('nic')
+    store.getState().deleteBaseline('nic')
+    expect(store.getState().past.length).toBe(before)
+    for (let i = 0; i < 9; i++) store.getState().saveBaseline(`B${i}`, snapshot(task))
+    expect(store.getState().project.baselines).toHaveLength(10)
+    expect(store.getState().saveBaseline('Navíc', snapshot(task))).toBeNull()
+  })
+
+  it('skutečné náklady: přidat, upravit, smazat – každé jeden krok Zpět; neplatné hodnoty se nezapíšou', () => {
+    const store = newStore()
+    const task = store.getState().addTask('A')
+    const before = store.getState().past.length
+    const a1 = store.getState().addActual(task, { date: '2026-11-20', amount: 1_500_00, note: '  faktura 12 ' })!
+    const a2 = store.getState().addActual(task, { date: '2026-11-18', amount: 50_00 })!
+    let actuals = store.getState().project.tasks[0]!.actuals!
+    // Seřazené podle data; poznámka oříznutá.
+    expect(actuals.map((a) => [a.id, a.date, a.amount, a.note])).toEqual([
+      [a2, '2026-11-18', 5000, undefined],
+      [a1, '2026-11-20', 150000, 'faktura 12'],
+    ])
+    store.getState().updateActual(task, a1, { amount: 2_000_00, note: '' })
+    actuals = store.getState().project.tasks[0]!.actuals!
+    expect(actuals[1]).toEqual({ id: a1, date: '2026-11-20', amount: 200000 })
+    expect(store.getState().addActual(task, { date: '2026-02-30', amount: 1 })).toBeNull()
+    expect(store.getState().addActual(task, { date: '2026-11-20', amount: -1 })).toBeNull()
+    expect(store.getState().addActual(task, { date: '2026-11-20', amount: 1.5 })).toBeNull()
+    expect(store.getState().addActual('nic', { date: '2026-11-20', amount: 1 })).toBeNull()
+    store.getState().updateActual(task, a1, { amount: 200000 })
+    store.getState().deleteActual(task, a2)
+    store.getState().deleteActual(task, a1)
+    expect(store.getState().project.tasks[0]!.actuals).toBeUndefined()
+    expect(store.getState().past.length - before).toBe(5)
+    expect(ProjectSchema.safeParse(store.getState().project).success).toBe(true)
+  })
+
+  it('kopie činnosti skutečné náklady nepřebírá (jsou to opravdu utracené peníze)', () => {
+    const store = newStore()
+    const task = store.getState().addTask('A')
+    store.getState().addActual(task, { date: '2026-11-20', amount: 100 })
+    const copy = store.getState().duplicateTask(task, ' (kopie)')!
+    expect(store.getState().project.tasks.find((t) => t.id === copy)!.actuals).toBeUndefined()
+  })
+
+  it('datum stavu: nastavit, zrušit (= dnes), neplatné se nezapíše', () => {
+    const store = newStore()
+    store.getState().setStatusDate('2026-12-31')
+    expect(store.getState().project.statusDate).toBe('2026-12-31')
+    const before = store.getState().past.length
+    store.getState().setStatusDate('2026-12-31')
+    store.getState().setStatusDate('31.12.2026')
+    expect(store.getState().past.length).toBe(before)
+    store.getState().setStatusDate(null)
+    expect(store.getState().project.statusDate).toBeUndefined()
+  })
+
+  it('schéma: starší soubor bez nových polí projde; chybná baseline nebo odkaz neprojde', () => {
+    const store = newStore()
+    const task = store.getState().addTask('A')
+    store.getState().saveBaseline('B', snapshot(task))
+    const base = store.getState().project
+    const b = base.baselines[0]!
+    expect(ProjectSchema.safeParse(base).success).toBe(true)
+    expect(ProjectSchema.safeParse({ ...base, activeBaselineId: 'nic' }).success).toBe(false)
+    expect(ProjectSchema.safeParse({ ...base, statusDate: '2026-13-01' }).success).toBe(false)
+    const withTask = (patch: object) => ({ ...base, baselines: [{ ...b, tasks: [{ ...b.tasks[0]!, ...patch }] }] })
+    expect(ProjectSchema.safeParse(withTask({ finish: '2026-11-01' })).success).toBe(false)
+    expect(ProjectSchema.safeParse(withTask({ costs: [1.5] })).success).toBe(false)
+    expect(ProjectSchema.safeParse(withTask({ costs: new Array(3661).fill(0) })).success).toBe(false)
+    expect(ProjectSchema.safeParse({ ...base, baselines: [{ ...b, tasks: [b.tasks[0]!, b.tasks[0]!] }] }).success).toBe(false)
+    const many = Array.from({ length: 11 }, (_, i) => ({ ...b, id: `b${i}` }))
+    expect(ProjectSchema.safeParse({ ...base, baselines: many, activeBaselineId: 'b0' }).success).toBe(false)
+    const actual = (a: object) => ({ ...base, tasks: base.tasks.map((t) => ({ ...t, actuals: [{ id: 'a', date: '2026-11-20', amount: 100, ...a }] })) })
+    expect(ProjectSchema.safeParse(actual({})).success).toBe(true)
+    expect(ProjectSchema.safeParse(actual({ amount: -5 })).success).toBe(false)
+    expect(ProjectSchema.safeParse(actual({ note: 'x'.repeat(501) })).success).toBe(false)
+  })
+})

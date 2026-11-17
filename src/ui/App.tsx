@@ -5,7 +5,9 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LANGUAGES } from '../i18n/languages'
 import { formatIsoDate } from '../i18n/format'
-import { createSampleProject } from '../samples/automatizace'
+import { addSampleTracking, createSampleProject } from '../samples/automatizace'
+import { dayToIso, isoToDay } from '../engine/calendar'
+import { todayIso } from '../model/dates'
 import { projectStore, useBudgetStatus, useCosts, useLoad, useProject, useSchedule } from '../store/useProject'
 import { formatMoney } from '../model/money'
 import { applyTheme, loadThemePreference, saveThemePreference, THEME_PREFERENCES, watchSystemTheme, type ThemePreference } from './theme'
@@ -15,6 +17,7 @@ import { TaskTable } from './TaskTable'
 import { SplitView } from './SplitView'
 import { GanttChart } from './gantt/GanttChart'
 import { ZoomSwitch } from './gantt/ZoomSwitch'
+import { BaselineToggle } from './gantt/BaselineToggle'
 import { CriticalToggle } from './gantt/CriticalToggle'
 import { StructureToolbar } from './StructureToolbar'
 import { runStructureCommand, STRUCTURE_COMMANDS, STRUCTURE_SHORTCUTS } from './structureCommands'
@@ -30,16 +33,19 @@ import { isDirty, openProject, saveProject, useFileState } from '../io/fileActio
 import { startAutosave } from '../io/autosaveRunner'
 import { deleteSelected, duplicateSelected } from './structureCommands'
 import { ResourcesView } from './resources/ResourcesView'
-import { AnalysisIcon, CostsIcon, LoadIcon, PlanIcon, ResourcesIcon } from './icons'
+import { AnalysisIcon, CostsIcon, LoadIcon, PlanIcon, ResourcesIcon, TrackingIcon } from './icons'
 import { LoadView } from './load/LoadView'
 import { CostsView } from './costs/CostsView'
 import { AnalysisView } from './analysis/AnalysisView'
+import { TrackingView } from './tracking/TrackingView'
 import { DetailDock } from './detail/DetailDock'
 import { TaskDetailBody, TaskDetailHeader } from './detail/TaskDetail'
 import { loadPreference, savePreference } from './preferences'
 
 /** Hlavní pohledy: Plán (tabulka + graf) a Zdroje (databáze, fáze 6a). */
-const VIEWS = ['plan', 'resources', 'load', 'costs', 'analysis'] as const
+/** O kolik týdnů dřív začíná vzorový projekt (aby bylo co sledovat). */
+const SAMPLE_WEEKS_AGO = 8
+const VIEWS = ['plan', 'resources', 'load', 'costs', 'analysis', 'tracking'] as const
 type View = (typeof VIEWS)[number]
 
 /** Je kurzor v textovém poli? Tam necháme Ctrl+Z prohlížeči (vrací psaní v poli). */
@@ -194,7 +200,11 @@ export default function App() {
   function handleLoadSample() {
     // Varování před nahrazením plánu (N-08). Prázdný projekt není co ztratit.
     if (project.tasks.length > 0 && !window.confirm(t('sample.confirmReplace'))) return
-    loadProject(createSampleProject((key) => t(key), i18n.language))
+    // Vzorový projekt „v běhu“ (fáze 9): začal před 8 týdny, má baseline, % hotovo a skutečné náklady.
+    const today = todayIso()
+    const sample = createSampleProject((key) => t(key), i18n.language, dayToIso(isoToDay(today) - SAMPLE_WEEKS_AGO * 7))
+    addSampleTracking(sample, (key) => t(key), today)
+    loadProject(sample)
   }
 
   return (
@@ -284,7 +294,7 @@ export default function App() {
                   view === id ? 'bg-miro-graphite text-miro-paper dark:bg-miro-paper dark:text-miro-graphite' : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
                 }`}
               >
-                {id === 'plan' ? <PlanIcon /> : id === 'resources' ? <ResourcesIcon /> : id === 'load' ? <LoadIcon /> : id === 'costs' ? <CostsIcon /> : <AnalysisIcon />}
+                {id === 'plan' ? <PlanIcon /> : id === 'resources' ? <ResourcesIcon /> : id === 'load' ? <LoadIcon /> : id === 'costs' ? <CostsIcon /> : id === 'analysis' ? <AnalysisIcon /> : <TrackingIcon />}
                 {t(`view.${id}`)}
                 {id === 'load' && overloadedCount > 0 && (
                   <span
@@ -324,6 +334,7 @@ export default function App() {
               {project.tasks.length > 0 && (
                 <div className="ml-auto flex flex-wrap gap-2">
                   <CriticalToggle />
+                  <BaselineToggle />
                   <ZoomSwitch />
                 </div>
               )}
@@ -381,6 +392,10 @@ export default function App() {
       ) : view === 'analysis' ? (
         <main className="min-h-0 flex-1">
           <AnalysisView />
+        </main>
+      ) : view === 'tracking' ? (
+        <main className="min-h-0 flex-1">
+          <TrackingView />
         </main>
       ) : project.tasks.length === 0 ? (
         // Prázdný projekt: jen uvítání přes celou šířku, graf by byl prázdný.

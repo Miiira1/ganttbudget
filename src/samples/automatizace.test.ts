@@ -3,7 +3,9 @@ import { effectiveWorkerRate, professionRate, workingDaysInYear } from '../model
 import { ProjectSchema } from '../model/schema'
 import { schedule } from '../engine/schedule'
 import { computeCosts } from '../model/costs'
-import { createSampleProject } from './automatizace'
+import { isoToDay } from '../engine/calendar'
+import { earnedValue } from '../model/earnedValue'
+import { addSampleTracking, createSampleProject } from './automatizace'
 import { translateCs } from './translateForTests'
 
 describe('vzorová databáze zdrojů (fáze 6a)', () => {
@@ -57,5 +59,38 @@ describe('vzorová databáze zdrojů (fáze 6a)', () => {
       expect(rate).toBeGreaterThanOrEqual(20_000)
       expect(rate).toBeLessThanOrEqual(150_000)
     }
+  })
+})
+
+describe('vzorový projekt v běhu – baseline, % hotovo a skutečnost (fáze 9)', () => {
+  const project = createSampleProject(translateCs, 'cs', '2026-11-16')
+  // Stejně jako tlačítko Vzorový projekt: začátek 8 týdnů před dneškem.
+  addSampleTracking(project, translateCs, '2027-01-11')
+  const scheduled = schedule(project)
+
+  it('je platný; baseline uložená k začátku projektu je vybraná ke srovnání', () => {
+    expect(ProjectSchema.safeParse(project).success).toBe(true)
+    expect(project.baselines).toHaveLength(1)
+    expect(project.baselines[0]).toMatchObject({ savedAt: '2026-11-16', name: translateCs('sample.baselineName') })
+    expect(project.activeBaselineId).toBe(project.baselines[0]!.id)
+  })
+
+  it('hotové činnosti mají 100 %, rozpracované méně, budoucí 0 %; skutečnost jen do včerejška', () => {
+    const percents = project.tasks.filter((t) => t.kind === 'task').map((t) => t.percentComplete)
+    expect(percents).toContain(100)
+    expect(percents.some((p) => p > 0 && p < 100)).toBe(true)
+    expect(percents).toContain(0)
+    const dates = project.tasks.flatMap((t) => (t.actuals ?? []).map((a) => a.date))
+    expect(dates.length).toBeGreaterThan(0)
+    expect(dates.every((d) => d <= '2027-01-10')).toBe(true)
+  })
+
+  it('Earned Value: BAC = náklady projektu, projekt je mírně pozadu a mírně dražší', () => {
+    const ev = earnedValue(project, scheduled, project.baselines[0]!, isoToDay('2027-01-11'))
+    expect(ev.totals.bac).toBe(computeCosts(project, scheduled).project.total)
+    expect(ev.totals.spi).toBeGreaterThan(0.7)
+    expect(ev.totals.spi).toBeLessThan(1)
+    expect(ev.totals.cpi).toBeGreaterThan(0.85)
+    expect(ev.totals.cpi).toBeLessThan(1)
   })
 })

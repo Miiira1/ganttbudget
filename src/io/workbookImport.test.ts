@@ -152,3 +152,66 @@ describe('celý projekt z Excelu – uložené pohledy analýzy', () => {
     expect(result.ok && result.project.views).toEqual(p.views)
   })
 })
+
+describe('celý projekt z Excelu – baseline a skutečné náklady (fáze 9)', () => {
+  const withTracking = () => {
+    const p = sample()
+    const leaves = p.tasks.filter((t) => t.kind === 'task')
+    leaves[0]!.actuals = [
+      { id: 'a1', date: '2026-11-30', amount: 3_500_000, note: 'Faktura 12' },
+      { id: 'a2', date: '2026-12-10', amount: 125_050 },
+    ]
+    leaves[2]!.actuals = [{ id: 'a3', date: '2027-01-15', amount: 2_000_000 }]
+    p.baselines = [{ id: 'b1', name: 'Schválený plán', savedAt: '2026-11-17', tasks: [] }]
+    p.activeBaselineId = 'b1'
+    p.statusDate = '2027-01-31'
+    return p
+  }
+  const actualsOf = (p: Project) => p.tasks.filter((t) => t.actuals).map((t) => [t.name, t.actuals!.map(({ id: _id, ...rest }) => rest)])
+
+  it('export → import do stejného projektu: činnosti si ponechají ID, skutečnost i baseline zůstanou', () => {
+    const p = withTracking()
+    const result = importWorkbook(toSheets(p), p, makeId)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.project.tasks.map((t) => t.id).sort()).toEqual(p.tasks.map((t) => t.id).sort())
+    expect(actualsOf(result.project)).toEqual(actualsOf(p))
+    expect(result.project.baselines).toEqual(p.baselines)
+    expect(result.project.activeBaselineId).toBe('b1')
+    expect(result.project.statusDate).toBe('2027-01-31')
+    expect(result.summary.actuals).toBe(3)
+  })
+
+  it('list Skutečnost rozhoduje: smazaný řádek zmizí, změněná částka se převezme', () => {
+    const p = withTracking()
+    const sheets = toSheets(p)
+    const name = cs.workbook.sheets.actuals
+    const rows = sheets.get(name)!
+    const amount = rows[0]!.findIndex((h) => h === cs.workbook.columns.amount)
+    rows[1]![amount] = 40_000
+    rows.splice(2, 1)
+    const result = importWorkbook(sheets, p, makeId)
+    expect(result.ok && result.project.tasks.flatMap((t) => (t.actuals ?? []).map((a) => a.amount))).toEqual([4_000_000, 2_000_000])
+  })
+
+  it('starší sešit bez listu Skutečnost: skutečné náklady činností se zachovají', () => {
+    const p = withTracking()
+    const sheets = toSheets(p)
+    sheets.delete(cs.workbook.sheets.actuals)
+    const result = importWorkbook(sheets, p, makeId)
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(actualsOf(result.project)).toEqual(actualsOf(p))
+  })
+
+  it('chyby listu Skutečnost: neznámé WBS, datum, částka', () => {
+    const p = withTracking()
+    const sheets = toSheets(p)
+    const rows = sheets.get(cs.workbook.sheets.actuals)!
+    const col = (key: 'wbs' | 'date' | 'amount') => rows[0]!.findIndex((h) => typeof h === 'string' && h.startsWith(cs.workbook.columns[key]))
+    rows[1]![col('wbs')] = '99.9'
+    rows[2]![col('date')] = '31.2.2027'
+    rows[3]![col('amount')] = -5
+    const result = importWorkbook(sheets, p, makeId)
+    expect(result.ok ? [] : result.errors.map((e) => `${e.sheet}:${e.row}:${e.code}`)).toEqual(['actuals:2:unknownTask', 'actuals:3:badDate', 'actuals:4:badAmount'])
+  })
+})

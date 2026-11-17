@@ -215,7 +215,10 @@
     "confirmMilestoneLines_other": "A milestone may only have a one-off cost and material. {{count}} resource lines will be removed. Continue? (Ctrl+Z undoes it.)",
     "slack": "Slack",
     "slackHint": "Total slack in working days: how much the item may slip without moving the project finish. 0 = critical path (yellow).",
-    "slackCell": "Total slack {{total}} working days (project finish does not move); free slack {{free}} working days (no successor moves either)."
+    "slackCell": "Total slack {{total}} working days (project finish does not move); free slack {{free}} working days (no successor moves either).",
+    "percentComputed": "A phase's % complete is calculated from its tasks – weighted by planned cost from the baseline, otherwise by duration. Enter it on the tasks.",
+    "milestoneDone": "achieved",
+    "milestoneDoneHint": "A milestone is either achieved (100 %) or not (0 %)"
   },
   "kind": {
     "task": "Task",
@@ -357,7 +360,18 @@
     "critical": "Critical path",
     "criticalHint": "Highlight the critical path: yellow tasks must not slip, otherwise the project finish moves. The grey bar after a bar shows its slack.",
     "slackBar_one": "Slack {{count}} working day – the task may slip this much without moving the project finish",
-    "slackBar_other": "Slack {{count}} working days – the task may slip this much without moving the project finish"
+    "slackBar_other": "Slack {{count}} working days – the task may slip this much without moving the project finish",
+    "baseline": "Baseline",
+    "baselineHint": "Show the dates of baseline \"{{name}}\" (saved original plan) in grey under the bars – you see at once what has moved",
+    "baselineNone": "No baseline (saved original plan) yet. You save one in the Tracking view.",
+    "barPercent": "{{pct}} % complete",
+    "milestoneDone": "Achieved",
+    "barBaseline": "Baseline \"{{name}}\": {{range}}",
+    "shiftNone": "finish unchanged",
+    "shiftLater_one": "finish {{count}} day later",
+    "shiftLater_other": "finish {{count}} days later",
+    "shiftEarlier_one": "finish {{count}} day earlier",
+    "shiftEarlier_other": "finish {{count}} days earlier"
   },
   "notice": {
     "close": "Close notice"
@@ -494,7 +508,8 @@
       "training": "Operator training (supplier)",
       "support": "Supplier service support",
       "finalPayment": "Final payment to the cell supplier (70 %)"
-    }
+    },
+    "baselineName": "Approved plan"
   },
   "resources": {
     "defaultCategories": {
@@ -625,7 +640,9 @@
     "costs": "Costs",
     "costsHint": "Cost phasing: how much the project costs in each week, month or quarter",
     "analysis": "Analysis",
-    "analysisHint": "Pivot table: costs and hours by phase, category, tag, resource, department and period"
+    "analysisHint": "Pivot table: costs and hours by phase, category, tag, resource, department and period",
+    "tracking": "Tracking",
+    "trackingHint": "Plan vs. actual: baseline, % complete, actual costs and Earned Value"
   },
   "rate": {
     "title": "Hourly rate – {{name}}",
@@ -1081,7 +1098,8 @@
       "absences": "Absences",
       "machines": "Machines",
       "materials": "Materials",
-      "phasing": "Phasing"
+      "phasing": "Phasing",
+      "actuals": "Actuals"
     },
     "project": {
       "item": "Item",
@@ -1125,7 +1143,11 @@
       "rateUnit": "Rate per",
       "unit": "Unit",
       "unitPrice": "Unit price",
-      "supplier": "Supplier"
+      "supplier": "Supplier",
+      "wbs": "WBS",
+      "task": "Task",
+      "date": "Date",
+      "amount": "Amount"
     },
     "calendarKind": {
       "custom": "day off / shutdown",
@@ -1141,7 +1163,7 @@
     },
     "importTitle": "Import whole project from Excel",
     "importSummary": "The workbook is valid: project \"{{name}}\", start {{start}}, currency {{currency}}. It contains:",
-    "replaceWarning": "The import replaces the whole current project \"{{name}}\" – tasks, budget, resource database, calendar and limits – with the workbook content. It can be undone with Undo (Ctrl+Z). Then save the project to a file (Ctrl+S).",
+    "replaceWarning": "The import replaces the whole current project \"{{name}}\" – tasks, budget, resource database, calendar and limits – with the workbook content. It can be undone with Undo (Ctrl+Z). Then save the project to a file (Ctrl+S). Baselines and saved views stay; tasks with the same WBS and name keep their link to them and their actual costs.",
     "importConfirm": "Replace project",
     "error": {
       "sheetRow": "Sheet \"{{sheet}}\", row {{row}}: {{message}}",
@@ -1170,7 +1192,10 @@
       "badRateCalc": "invalid rate calculation (check wage, contributions, overhead, vacation, sick days, hours and productivity).",
       "badRateUnit": "the machine rate must be per hour or per day.",
       "badUnit": "the unit is missing (or longer than 20 characters).",
-      "invalid": "The workbook data did not pass the check."
+      "invalid": "The workbook data did not pass the check.",
+      "unknownTask": "no task with this WBS on the Tasks sheet.",
+      "actualNoteTooLong": "the note is longer than 500 characters.",
+      "tooManyActuals": "the task has more than 200 actual costs."
     }
   },
   "analysis": {
@@ -1277,6 +1302,190 @@
       "save": "Save",
       "renameConfirm": "Rename",
       "undo": "The change can be undone with Undo (Ctrl+Z)."
+    }
+  },
+  "actuals": {
+    "title": "Actual costs",
+    "hint": "What was really spent on the task (invoices, timesheets). The Tracking view uses them for AC – actual cost up to the status date.",
+    "total": "so far {{amount}}",
+    "planned": "planned {{amount}}",
+    "add": "Actual cost",
+    "addHint": "Add an actual cost dated today – then edit the date, amount and note in the row",
+    "full": "At most {{count}} items per task",
+    "empty": "None yet. When money is spent on the task, record it here (date and amount).",
+    "caption": "Actual costs of task {{name}}",
+    "columns": {
+      "date": "Date",
+      "amount": "Amount ({{currency}})",
+      "note": "Note"
+    },
+    "fieldLabel": "{{field}} of actual cost",
+    "noteTooLong": "A note can have at most 500 characters.",
+    "delete": "Delete actual cost",
+    "deleteHint": "Delete actual cost (can be undone with Ctrl+Z)",
+    "labels": {
+      "date": "Date",
+      "amount": "Amount",
+      "note": "Note"
+    }
+  },
+  "tracking": {
+    "intro": "Plan vs. actual: comparison with the saved original plan (baseline) and Earned Value at the status date.",
+    "noTasksTitle": "Nothing to track yet",
+    "noTasks": "The project has no tasks. Build the plan in the Plan view first.",
+    "emptyTitle": "Save a baseline first",
+    "empty": "A baseline is a snapshot of the approved plan – dates and planned costs. Once the plan changes or work starts, the app shows what has moved, how much is done and whether the project will overrun the budget. Save it once the plan is approved.",
+    "baseline": {
+      "label": "Baseline to compare",
+      "selectHint": "Which saved baseline the plan is compared with",
+      "option": "{{name}} (saved {{date}})",
+      "save": "Save baseline…",
+      "saveHint": "Saves a snapshot of the current plan (dates and planned costs) and selects it for comparison. At most 10 baselines; the change can be undone with Ctrl+Z.",
+      "rename": "Rename…",
+      "delete": "Delete",
+      "confirmDelete": "Really delete baseline \"{{name}}\"? It can be undone with Undo (Ctrl+Z).",
+      "saveTitle": "Save baseline",
+      "renameTitle": "Rename baseline",
+      "name": "Name",
+      "saveConfirm": "Save",
+      "renameConfirm": "Rename",
+      "undo": "The change can be undone with Undo (Ctrl+Z).",
+      "defaultName": "Baseline {{date}}",
+      "tooLarge": "The plan is too large for a baseline (cost phasing longer than 10 years). The baseline was not saved.",
+      "limit": "The project already has 10 baselines. Delete one first.",
+      "cycles_one": "Baseline saved, but {{count}} item in a dependency loop has no dates, so it is missing from it.",
+      "cycles_other": "Baseline saved, but {{count}} items in a dependency loop have no dates, so they are missing from it."
+    },
+    "status": "Status date",
+    "statusHint": "The day for which planned work (PV), completed work (EV) and spending (AC) are calculated. Empty = today.",
+    "statusToday": "(status date = today; moves automatically)",
+    "today": "Today",
+    "todayHint": "Always calculate as of today",
+    "summary": "Status at {{date}} against baseline \"{{name}}\" saved {{saved}}.",
+    "explain": "What is {{term}}?",
+    "hint": {
+      "bac": "whole plan per baseline",
+      "pv": "should be done by {{date}}",
+      "ev": "{{pct}} % of the plan done",
+      "ac": "spent up to {{date}}",
+      "spiNone": "nothing should be done yet",
+      "spiLate": "behind schedule",
+      "spiSlightly": "slightly behind",
+      "spiOk": "on schedule or ahead",
+      "cpiNone": "nothing spent yet",
+      "cpiOver": "more expensive than planned",
+      "cpiSlightly": "slightly more expensive",
+      "cpiOk": "on budget or cheaper",
+      "eacNone": "calculated after first costs and completed work",
+      "eac": "{{etc}} still to spend",
+      "vacOver": "estimate: budget will be exceeded",
+      "vacOk": "estimate: saving against the plan"
+    },
+    "terms": {
+      "bac": {
+        "short": "BAC",
+        "name": "BAC – Budget at Completion",
+        "text": "What the whole project should cost according to the saved baseline. It is the fixed point everything else is compared with.",
+        "formula": "BAC = sum of planned costs of all baseline items."
+      },
+      "pv": {
+        "short": "PV",
+        "name": "PV – Planned Value",
+        "text": "How much work (in money) should be done by the status date according to the baseline.",
+        "formula": "PV = baseline planned costs from the start up to and including the status date."
+      },
+      "ev": {
+        "short": "EV",
+        "name": "EV – Earned Value",
+        "text": "How much work is really done, valued at the planned price of that work. A task worth 10,000 that is 40 % done has EV 4,000 – no matter how much was actually spent.",
+        "formula": "EV = Σ (planned task cost × % complete)."
+      },
+      "ac": {
+        "short": "AC",
+        "name": "AC – Actual Cost",
+        "text": "What was really spent up to the status date. It is recorded on tasks in the Task detail panel (Actual costs section).",
+        "formula": "AC = sum of actual costs dated up to and including the status date."
+      },
+      "spi": {
+        "short": "SPI",
+        "name": "SPI – Schedule Performance Index",
+        "text": "Whether work progresses as planned. 1 = exactly on plan, below 1 = behind (0.8 = only 80 % of what should be done), above 1 = ahead.",
+        "formula": "SPI = EV / PV; variance SV = EV − PV (money)."
+      },
+      "cpi": {
+        "short": "CPI",
+        "name": "CPI – Cost Performance Index",
+        "text": "How much work we get for every unit of money spent. 1 = on budget, below 1 = more expensive (0.9 = only 0.90 worth of work per 1 spent), above 1 = cheaper.",
+        "formula": "CPI = EV / AC; variance CV = EV − AC (money)."
+      },
+      "eac": {
+        "short": "EAC",
+        "name": "EAC – Estimate at Completion",
+        "text": "What the project will finally cost if it keeps performing as so far (same CPI). ETC is what is still left to spend.",
+        "formula": "EAC = BAC / CPI; ETC = EAC − AC."
+      },
+      "vac": {
+        "short": "VAC",
+        "name": "VAC – Variance at Completion",
+        "text": "How much the estimated final cost differs from the plan. Negative = budget overrun, positive = saving.",
+        "formula": "VAC = BAC − EAC."
+      }
+    },
+    "learn": {
+      "title": "How to read Earned Value",
+      "p1": "Earned Value compares three amounts of money: what should be done (PV), what is done (EV) and what it cost (AC). All are calculated as of the status date.",
+      "p2": "You spot a delay by EV < PV (SPI below 1) and an overrun by AC > EV (CPI below 1). Both can happen at once – or mask each other, so look at both indices.",
+      "p3": "EV comes from the % complete you enter on tasks in the plan. The more honestly you enter it, the truer the picture.",
+      "p4": "When the plan changes substantially (an approved scope change), save a new baseline and select it for comparison. You can keep the old one for reference."
+    },
+    "chart": {
+      "label": "Plan vs. actual over time",
+      "pv": "PV – plan per baseline (cumulative)",
+      "ac": "AC – actual costs (cumulative)",
+      "ev": "EV – work done at the status date",
+      "status": "Status date",
+      "summary": "Chart: plan per baseline total {{pv}}, work done at the status date {{ev}}",
+      "tip": "{{period}}: plan (PV) {{pv}}, actual (AC) {{ac}} – cumulative",
+      "tipPlan": "{{period}}: plan (PV) {{pv}} – cumulative; actuals only up to the status date",
+      "evTip": "Work done (EV) at the status date: {{ev}}"
+    },
+    "table": {
+      "label": "Tasks: baseline vs. plan",
+      "caption": "Tasks – baseline and plan dates, % complete and Earned Value",
+      "wbs": "WBS",
+      "name": "Name",
+      "baseline": "Baseline",
+      "plan": "Plan",
+      "shift": "Shift (days)",
+      "shiftHint": "How many calendar days later (+) or earlier (−) the item finishes than in the baseline",
+      "percent": "% complete",
+      "cvHint": "CV = EV − AC: positive = cheaper, negative = more expensive than planned",
+      "svHint": "SV = EV − PV: positive = ahead, negative = behind the plan (money)",
+      "notInPlan": "not in plan",
+      "new": "new",
+      "newHint": "Task added after the baseline was saved – it has no planned cost (BAC 0), but its actuals count"
+    },
+    "export": {
+      "hint": "Save the task table with Earned Value (at the status date)",
+      "fileSuffix": "tracking",
+      "sheetName": "Tracking",
+      "columns": {
+        "wbs": "WBS",
+        "name": "Name",
+        "status": "Status",
+        "baselineStart": "Start (baseline)",
+        "baselineFinish": "Finish (baseline)",
+        "start": "Start (plan)",
+        "finish": "Finish (plan)",
+        "shift": "Finish shift (days)",
+        "percent": "% complete",
+        "bac": "BAC ({{currency}})",
+        "pv": "PV ({{currency}})",
+        "ev": "EV ({{currency}})",
+        "ac": "AC ({{currency}})",
+        "cv": "CV ({{currency}})",
+        "sv": "SV ({{currency}})"
+      }
     }
   }
 }

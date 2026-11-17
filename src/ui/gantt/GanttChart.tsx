@@ -24,11 +24,12 @@ import {
   type Timeline,
 } from '../../gantt/timeline'
 import { todayIso } from '../../model/dates'
-import { useProject, useSchedule } from '../../store/useProject'
+import { usePercents, useProject, useSchedule } from '../../store/useProject'
 import { BarDragLayer } from './BarDragLayer'
 import { LinkDragLayer } from './LinkDragLayer'
 import { DependencyArrows } from './DependencyArrows'
-import { TaskBars } from './TaskBars'
+import { TaskBars, type BaselineBar } from './TaskBars'
+import { activeBaseline } from '../../model/baseline'
 import { TimelineHeader } from './TimelineHeader'
 import { useSelectedIds, useVisibleRows } from '../viewState'
 import { useZoom } from './zoom'
@@ -171,6 +172,27 @@ export function GanttChart() {
     })
     return ends
   }, [showCritical, rows, dates, tl])
+  // % hotovo (fáze spočítané) a stínové úsečky vybrané baseline (fáze 9, G-08).
+  const percents = usePercents()
+  const showBaseline = useDisplayOptions((s) => s.showBaseline)
+  const baseline = activeBaseline(project)
+  const baselineBars = useMemo(() => {
+    if (!showBaseline || !baseline) return null
+    const byId = new Map(baseline.tasks.map((b) => [b.taskId, b]))
+    const out = new Map<string, BaselineBar>()
+    rows.forEach((task, rowIndex) => {
+      const b = byId.get(task.id)
+      if (!b) return
+      const d = dates.get(task.id)
+      out.set(task.id, {
+        bar: barGeometry(tl, task.kind, b.start, b.finish, rowIndex),
+        start: b.start,
+        finish: b.finish,
+        finishShift: d?.finish ? isoToDay(d.finish) - isoToDay(b.finish) : null,
+      })
+    })
+    return out
+  }, [showBaseline, baseline, rows, dates, tl])
   const gridLines = useMemo(() => headerRows(tl)[1].slice(1).map((s) => s.x), [tl])
   useZoomNavigation(wrapperRef, tl)
 
@@ -268,7 +290,7 @@ export function GanttChart() {
 
         {/* Šipky vazeb pod úsečkami, úsečky nad čárou dneška, aby byly čitelné. */}
         <DependencyArrows rows={rows} bars={bars} critical={critical} />
-        <TaskBars rows={rows} bars={bars} dates={dates} critical={critical} slackEnds={slackEnds} />
+        <TaskBars rows={rows} bars={bars} dates={dates} critical={critical} slackEnds={slackEnds} percents={percents} baseline={baselineBars} baselineName={baseline?.name ?? ''} />
 
         {/* Náhled při tažení úsečky (G-02) – nad vším ostatním. */}
         <BarDragLayer svgRef={svgRef} tl={tl} calendar={calendar} rows={rows} dates={dates} />

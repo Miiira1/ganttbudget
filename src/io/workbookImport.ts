@@ -16,16 +16,22 @@ import { createDefaultRateCalc, type RateCalc } from '../model/rates'
 import {
   calendarDaysInclusive,
   MAX_ABSENCE_DAYS,
+  MAX_ACTUALS,
   MAX_CATALOG_ITEMS,
   nameKey,
   ProjectSchema,
   RateCalcSchema,
   type Absence,
+  type ActualCost,
   type Project,
 } from '../model/schema'
 import { decimal, importBudget, money } from './budgetImport'
 import { CellSchema, importTable, isoDate, normalize, text, type CellValue } from './tableImport'
+import { wbsNumbers } from '../model/hierarchy'
 import { PROJECT_ITEMS, RATE_CALC_COLUMNS, WORKBOOK_SHEETS, type WorkbookSheetKey } from './workbookExport'
+
+/** Nejvíc řádků listu Skutečnost. */
+const MAX_ACTUAL_ROWS = 50_000
 
 export interface WorkbookError {
   sheet: WorkbookSheetKey
@@ -44,6 +50,8 @@ export interface WorkbookSummary {
   absences: number
   machines: number
   materials: number
+  /** Položky skutečných nákladů (fáze 9). */
+  actuals: number
 }
 
 export type WorkbookImportResult = { ok: true; project: Project; summary: WorkbookSummary } | { ok: false; errors: WorkbookError[] }
@@ -85,7 +93,8 @@ export function importWorkbook(sheetsByName: Map<string, unknown[][]>, base: Pro
     const key = SHEETS.get(normalize(name))
     if (key && !sheets.has(key)) sheets.set(key, rows)
   }
-  for (const key of WORKBOOK_SHEETS) if (key !== 'phasing' && !sheets.has(key)) errors.push({ sheet: key, row: 1, code: 'missingSheet' })
+  // Náběh je jen vypočtený; Skutečnost přibyla ve fázi 9 – starší sešity ji nemají.
+  for (const key of WORKBOOK_SHEETS) if (key !== 'phasing' && key !== 'actuals' && !sheets.has(key)) errors.push({ sheet: key, row: 1, code: 'missingSheet' })
   if (errors.length > 0) return { ok: false, errors }
 
   /** Projde řádky listu; `parse` vrátí položku, nebo kód chyby. */
@@ -357,7 +366,8 @@ export function importWorkbook(sheetsByName: Map<string, unknown[][]>, base: Pro
   const hasData = (key: WorkbookSheetKey) => table(sheets.get(key)!).data.length > 0
   let project = interim
   if (hasData('tasks')) {
-    const tasks = importTable(sheets.get('tasks')!, interim, makeId)
+    // Současné činnosti jen pro porovnání: stejné WBS a název = stejné ID (baseline, skutečné náklady).
+    const tasks = importTable(sheets.get('tasks')!, { ...interim, tasks: base.tasks }, makeId)
     if (!tasks.ok) return { ok: false, errors: tasks.errors.map((e) => ({ sheet: 'tasks', ...e })) }
     project = tasks.project
   }
@@ -367,6 +377,63 @@ export function importWorkbook(sheetsByName: Map<string, unknown[][]>, base: Pro
     if (!result.ok) return { ok: false, errors: result.errors.map((e) => ({ sheet: 'lines', ...e })) }
     project = result.project
     lines = result.summary.lines
+  }
+
+  // --- Skutečnost (fáze 9): je-li list v sešitu, nahradí skutečné náklady všech činností ---
+  let actualCount = project.tasks.reduce((sum, task) => sum + (task.actuals?.length ?? 0), 0)
+  if (sheets.has('actuals')) {
+    const taskByWbs = new Map([...wbsNumbers(project)].map(([id, wbs]) => [wbs, id]))
+    const byTask = new Map<string, ActualCost[]>()
+    const { columns, data } = table(sheets.get('actuals')!)
+    if (data.length > 0 && (['wbs', 'date', 'amount'] as const).some((c) => !columns.has(c))) errors.push({ sheet: 'actuals', row: 1, code: 'missingColumns' })
+    else if (data.length > MAX_ACTUAL_ROWS) errors.push({ sheet: 'actuals', row: 1, code: 'tooManyRows' })
+    else {
+      for (const { cells, fileRow } of data) {
+        const cell = (c: ColumnKey): CellValue => {
+          const i = columns.get(c)
+          return i === undefined ? null : (cells[i] ?? null)
+        }
+        const fail = (code: string) => errors.push({ sheet: 'actuals', row: fileRow, code })
+        const taskId = taskByWbs.get(text(cell('wbs')).trim())
+        if (!taskId) {
+          fail('unknownTask')
+          continue
+        }
+        const date = isoDate(cell('date'))
+        if (!date) {
+          fail('badDate')
+          continue
+        }
+        const amount = money(cell('amount'))
+        if (amount === null || amount === undefined || amount > 1_000_000_000_000) {
+          fail('badAmount')
+          continue
+        }
+        const note = text(cell('note')).trim()
+        if (note.length > 500) {
+          fail('actualNoteTooLong')
+          continue
+        }
+        const list = byTask.get(taskId) ?? []
+        if (list.length >= MAX_ACTUALS) {
+          fail('tooManyActuals')
+          continue
+        }
+        list.push({ id: makeId(), date, amount, ...(note ? { note } : {}) })
+        byTask.set(taskId, list)
+      }
+    }
+    if (errors.length > 0) return { ok: false, errors }
+    project = {
+      ...project,
+      tasks: project.tasks.map((task) => {
+        const { actuals: _old, ...rest } = task
+        void _old
+        const list = byTask.get(task.id)
+        return list ? { ...rest, actuals: list.sort((a, b) => a.date.localeCompare(b.date)) } : rest
+      }),
+    }
+    actualCount = [...byTask.values()].reduce((sum, list) => sum + list.length, 0)
   }
 
   const parsed = ProjectSchema.safeParse(project)
@@ -382,6 +449,7 @@ export function importWorkbook(sheetsByName: Map<string, unknown[][]>, base: Pro
       professions: professions.length,
       workers: workers.length,
       absences: absenceCount,
+      actuals: actualCount,
       machines: machines.length,
       materials: materials.length,
     },
