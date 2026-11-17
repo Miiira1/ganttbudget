@@ -122,7 +122,30 @@
     "exportGanttPng": "Export Gantt as PNG",
     "exportGanttPngHint": "The Gantt chart as a PNG image at double resolution (as currently shown: scale, collapsed phases, critical path)",
     "print": "Print / PDF…",
-    "printHint": "Print the Gantt chart page by page, or save it as a PDF (Ctrl+P)"
+    "printHint": "Print the Gantt chart page by page, or save it as a PDF (Ctrl+P)",
+    "exportMenu": "Export",
+    "exportMenuHint": "Save the plan, budget or resource database in another format (image, Excel, CSV, library)",
+    "importMenu": "Import",
+    "importMenuHint": "Load the plan, budget or resource database from another file (Excel, CSV, library)",
+    "short": {
+      "new": "New project…",
+      "open": "Open…",
+      "save": "Save",
+      "saveAs": "Save as…",
+      "print": "Print / PDF…",
+      "exportGanttSvg": "Gantt as SVG image",
+      "exportGanttPng": "Gantt as PNG image",
+      "exportWorkbook": "Whole project to Excel…",
+      "exportXlsx": "Tasks to Excel (XLSX)…",
+      "exportCsv": "Tasks to CSV…",
+      "exportBudgetXlsx": "Budget to Excel (XLSX)…",
+      "exportBudgetCsv": "Budget to CSV…",
+      "exportLibrary": "Resource library…",
+      "importWorkbook": "Whole project from Excel…",
+      "import": "Tasks from Excel / CSV…",
+      "importBudget": "Budget from Excel / CSV…",
+      "importLibrary": "Resource library…"
+    }
   },
   "toolbar": {
     "label": "Main tools",

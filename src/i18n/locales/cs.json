@@ -130,7 +130,30 @@
     "exportGanttPng": "Exportovat Gantt jako PNG",
     "exportGanttPngHint": "Ganttův diagram jako obrázek PNG ve dvojnásobném rozlišení (tak, jak je vidět: měřítko, sbalené fáze, kritická cesta)",
     "print": "Tisk / PDF…",
-    "printHint": "Vytisknout Ganttův diagram po stránkách, nebo ho uložit jako PDF (Ctrl+P)"
+    "printHint": "Vytisknout Ganttův diagram po stránkách, nebo ho uložit jako PDF (Ctrl+P)",
+    "exportMenu": "Exportovat",
+    "exportMenuHint": "Uložit plán, rozpočet nebo databázi zdrojů do jiného formátu (obrázek, Excel, CSV, knihovna)",
+    "importMenu": "Importovat",
+    "importMenuHint": "Načíst plán, rozpočet nebo databázi zdrojů z jiného souboru (Excel, CSV, knihovna)",
+    "short": {
+      "new": "Nový projekt…",
+      "open": "Otevřít…",
+      "save": "Uložit",
+      "saveAs": "Uložit jako…",
+      "print": "Tisk / PDF…",
+      "exportGanttSvg": "Gantt jako obrázek SVG",
+      "exportGanttPng": "Gantt jako obrázek PNG",
+      "exportWorkbook": "Celý projekt do Excelu…",
+      "exportXlsx": "Činnosti do Excelu (XLSX)…",
+      "exportCsv": "Činnosti do CSV…",
+      "exportBudgetXlsx": "Rozpočet do Excelu (XLSX)…",
+      "exportBudgetCsv": "Rozpočet do CSV…",
+      "exportLibrary": "Knihovnu zdrojů…",
+      "importWorkbook": "Celý projekt z Excelu…",
+      "import": "Činnosti z Excelu / CSV…",
+      "importBudget": "Rozpočet z Excelu / CSV…",
+      "importLibrary": "Knihovnu zdrojů…"
+    }
   },
   "toolbar": {
     "label": "Hlavní nástroje",
