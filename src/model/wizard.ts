@@ -7,6 +7,7 @@
  * za sebou vazbou FS – plán tak má smysluplný tvar a kontrola plánu nic nehlásí.
  * Konec projektu se nezadává: vyplyne z plánu.
  */
+import { holidaySettings, type HolidayChoice } from '../engine/calendar'
 import { isValidIsoDate } from './dates'
 import { createDefaultCalendar, createEmptyProject, createTask, type Project, type Task } from './schema'
 
@@ -27,7 +28,8 @@ export interface WizardAnswers {
   language: string
   startDate: string
   workingWeekdays: number[]
-  useCzechHolidays: boolean
+  /** Státní svátky: země, nebo „bez svátků“ (fáze 13d). */
+  holidays: HolidayChoice
   shutdowns: { start: string; end: string; name: string }[]
   phases: string[]
   addFirstTasks: boolean
@@ -73,7 +75,7 @@ export function createWizardProject(a: WizardAnswers, newId: () => string): Proj
   project.calendar = {
     ...createDefaultCalendar(),
     workingWeekdays: [...a.workingWeekdays].sort((x, y) => x - y),
-    useCzechHolidays: a.useCzechHolidays,
+    ...holidaySettings(a.holidays),
     customHolidays: a.shutdowns.map((s) => ({ start: s.start, end: s.end, name: s.name.trim().slice(0, MAX_NAME) })),
   }
 

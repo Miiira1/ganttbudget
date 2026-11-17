@@ -51,7 +51,7 @@ export interface WorkbookSheet {
 }
 
 /** Položky listu Projekt (první sloupec = popisek, druhý = hodnota). */
-export const PROJECT_ITEMS = ['format', 'name', 'startDate', 'currency', 'language', 'limit', 'workingWeekdays', 'czechHolidays'] as const
+export const PROJECT_ITEMS = ['format', 'name', 'startDate', 'currency', 'language', 'limit', 'workingWeekdays', 'czechHolidays', 'holidayCountry'] as const
 
 /** Sloupce kalkulace sazby (profese i pracovník). */
 export const RATE_CALC_COLUMNS = ['monthlyWage', 'contributionsPct', 'overheadMode', 'overheadValue', 'vacationDays', 'sickDays', 'calcHoursPerDay', 'productivityPct'] as const
@@ -144,6 +144,7 @@ export function buildWorkbook(
     limit: toUnits(project.budget?.limit),
     workingWeekdays: [...project.calendar.workingWeekdays].sort().join(', '),
     czechHolidays: t(project.calendar.useCzechHolidays ? 'workbook.yes' : 'workbook.no'),
+    holidayCountry: project.calendar.holidayCountry ?? 'CZ',
   }
   const projectSheet: WorkbookSheet = {
     key: 'project',

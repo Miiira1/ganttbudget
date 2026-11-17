@@ -159,7 +159,10 @@ export const CalendarSchema = z.object({
     .min(1)
     .max(7)
     .refine((days) => new Set(days).size === days.length, { message: 'duplicateWeekday' }),
+  /** Počítat státní svátky (název pole z doby, kdy byly jen české; false = bez státních svátků). */
   useCzechHolidays: z.boolean(),
+  /** Čí státní svátky (fáze 13d); chybí = Česko. */
+  holidayCountry: z.enum(['CZ', 'SK', 'PL', 'DE', 'AT']).optional(),
   /** Vlastní volné dny a odstávky (fáze 2). */
   customHolidays: z.array(HolidayRangeSchema),
   /** Státní svátky, které se nemají počítat (fáze 2). */

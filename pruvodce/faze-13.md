@@ -1,7 +1,7 @@
 # Fáze 13 – Doladění a export
 
 Poslední fáze roadmapy je rozdělená na čtyři části; každá končí commitem a nasazením:
-**13a** export Gantta · **13b** import z MS Project a GanttProject · **13c** tablet, tvorba tažením, sbalení, výkon · **13d** svátky dalších zemí, přístupnost.
+**13a** export Gantta · **13b** import z MS Project a GanttProject · **13c** tablet, tvorba tažením, sbalení, výkon · **13d** svátky dalších zemí, přístupnost (a na žádost uživatele brand kit 2.0).
 
 ---
 
@@ -169,3 +169,68 @@ Mimo plán (na přání uživatele): **menu Soubor má dvě úrovně** – podna
 1. Proč sbalení fáze nepatří do historie Zpět, i když se ukládá do souboru?
 2. Proč je dobré nejdřív změřit, co je pomalé, a teprve potom optimalizovat?
 3. **Mini-úkol:** naimportujte velký plán (např. z GanttProject) a zkuste, jestli je tažení úsečky plynulé. Všimněte si, jak dlouho trvá přepočet po puštění.
+
+---
+
+## 13d – Svátky dalších zemí, přístupnost a brand 2.0
+
+### 1. Cíl
+
+- **Státní svátky dalších zemí**: v okně **Kalendář** (i v průvodci) jde vybrat Česko, Slovensko, Polsko, Německo (celostátní svátky), Rakousko, nebo bez svátků. Výběr se uloží do projektu i do sešitu Excelu.
+- **Přístupnost**: dostatečný kontrast všech barev, popisky pro čtečky obrazovky, viditelný rámeček fokusu a odkaz **„Přeskočit na obsah“** pro ovládání klávesnicí.
+- **Brand kit 2.0** (na žádost uživatele během fáze): nové logo „Monolinka“ a ikona, písma Inter / Inter Tight, upravené tyrkysové odstíny a přehlednější rozvržení – záhlaví ve dvou řadách, menu **Nápověda** a **⚙ Zobrazení**, sbalený panel detailu, skrývatelná informace o datech.
+
+Tím je hotová celá roadmapa fází 0–13.
+
+### 2. Co se naučíte z vibe codingu
+
+**Zákony se mění – i svátky.** Na Slovensku přestal být 1. září volným dnem v roce 2024, 17. listopad od listopadu 2025 a v roce 2026 jsou pracovní i 8. květen a 15. září. Claude si přečetl úřední znění zákona (Slov-Lex, RIS) a svátky naprogramoval s platností podle roku. Testy hlídají konkrétní data v několika letech.
+
+**Přístupnost se dá testovat.** Kontrast barev počítá test přímo ze stylů aplikace; druhý test zakáže slabé šedé jako text. Automatický audit v prohlížeči našel jen jednu chybu (strom mapy pro čtečky) – zbytek prošel.
+
+**Pozor na pozorovací chyby.** První měření rámečků fokusu ukazovalo „chybí“ – ve skutečnosti se rámeček teprve animoval. Před opravou je dobré nález ověřit jinak.
+
+**Značka je víc než logo.** Brand kit předepisuje písma a pravidla (žlutá a jasná tyrkysová jen jako plochy, text grafitový). Písma se stáhla jednou z oficiálních zdrojů, zmenšila na latinku a češtinu (~21 kB) a přibalila – aplikace dál nic nenačítá z cizích serverů.
+
+**Uživatel má poslední slovo.** Kit doporučuje pro čísla JetBrains Mono; uživateli se víc líbilo tradiční písmo, a tak jsou čísla v Inter se stejně širokými číslicemi. Odchylka od kitu je zapsaná v zadání.
+
+**Nástroje mimo projekt nespouštět naslepo.** `npx prettier` si stáhl formátovač, který projekt nepoužívá, a přeformátoval soubor jiným stylem. Změna se vrátila – poučení: spouštět jen nástroje z `package.json`.
+
+### 3. Prompty
+
+| Krok | Co přibude | Co ověřit |
+|---|---|---|
+| 15 | sady svátků SK, PL, DE, AT (nejdřív testy) | Kalendář → Slovensko → svátky 2026 bez 8. 5. a 15. 9. |
+| 16 | kontrola přístupnosti, test kontrastu, „Přeskočit na obsah“ | stisknout Tab hned po otevření aplikace |
+| A–D | brand kit 2.0 a přehlednost rozhraní | logo, písma, záhlaví, Nápověda, ⚙ |
+| 18 | uzavření: zadání, průvodce, README, `npm audit` | — |
+
+Prompt pro brand: `Proveď aktualizaci brandu dle připojeného brand kitu v2.0. Rovněž proveď audit přehlednosti user interface …` → otázky (písma, rozsah úprav, varianta ikony) → schválit plán → kroky A–D.
+
+### 4. Jak ověřit výsledek
+
+1. **Kalendář** → Státní svátky: **Slovensko** → rozbalit „Svátky v roce 2026“ → nejsou tam 8. 5. ani 15. 9.; graf přeskakuje slovenské svátky.
+2. **Soubor → Exportovat → Celý projekt do Excelu** → list Projekt má položku „Země státních svátků“.
+3. Otevřít aplikaci a hned stisknout **Tab** → vlevo nahoře „Přeskočit na obsah“ → **Enter** → fokus je v tabulce.
+4. **? Nápověda** → Zkratky, Slovníček, Průvodce, Vzorový projekt, Kde jsou moje data; **⚙** → jazyk a vzhled.
+5. Bez vybrané činnosti je panel detailu úzký pruh; po kliknutí na činnost se rozbalí.
+
+### 5. Když se to rozbije
+
+| Co vidíte | Co napsat Claude |
+|---|---|
+| Svátek chybí nebo je navíc | `V kalendáři <země> v roce <rok> chybí / je navíc <datum>. Podle <zdroj> by měl / neměl být volno.` |
+| Čtečka obrazovky něco nepřečte | `Čtečka <název> u <prvek> v pohledu <pohled> říká „<co>“, čekal bych „<co>“.` |
+| Záhlaví se na mé obrazovce láme / něco přetéká | `Při šířce okna <px> se v záhlaví <co>. Posílám screenshot.` |
+
+### 6. Kontrolní otázky
+
+1. Proč nestačí mít pro každou zemi jeden pevný seznam svátků?
+2. Jaký je rozdíl mezi požadovaným kontrastem textu a grafiky (ikon, čar)?
+3. **Mini-úkol:** projděte aplikaci jen klávesnicí – vytvořte činnost, nastavte jí délku a předchůdce a otevřete Kalendář. Kde vám ovládání chybělo?
+
+---
+
+## Konec roadmapy
+
+Fáze 0–13 jsou hotové: od tabulky činností přes plánovací jádro, Ganttův graf, zdroje a rozpočet, analytiku, sledování a AI až po export, import, tablet a přístupnost. Další nápady (kreslení jen viditelných řádků u obřích plánů, tažení řádků prstem) jsou zapsané v zadání jako možný další rozvoj.

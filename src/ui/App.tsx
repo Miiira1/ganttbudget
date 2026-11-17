@@ -29,6 +29,7 @@ import { NewProjectDialog } from './NewProjectDialog'
 import { WizardDialog } from './WizardDialog'
 import { AiDialog, type AiTab } from './ai/AiDialog'
 import { PrintDialog } from './PrintDialog'
+import { DisplaySettings, HelpMenu } from './HeaderMenus'
 import { FileMenu } from './FileMenu'
 import { ImportDialog } from './ImportDialog'
 import { BudgetImportDialog } from './costs/BudgetImportDialog'
@@ -60,6 +61,9 @@ function isEditingField(target: EventTarget | null): boolean {
   return target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
 }
 
+/** Cíl odkazu „Přeskočit na obsah“ – hlavní oblast aktuálního pohledu. */
+const MAIN_ID = 'obsah'
+
 export default function App() {
   const { t, i18n } = useTranslation()
   const project = useProject((s) => s.project)
@@ -87,6 +91,12 @@ export default function App() {
   const dirty = useFileState((s) => s.savedProject) !== project
   const selectedId = useSelectedId(project)
   const selectRow = useViewState((s) => s.select)
+  // Patička s informací o datech: skrytí si pamatuje prohlížeč.
+  const [privacyHidden, setPrivacyHiddenState] = useState(() => loadPreference('privacyHidden') === 'true')
+  const setPrivacyHidden = (hidden: boolean) => {
+    setPrivacyHiddenState(hidden)
+    savePreference('privacyHidden', String(hidden))
+  }
 
   // --- Pohled Plán / Zdroje / Vytížení (pamatuje si ho prohlížeč) ---
   const [view, setViewState] = useState<View>(() => {
@@ -230,162 +240,198 @@ export default function App() {
 
   return (
     <div className="flex h-screen flex-col">
-      <header className="border-b border-slate-200 px-4 py-2 dark:border-slate-700">
-        {/* 1. řádek: logo vlevo, jazyk a vzhled vpravo na stejné úrovni. */}
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-          <div className="mr-auto">
-            {/* Logo značky MiRo project (varianta pro světlé / tmavé pozadí). */}
-            <h1 className="flex items-center">
-              <img src={logoOnLight} alt={t('app.title')} className="h-8 w-auto dark:hidden" />
-              <img src={logoOnDark} alt={t('app.title')} className="hidden h-8 w-auto dark:block" />
-            </h1>
+      {/* „Přeskočit na obsah“ (13d – přístupnost): první zastávka klávesy Tab, vidět jen při fokusu. */}
+      <a
+        href={`#${MAIN_ID}`}
+        onClick={(e) => {
+          e.preventDefault()
+          document.getElementById(MAIN_ID)?.focus()
+        }}
+        className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-miro-yellow focus:px-3 focus:py-2 focus:font-medium focus:text-miro-graphite focus:outline-none focus:ring-2 focus:ring-focus"
+      >
+        {t('a11y.skipToContent')}
+      </a>
+      {/*
+        Záhlaví (brand 2.0 – přehlednost): 1. řada = logo, projekt a akce celé aplikace,
+        2. řada = přepínač pohledů, 3. řada jen v Plánu = nástroje plánu.
+      */}
+      <header className="border-b border-slate-200 bg-white/60 dark:border-slate-700 dark:bg-slate-900/40">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 pb-2 pt-3">
+          {/* Logo značky MiRo project (varianta pro světlé / tmavé pozadí). */}
+          <h1 className="flex shrink-0 items-center">
+            <img src={logoOnLight} alt={t('app.title')} className="h-7 w-auto dark:hidden" />
+            <img src={logoOnDark} alt={t('app.title')} className="hidden h-7 w-auto dark:block" />
+          </h1>
+          <span aria-hidden="true" className="hidden h-6 w-px bg-slate-300 sm:block dark:bg-slate-600" />
+          {/* Projekt: název (kliknutím přejmenovat), neuložené změny a stručné údaje. */}
+          <div className="min-w-0 flex-1">
+            <p className="flex min-w-0 items-baseline gap-2 text-sm">
+              <ProjectName />
+              {fileName && (
+                <span className="truncate text-slate-500 dark:text-slate-400" title={t('file.fileNameHint')}>
+                  {fileName}
+                </span>
+              )}
+              {dirty && (
+                <span className="shrink-0 font-medium text-slate-800 dark:text-slate-100" title={t('file.unsavedHint')}>
+                  <span aria-hidden="true" className="text-miro-gold dark:text-miro-yellow">● </span>
+                  {t('file.unsaved')}
+                </span>
+              )}
+            </p>
+            <p className="truncate text-xs text-slate-600 dark:text-slate-400">
+              {t('project.start', { date: formatIsoDate(project.startDate, i18n.language) })}
+              {projectFinish && <> · {t('project.finish', { date: formatIsoDate(projectFinish, i18n.language) })}</>}
+              {' · '}
+              {t('project.taskCount', { count: project.tasks.length })}
+              {projectCost > 0 && (
+                <>
+                  {' · '}
+                  <span
+                    title={budgetOver ? t('project.budgetOverHint') : t('project.costHint')}
+                    className={budgetOver ? 'font-semibold text-red-700 dark:text-red-300' : undefined}
+                  >
+                    {budgetOver && <span aria-hidden="true">⚠ </span>}
+                    {budget.project
+                      ? t('project.costOfLimit', {
+                          amount: formatMoney(projectCost, project.currency, i18n.language),
+                          limit: formatMoney(budget.project.limit, project.currency, i18n.language),
+                        })
+                      : t('project.cost', { amount: formatMoney(projectCost, project.currency, i18n.language) })}
+                    {budgetOver && <span className="sr-only"> {t('project.budgetOverHint')}</span>}
+                  </span>
+                </>
+              )}
+            </p>
           </div>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <label className="flex items-center gap-2 text-sm">
-              {t('toolbar.language')}
-              <select className="field-select" value={i18n.language} onChange={(e) => void i18n.changeLanguage(e.target.value)}>
-                {LANGUAGES.map((l) => (
-                  <option key={l.code} value={l.code}>
-                    {l.translation.meta.languageName}
-                  </option>
+          {/* Akce celé aplikace. */}
+          <div role="toolbar" aria-label={t('toolbar.label')} className="flex flex-wrap items-center gap-2">
+            <FileMenu onNew={() => setNewOpen(true)} onPrint={() => setPrintOpen(true)} />
+            <div className="flex">
+              <button
+                type="button"
+                className="btn-secondary rounded-r-none px-2.5"
+                onClick={undo}
+                disabled={!canUndo}
+                aria-label={t('toolbar.undo')}
+                title={t('toolbar.undoHint')}
+              >
+                <span aria-hidden="true">↶</span>
+              </button>
+              <button
+                type="button"
+                className="btn-secondary -ml-px rounded-l-none px-2.5"
+                onClick={redo}
+                disabled={!canRedo}
+                aria-label={t('toolbar.redo')}
+                title={t('toolbar.redoHint')}
+              >
+                <span aria-hidden="true">↷</span>
+              </button>
+            </div>
+            <button type="button" className="btn-secondary" onClick={() => setCalendarOpen(true)} title={t('toolbar.calendarHint')}>
+              <span aria-hidden="true">📅</span> {t('toolbar.calendar')}
+            </button>
+            {/* Kontrola kvality plánu (U-04): počet varování žlutě, bez varování ✓. */}
+            <button type="button" className="btn-secondary" onClick={() => setCheckOpen(true)} title={t('toolbar.checkHint')}>
+              <span aria-hidden="true">🔍</span> {t('toolbar.check')}
+              {project.tasks.length > 0 &&
+                (issueCount > 0 ? (
+                  <span className="ml-0.5 rounded-full bg-miro-yellow px-1.5 text-xs font-semibold leading-5 text-miro-graphite">
+                    <span aria-hidden="true">{issueCount}</span>
+                    <span className="sr-only">{t('toolbar.checkCount', { count: issueCount })}</span>
+                  </span>
+                ) : (
+                  <span className="ml-0.5 text-miro-turquoise-dark dark:text-miro-turquoise">
+                    <span aria-hidden="true">✓</span>
+                    <span className="sr-only">{t('toolbar.checkOk')}</span>
+                  </span>
                 ))}
-              </select>
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              {t('toolbar.theme')}
-              <select className="field-select" value={theme} onChange={(e) => setTheme(e.target.value as ThemePreference)}>
-                {THEME_PREFERENCES.map((p) => (
-                  <option key={p} value={p}>
-                    {t(`theme.${p}`)}
-                  </option>
-                ))}
-              </select>
-            </label>
+            </button>
+            {/* Napojení na AI (fáze 11): export projektu a plán z popisu – nic se neposílá samo. */}
+            <button type="button" className="btn-secondary" onClick={() => (setAiTab('export'), setAiOpen(true))} title={t('toolbar.aiHint')}>
+              <AiIcon /> {t('toolbar.ai')}
+            </button>
+            <HelpMenu
+              items={[
+                { id: 'shortcuts', label: t('toolbar.shortcuts'), icon: '⌨', shortcut: 'F1', onSelect: () => setShortcutsOpen(true) },
+                { id: 'glossary', label: t('toolbar.glossary'), icon: '📖', onSelect: () => setGlossaryOpen(true) },
+                { id: 'wizard', label: t('toolbar.wizard'), icon: '🧭', onSelect: () => setWizardOpen(true) },
+                { id: 'sample', label: t('toolbar.loadSample'), icon: '📂', onSelect: handleLoadSample },
+                { id: 'privacy', label: t('app.privacyMenu'), icon: '🔒', onSelect: () => setPrivacyHidden(false) },
+              ]}
+            />
+            <DisplaySettings>
+              <label className="flex items-center justify-between gap-3 text-sm">
+                {t('toolbar.language')}
+                <select className="field-select" value={i18n.language} onChange={(e) => void i18n.changeLanguage(e.target.value)}>
+                  {LANGUAGES.map((l) => (
+                    <option key={l.code} value={l.code}>
+                      {l.translation.meta.languageName}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex items-center justify-between gap-3 text-sm">
+                {t('toolbar.theme')}
+                <select className="field-select" value={theme} onChange={(e) => setTheme(e.target.value as ThemePreference)}>
+                  {THEME_PREFERENCES.map((pref) => (
+                    <option key={pref} value={pref}>
+                      {t(`theme.${pref}`)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </DisplaySettings>
           </div>
         </div>
-        {/* 2. řádek: údaje o projektu (název, soubor, termíny, náklady a limit). */}
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-          <ProjectName />
-          {fileName && <span title={t('file.fileNameHint')}> ({fileName})</span>}
-          {dirty && (
-            <span className="ml-1 font-medium text-slate-800 dark:text-slate-100" title={t('file.unsavedHint')}>
-              <span aria-hidden="true" className="text-miro-gold dark:text-miro-yellow">● </span>
-              {t('file.unsaved')}
-            </span>
-          )}
-          {' · '}
-          {t('project.start', { date: formatIsoDate(project.startDate, i18n.language) })}
-          {' · '}
-          {projectFinish && (
-            <>
-              {t('project.finish', { date: formatIsoDate(projectFinish, i18n.language) })}
-              {' · '}
-            </>
-          )}
-          {t('project.taskCount', { count: project.tasks.length })}
-          {projectCost > 0 && (
-            <>
-              {' · '}
-              <span
-                title={budgetOver ? t('project.budgetOverHint') : t('project.costHint')}
-                className={budgetOver ? 'font-semibold text-red-700 dark:text-red-300' : undefined}
-              >
-                {budgetOver && <span aria-hidden="true">⚠ </span>}
-                {budget.project
-                  ? t('project.costOfLimit', {
-                      amount: formatMoney(projectCost, project.currency, i18n.language),
-                      limit: formatMoney(budget.project.limit, project.currency, i18n.language),
-                    })
-                  : t('project.cost', { amount: formatMoney(projectCost, project.currency, i18n.language) })}
-                {budgetOver && <span className="sr-only"> {t('project.budgetOverHint')}</span>}
-              </span>
-            </>
-          )}
-        </p>
-        <div role="toolbar" aria-label={t('toolbar.label')} className="mt-2 flex flex-wrap gap-2">
-          <div role="group" aria-label={t('view.label')} className="flex rounded-md border border-slate-300 p-0.5 dark:border-slate-600">
-            {VIEWS.map((id) => (
-              <button
-                key={id}
-                type="button"
-                aria-pressed={view === id}
-                onClick={() => setView(id)}
-                title={t(`view.${id}Hint`)}
-                className={`inline-flex items-center gap-1.5 rounded px-3 py-1 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-focus ${
-                  view === id ? 'bg-miro-graphite text-miro-paper dark:bg-miro-paper dark:text-miro-graphite' : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
-                }`}
-              >
-                {id === 'plan' ? <PlanIcon /> : id === 'resources' ? <ResourcesIcon /> : id === 'load' ? <LoadIcon /> : id === 'costs' ? <CostsIcon /> : id === 'analysis' ? <AnalysisIcon /> : id === 'tracking' ? <TrackingIcon /> : <MindMapIcon />}
-                {t(`view.${id}`)}
-                {id === 'load' && overloadedCount > 0 && (
-                  <span
-                    className="ml-0.5 rounded-full bg-red-600 px-1.5 text-xs font-semibold leading-5 text-white dark:bg-red-500"
-                    title={t('load.overloadedBadge', { count: overloadedCount })}
-                  >
-                    {overloadedCount}
-                    <span className="sr-only"> {t('load.overloadedBadge', { count: overloadedCount })}</span>
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-          <FileMenu onNew={() => setNewOpen(true)} onPrint={() => setPrintOpen(true)} />
-          <button type="button" className="btn-secondary" onClick={undo} disabled={!canUndo} title={t('toolbar.undoHint')}>
-            <span aria-hidden="true">↶</span> {t('toolbar.undo')}
-          </button>
-          <button type="button" className="btn-secondary" onClick={redo} disabled={!canRedo} title={t('toolbar.redoHint')}>
-            <span aria-hidden="true">↷</span> {t('toolbar.redo')}
-          </button>
-          <button type="button" className="btn-secondary" onClick={handleLoadSample} title={t('toolbar.loadSampleHint')}>
-            {t('toolbar.loadSample')}
-          </button>
-          <button type="button" className="btn-secondary" onClick={() => setCalendarOpen(true)} title={t('toolbar.calendarHint')}>
-            <span aria-hidden="true">📅</span> {t('toolbar.calendar')}
-          </button>
-          {/* Kontrola kvality plánu (U-04): počet varování žlutě, bez varování ✓. */}
-          <button type="button" className="btn-secondary" onClick={() => setCheckOpen(true)} title={t('toolbar.checkHint')}>
-            <span aria-hidden="true">🔍</span> {t('toolbar.check')}
-            {project.tasks.length > 0 &&
-              (issueCount > 0 ? (
-                <span className="ml-0.5 rounded-full bg-miro-yellow px-1.5 text-xs font-semibold leading-5 text-miro-graphite">
-                  <span aria-hidden="true">{issueCount}</span>
-                  <span className="sr-only">{t('toolbar.checkCount', { count: issueCount })}</span>
+        {/* 2. řada: přepínač pohledů (záložky). */}
+        <nav aria-label={t('view.label')} className="flex gap-1 overflow-x-auto px-4">
+          {VIEWS.map((id) => (
+            <button
+              key={id}
+              type="button"
+              aria-current={view === id ? 'page' : undefined}
+              onClick={() => setView(id)}
+              title={t(`view.${id}Hint`)}
+              // Aktivní pohled: žlutá čára (3 px) a jemný žlutý podklad – výrazné, ale klidné; váha písma stejná, nic neposkočí.
+              className={`-mb-px inline-flex shrink-0 items-center gap-1.5 rounded-t-md border-b-[3px] px-3 pb-2 pt-1.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus ${
+                view === id
+                  ? 'border-miro-yellow bg-miro-yellow-light/45 text-miro-graphite dark:bg-miro-yellow/15 dark:text-miro-paper'
+                  : 'border-transparent text-slate-600 hover:border-slate-300 hover:bg-slate-100/70 hover:text-slate-900 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-slate-800/60 dark:hover:text-slate-100'
+              }`}
+            >
+              {id === 'plan' ? <PlanIcon /> : id === 'resources' ? <ResourcesIcon /> : id === 'load' ? <LoadIcon /> : id === 'costs' ? <CostsIcon /> : id === 'analysis' ? <AnalysisIcon /> : id === 'tracking' ? <TrackingIcon /> : <MindMapIcon />}
+              {t(`view.${id}`)}
+              {id === 'load' && overloadedCount > 0 && (
+                <span
+                  className="ml-0.5 rounded-full bg-red-600 px-1.5 text-xs font-semibold leading-5 text-white dark:bg-red-500"
+                  title={t('load.overloadedBadge', { count: overloadedCount })}
+                >
+                  {overloadedCount}
+                  <span className="sr-only"> {t('load.overloadedBadge', { count: overloadedCount })}</span>
                 </span>
-              ) : (
-                <span className="ml-0.5 text-miro-turquoise-dark dark:text-miro-turquoise">
-                  <span aria-hidden="true">✓</span>
-                  <span className="sr-only">{t('toolbar.checkOk')}</span>
-                </span>
-              ))}
-          </button>
-          {/* Napojení na AI (fáze 11): export projektu a plán z popisu – nic se neposílá samo. */}
-          <button type="button" className="btn-secondary" onClick={() => (setAiTab('export'), setAiOpen(true))} title={t('toolbar.aiHint')}>
-            <AiIcon /> {t('toolbar.ai')}
-          </button>
-          <button type="button" className="btn-secondary" onClick={() => setShortcutsOpen(true)} title={t('toolbar.shortcutsHint')}>
-            <span aria-hidden="true">⌨</span> {t('toolbar.shortcuts')}
-          </button>
-          <button type="button" className="btn-secondary" onClick={() => setGlossaryOpen(true)} title={t('toolbar.glossaryHint')}>
-            <span aria-hidden="true">📖</span> {t('toolbar.glossary')}
-          </button>
-          {/* Druhá řada pohledu Plán: přidání činnosti a úpravy struktury, vpravo kritická cesta a měřítko. */}
-          {view === 'plan' && (
-            <div className="flex w-full flex-wrap items-center gap-2">
-              <button type="button" className="btn-primary" onClick={handleAddTask}>
-                <span aria-hidden="true">＋</span> {t('toolbar.addTask')}
-              </button>
-              {project.tasks.length > 0 && <StructureToolbar />}
-              {project.tasks.length > 0 && (
-                <div className="ml-auto flex flex-wrap gap-2">
-                  <CriticalToggle />
-                  <BaselineToggle />
-                  <ZoomSwitch />
-                </div>
               )}
+            </button>
+          ))}
+        </nav>
+      </header>
+      {/* 3. řada jen v Plánu: přidání činnosti a úpravy struktury, vpravo kritická cesta, baseline a měřítko. */}
+      {view === 'plan' && (
+        <div role="toolbar" aria-label={t('toolbar.planTools')} className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-2 dark:border-slate-700">
+          <button type="button" className="btn-primary" onClick={handleAddTask}>
+            <span aria-hidden="true">＋</span> {t('toolbar.addTask')}
+          </button>
+          {project.tasks.length > 0 && <StructureToolbar />}
+          {project.tasks.length > 0 && (
+            <div className="ml-auto flex flex-wrap gap-2">
+              <CriticalToggle />
+              <BaselineToggle />
+              <ZoomSwitch />
             </div>
           )}
         </div>
-      </header>
+      )}
 
       {/* Upozornění (chybný zápis, nespočitatelné termíny) – čtečka obrazovky ho přečte hned. */}
       <div aria-live="assertive">
@@ -428,49 +474,62 @@ export default function App() {
       <LibraryDialog />
 
       {view === 'resources' ? (
-        <main className="min-h-0 flex-1">
+        <main id={MAIN_ID} tabIndex={-1} className="focus:outline-none min-h-0 flex-1">
           <ResourcesView />
         </main>
       ) : view === 'load' ? (
-        <main className="min-h-0 flex-1">
+        <main id={MAIN_ID} tabIndex={-1} className="focus:outline-none min-h-0 flex-1">
           <LoadView onShowPlan={() => setView('plan')} />
         </main>
       ) : view === 'costs' ? (
-        <main className="min-h-0 flex-1">
+        <main id={MAIN_ID} tabIndex={-1} className="focus:outline-none min-h-0 flex-1">
           <CostsView />
         </main>
       ) : view === 'analysis' ? (
-        <main className="min-h-0 flex-1">
+        <main id={MAIN_ID} tabIndex={-1} className="focus:outline-none min-h-0 flex-1">
           <AnalysisView />
         </main>
       ) : view === 'tracking' ? (
-        <main className="min-h-0 flex-1">
+        <main id={MAIN_ID} tabIndex={-1} className="focus:outline-none min-h-0 flex-1">
           <TrackingView />
         </main>
       ) : view === 'mindmap' ? (
-        <main className="min-h-0 flex-1">
+        <main id={MAIN_ID} tabIndex={-1} className="focus:outline-none min-h-0 flex-1">
           <MindMapView onShowPlan={() => setView('plan')} />
         </main>
       ) : project.tasks.length === 0 ? (
         // Prázdný projekt: jen uvítání přes celou šířku, graf by byl prázdný.
-        <main className="flex-1 overflow-auto">
+        <main id={MAIN_ID} tabIndex={-1} className="focus:outline-none flex-1 overflow-auto">
           <TaskTable onAddTask={handleAddTask} onLoadSample={handleLoadSample} onWizard={() => setWizardOpen(true)} onNewProject={() => setNewOpen(true)} />
         </main>
       ) : (
-        <main className="min-h-0 flex-1">
+        <main id={MAIN_ID} tabIndex={-1} className="focus:outline-none min-h-0 flex-1">
           <DetailDock
             plan={<SplitView left={<TaskTable onAddTask={handleAddTask} onLoadSample={handleLoadSample} onWizard={() => setWizardOpen(true)} onNewProject={() => setNewOpen(true)} />} right={<GanttChart />} />}
             header={<TaskDetailHeader />}
+            empty={selectedId === null}
           >
             <TaskDetailBody />
           </DetailDock>
         </main>
       )}
 
-      <footer className="border-t border-slate-200 px-4 py-1.5 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
-        <span aria-hidden="true">🔒 </span>
-        {t('app.privacy')} {t('app.notSavedYet')}
-      </footer>
+      {/* Informace o datech: jedna řádka, jde skrýt (pamatuje si prohlížeč); znovu ji ukáže Nápověda. */}
+      {!privacyHidden && (
+        <footer className="flex items-center gap-3 border-t border-slate-200 px-4 py-1 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
+          <p className="min-w-0 flex-1 truncate" title={`${t('app.privacy')} ${t('app.notSavedYet')}`}>
+            <span aria-hidden="true">🔒 </span>
+            {t('app.privacy')} {t('app.notSavedYet')}
+          </p>
+          <button
+            type="button"
+            onClick={() => setPrivacyHidden(true)}
+            className="shrink-0 rounded px-1.5 py-0.5 hover:bg-slate-200 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:bg-slate-800 dark:hover:text-slate-100"
+          >
+            {t('app.privacyHide')}
+          </button>
+        </footer>
+      )}
     </div>
   )
 }

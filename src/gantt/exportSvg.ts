@@ -56,8 +56,8 @@ const C = {
   nonWorking: '#f3f2ec',
   holiday: '#ece9dc',
   task: 'rgba(59,218,255,0.35)',
-  taskStroke: '#08708c',
-  progress: '#08708c',
+  taskStroke: '#0e7490',
+  progress: '#0e7490',
   phase: '#262626',
   phaseProgress: '#3bdaff',
   critical: '#ffc000',
@@ -69,7 +69,7 @@ const C = {
 
 /** Výška pásu s názvem a podtitulem nad hlavičkou (potřebuje ji i stránkování tisku). */
 export const TITLE_HEIGHT = 44
-const FONT = "Lato, 'Segoe UI', Arial, sans-serif"
+const FONT = "Inter, 'Segoe UI', Arial, sans-serif"
 /** Sloupce tabulky: šířka a zarovnání. */
 const COLUMNS = [
   { key: 'number', width: 30, align: 'end' },

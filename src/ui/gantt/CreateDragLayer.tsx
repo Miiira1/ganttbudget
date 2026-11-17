@@ -143,7 +143,7 @@ export function CreateDragLayer({ tl, calendar, rowIndex, projectStart }: Create
         <text
           x={Math.max(0, dayToX(tl, isoToDay(projectStart))) + 8}
           y={top + ROW_HEIGHT / 2 + 4}
-          className="pointer-events-none select-none fill-slate-400 text-xs dark:fill-slate-500"
+          className="pointer-events-none select-none fill-slate-500 text-xs dark:fill-slate-400"
           aria-hidden="true"
         >
           {t('gantt.createHint')}

@@ -6,7 +6,9 @@
   "app": {
     "title": "MiRo project",
     "privacy": "Your data stays on this computer only; nothing is sent to a server.",
-    "notSavedYet": "Your project is continuously backed up in this browser; to be safe, save it to a file (Ctrl+S)."
+    "notSavedYet": "Your project is continuously backed up in this browser; to be safe, save it to a file (Ctrl+S).",
+    "privacyHide": "Hide",
+    "privacyMenu": "Where my data is"
   },
   "import": {
     "title": "Import tasks",
@@ -206,7 +208,13 @@
     "checkCount_other": "{{count}} warnings",
     "checkOk": "no warnings",
     "ai": "AI",
-    "aiHint": "Copy the project for AI or create a plan with the help of AI (ChatGPT, Claude…)"
+    "aiHint": "Copy the project for AI or create a plan with the help of AI (ChatGPT, Claude…)",
+    "help": "Help",
+    "helpHint": "Shortcuts, glossary, wizard and sample project",
+    "display": "Display",
+    "displayHint": "Language and appearance",
+    "wizard": "New project wizard…",
+    "planTools": "Plan tools"
   },
   "theme": {
     "system": "System",
@@ -476,7 +484,16 @@
     "projectStartHint": "The first tasks start on the nearest working day from this date.",
     "workingDays": "Working days of the week",
     "atLeastOneDay": "At least one day of the week must be a working day.",
-    "czechHolidays": "Automatically include Czech public holidays (including Easter)",
+    "holidaysLabel": "Public holidays:",
+    "holidaysHint": "Days off by law of the selected country (for Germany only nationwide holidays, not those of individual states).",
+    "country": {
+      "CZ": "Czechia",
+      "SK": "Slovakia",
+      "PL": "Poland",
+      "DE": "Germany (nationwide)",
+      "AT": "Austria",
+      "none": "no public holidays"
+    },
     "holidaysOverview": "Holidays in {{from}}–{{to}}",
     "holidaysOverviewOne": "Holidays in {{year}}",
     "holidayCounted": "Treat as day off: {{name}}, {{date}}",
@@ -506,7 +523,26 @@
     "freedomDay": "Struggle for Freedom and Democracy Day",
     "christmasEve": "Christmas Eve",
     "christmasDay": "Christmas Day",
-    "stStephensDay": "St. Stephen's Day"
+    "stStephensDay": "St. Stephen's Day",
+    "newYearsDay": "New Year's Day",
+    "epiphany": "Epiphany",
+    "easterSunday": "Easter Sunday",
+    "ascension": "Ascension Day",
+    "pentecost": "Pentecost Sunday",
+    "whitMonday": "Whit Monday",
+    "corpusChristi": "Corpus Christi",
+    "assumption": "Assumption of Mary",
+    "allSaints": "All Saints' Day",
+    "immaculateConception": "Immaculate Conception",
+    "skRepublicDay": "Day of the Establishment of the Slovak Republic",
+    "skNationalUprising": "Slovak National Uprising Anniversary",
+    "skConstitutionDay": "Constitution Day of the Slovak Republic",
+    "ourLadyOfSorrows": "Our Lady of Sorrows",
+    "plConstitutionDay": "Constitution Day (3 May)",
+    "plIndependenceDay": "Independence Day",
+    "deUnityDay": "Day of German Unity",
+    "reformationDay": "Reformation Day",
+    "atNationalDay": "Austrian National Day"
   },
   "sample": {
     "confirmReplace": "Loading the sample project will replace the current plan. You can undo this with Undo (Ctrl+Z). Continue?",
@@ -1193,7 +1229,8 @@
       "language": "Project language",
       "limit": "Project budget limit",
       "workingWeekdays": "Working days of the week (1 = Monday … 7 = Sunday)",
-      "czechHolidays": "Czech public holidays (yes / no)"
+      "czechHolidays": "Public holidays (yes / no)",
+      "holidayCountry": "Public holidays country (CZ, SK, PL, DE, AT)"
     },
     "columns": {
       "kind": "Kind",
@@ -1261,6 +1298,7 @@
       "badAmount": "invalid amount (positive number, at most 2 decimals).",
       "badWeekdays": "write working days as numbers 1–7 separated by commas (1 = Monday), e.g. 1, 2, 3, 4, 5.",
       "badYesNo": "write \"yes\" or \"no\".",
+      "badCountry": "write the country as CZ, SK, PL, DE or AT.",
       "badKind": "unknown kind (allowed: day off / shutdown, removed holiday).",
       "badRange": "the end is before the start (or the absence is longer than 2 years).",
       "nameTooLong": "the text is longer than 200 characters.",
@@ -2107,7 +2145,7 @@
       "currency": "Currency",
       "start": "Start",
       "workingDays": "Working days",
-      "holidays": "Czech holidays",
+      "holidays": "Public holidays",
       "shutdowns": "Shutdowns",
       "phases": "Phases"
     },
@@ -2196,7 +2234,7 @@
       "start": "Start",
       "finish": "Finish",
       "items": "Items: phases {{phases}}, tasks {{tasks}}, milestones {{milestones}}",
-      "calendar": "Working days: {{weekdays}}; Czech public holidays: {{holidays}}",
+      "calendar": "Working days: {{weekdays}}; public holidays: {{holidays}}",
       "shutdown": "Time off / shutdown: {{name}} ({{from}} – {{to}})",
       "totalCost": "Total planned costs",
       "limit": "Budget limit (spending)",
@@ -2388,5 +2426,8 @@
     "pdfHint": "In the print window, choose the “Save as PDF” printer (or “Microsoft Print to PDF”) and check that {{paper}} landscape paper is set.",
     "cancel": "Cancel",
     "print": "Print…"
+  },
+  "a11y": {
+    "skipToContent": "Skip to content"
   }
 }

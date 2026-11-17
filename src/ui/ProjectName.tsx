@@ -16,8 +16,8 @@ export function ProjectName() {
       <button
         type="button"
         onClick={() => setDraft(name)}
-        title={t('project.renameHint')}
-        className="rounded font-medium text-slate-800 underline decoration-dotted decoration-slate-400 underline-offset-2 hover:decoration-solid focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:text-slate-200"
+        title={`${name} – ${t('project.renameHint')}`}
+        className="min-w-0 truncate rounded font-medium text-slate-800 underline decoration-dotted decoration-slate-400 underline-offset-2 hover:decoration-solid focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:text-slate-200"
       >
         {name}
       </button>

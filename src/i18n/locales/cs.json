@@ -6,7 +6,9 @@
   "app": {
     "title": "MiRo project",
     "privacy": "Vaše data zůstávají jen v tomto počítači, nic se neposílá na server.",
-    "notSavedYet": "Rozpracovaný projekt se průběžně zálohuje v tomto prohlížeči; pro jistotu ho ukládejte do souboru (Ctrl+S)."
+    "notSavedYet": "Rozpracovaný projekt se průběžně zálohuje v tomto prohlížeči; pro jistotu ho ukládejte do souboru (Ctrl+S).",
+    "privacyHide": "Skrýt",
+    "privacyMenu": "Kde jsou moje data"
   },
   "import": {
     "title": "Import činností",
@@ -222,7 +224,13 @@
     "checkCount_other": "{{count}} varování",
     "checkOk": "bez varování",
     "ai": "AI",
-    "aiHint": "Zkopírovat projekt pro AI nebo vytvořit plán s pomocí AI (ChatGPT, Claude…)"
+    "aiHint": "Zkopírovat projekt pro AI nebo vytvořit plán s pomocí AI (ChatGPT, Claude…)",
+    "help": "Nápověda",
+    "helpHint": "Přehled zkratek, slovníček pojmů, průvodce a vzorový projekt",
+    "display": "Zobrazení",
+    "displayHint": "Jazyk a vzhled aplikace",
+    "wizard": "Průvodce novým projektem…",
+    "planTools": "Nástroje plánu"
   },
   "theme": {
     "system": "Podle systému",
@@ -516,7 +524,16 @@
     "projectStartHint": "První činnosti začnou nejbližší pracovní den od tohoto data.",
     "workingDays": "Pracovní dny v týdnu",
     "atLeastOneDay": "Aspoň jeden den v týdnu musí být pracovní.",
-    "czechHolidays": "Automaticky počítat české státní svátky (včetně Velikonoc)",
+    "holidaysLabel": "Státní svátky:",
+    "holidaysHint": "Volné dny podle zákona vybrané země (u Německa jen celostátní svátky, ne svátky spolkových zemí).",
+    "country": {
+      "CZ": "Česko",
+      "SK": "Slovensko",
+      "PL": "Polsko",
+      "DE": "Německo (celostátní)",
+      "AT": "Rakousko",
+      "none": "bez státních svátků"
+    },
     "holidaysOverview": "Svátky v letech {{from}}–{{to}}",
     "holidaysOverviewOne": "Svátky v roce {{year}}",
     "holidayCounted": "Počítat jako volno: {{name}}, {{date}}",
@@ -546,7 +563,26 @@
     "freedomDay": "Den boje za svobodu a demokracii",
     "christmasEve": "Štědrý den",
     "christmasDay": "1. svátek vánoční",
-    "stStephensDay": "2. svátek vánoční"
+    "stStephensDay": "2. svátek vánoční",
+    "newYearsDay": "Nový rok",
+    "epiphany": "Zjevení Páně (Tři králové)",
+    "easterSunday": "Velikonoční neděle",
+    "ascension": "Nanebevstoupení Páně",
+    "pentecost": "Letnice (Seslání Ducha svatého)",
+    "whitMonday": "Svatodušní pondělí",
+    "corpusChristi": "Boží tělo",
+    "assumption": "Nanebevzetí Panny Marie",
+    "allSaints": "Všech svatých",
+    "immaculateConception": "Neposkvrněné početí Panny Marie",
+    "skRepublicDay": "Den vzniku Slovenské republiky",
+    "skNationalUprising": "Výročí Slovenského národního povstání",
+    "skConstitutionDay": "Den Ústavy Slovenské republiky",
+    "ourLadyOfSorrows": "Sedmibolestná Panna Maria",
+    "plConstitutionDay": "Svátek Ústavy 3. května",
+    "plIndependenceDay": "Svátek nezávislosti",
+    "deUnityDay": "Den německé jednoty",
+    "reformationDay": "Den reformace",
+    "atNationalDay": "Rakouský národní svátek"
   },
   "sample": {
     "confirmReplace": "Načtením vzorového projektu se nahradí současný plán. Změnu lze vrátit tlačítkem Zpět (Ctrl+Z). Pokračovat?",
@@ -1273,7 +1309,8 @@
       "language": "Jazyk projektu",
       "limit": "Limit rozpočtu projektu Kč",
       "workingWeekdays": "Pracovní dny v týdnu (1 = pondělí … 7 = neděle)",
-      "czechHolidays": "České státní svátky (ano / ne)"
+      "czechHolidays": "Státní svátky (ano / ne)",
+      "holidayCountry": "Země státních svátků (CZ, SK, PL, DE, AT)"
     },
     "columns": {
       "kind": "Druh",
@@ -1341,6 +1378,7 @@
       "badAmount": "chybná částka (kladné číslo, nejvýš 2 desetinná místa).",
       "badWeekdays": "pracovní dny zapište čísly 1–7 oddělenými čárkou (1 = pondělí), např. 1, 2, 3, 4, 5.",
       "badYesNo": "zapište „ano“, nebo „ne“.",
+      "badCountry": "zapište zemi jako CZ, SK, PL, DE nebo AT.",
       "badKind": "neznámý druh (povolené: volno / odstávka, odebraný svátek).",
       "badRange": "konec je před začátkem (nebo nepřítomnost trvá déle než 2 roky).",
       "nameTooLong": "text je delší než 200 znaků.",
@@ -2191,7 +2229,7 @@
       "currency": "Měna",
       "start": "Začátek",
       "workingDays": "Pracovní dny",
-      "holidays": "České svátky",
+      "holidays": "Státní svátky",
       "shutdowns": "Odstávky",
       "phases": "Fáze"
     },
@@ -2280,7 +2318,7 @@
       "start": "Začátek",
       "finish": "Konec",
       "items": "Položky: fáze {{phases}}, činnosti {{tasks}}, milníky {{milestones}}",
-      "calendar": "Pracovní dny: {{weekdays}}; české státní svátky: {{holidays}}",
+      "calendar": "Pracovní dny: {{weekdays}}; státní svátky: {{holidays}}",
       "shutdown": "Volno / odstávka: {{name}} ({{from}} – {{to}})",
       "totalCost": "Plánované náklady celkem",
       "limit": "Limit rozpočtu (čerpání)",
@@ -2472,5 +2510,8 @@
     "pdfHint": "V okně tisku zvolte tiskárnu „Uložit jako PDF“ (nebo „Microsoft Print to PDF“) a zkontrolujte, že je nastavený papír {{paper}} na šířku.",
     "cancel": "Zrušit",
     "print": "Tisknout…"
+  },
+  "a11y": {
+    "skipToContent": "Přeskočit na obsah"
   }
 }

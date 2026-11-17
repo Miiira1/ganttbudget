@@ -75,6 +75,21 @@ describe('celý projekt z Excelu – export → import vrátí stejný projekt',
     expect(result.project.budget).toEqual({ limit: 700_000_000, categoryLimits: [{ categoryId: expect.any(String), limit: 120_000_000 }] })
   })
 
+  it('země státních svátků se zachová; starší sešit s položkou „České státní svátky“ i bez země = Česko (fáze 13d)', () => {
+    const p = sample()
+    p.calendar.holidayCountry = 'SK'
+    const result = importWorkbook(toSheets(p), p, makeId)
+    expect(result.ok && result.project.calendar.holidayCountry).toBe('SK')
+    const old = toSheets(sample())
+    const rows = old.get(cs.workbook.sheets.project)!
+    const holidays = rows.find((r) => r[0] === cs.workbook.project.czechHolidays)!
+    holidays[0] = 'České státní svátky (ano / ne)'
+    rows.splice(rows.findIndex((r) => r[0] === cs.workbook.project.holidayCountry), 1)
+    const legacy = importWorkbook(old, sample(), makeId)
+    expect(legacy.ok && legacy.project.calendar).toMatchObject({ useCzechHolidays: true })
+    expect(legacy.ok && 'holidayCountry' in legacy.project.calendar).toBe(false)
+  })
+
   it('skutečný soubor XLSX: zápis → čtení → import', async () => {
     const p = sample()
     const t = translator(cs)
@@ -116,6 +131,14 @@ describe('celý projekt z Excelu – chyby s názvem listu a číslem řádku', 
         rows.find((r) => r[0] === t('workbook.project.czechHolidays'))![1] = 'možná'
       }),
     ).toEqual(['project:4:badDate', 'project:8:badWeekdays', 'project:9:badYesNo'])
+  })
+
+  it('list Projekt: neznámá země státních svátků (fáze 13d)', () => {
+    expect(
+      errors((s) => {
+        sheet(s, 'project').find((r) => r[0] === t('workbook.project.holidayCountry'))![1] = 'HU'
+      }),
+    ).toEqual(['project:10:badCountry'])
   })
 
   it('databáze: neznámá kategorie, profese, pracovník; duplicitní název; chybná kapacita', () => {

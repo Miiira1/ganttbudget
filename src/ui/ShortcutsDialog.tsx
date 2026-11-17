@@ -66,7 +66,7 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
                 <th scope="row" className="whitespace-nowrap py-1.5 pr-4 text-left font-normal">
                   {keys.map((key, i) => (
                     <span key={key}>
-                      {i > 0 && <span className="px-0.5 text-slate-400">+</span>}
+                      {i > 0 && <span className="px-0.5 text-slate-500">+</span>}
                       <kbd className={kbd}>{key}</kbd>
                     </span>
                   ))}

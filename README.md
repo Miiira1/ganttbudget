@@ -6,7 +6,7 @@ Je určená studentům a praktikům bez zkušenosti s projektovým řízením. B
 
 **▶ Vyzkoušet aplikaci: https://miiira1.github.io/ganttbudget/** (nic se neinstaluje, stačí prohlížeč)
 
-> Stav: **fáze 13c – tablet, tvorba tažením, výkon.** Termíny se počítají z délek, vazeb FS, SS, FF, SF
+> Stav: **roadmapa fází 0–13 dokončena.** Termíny se počítají z délek, vazeb FS, SS, FF, SF
 > (s prodlevou), omezení „začít nejdříve“ a kalendáře (víkendy, české svátky, odstávky) a zobrazují
 > se v tabulce i v Ganttově diagramu. Vazby se zapisují textem (`3SS+2`) nebo kreslí tažením v grafu.
 > Činnosti se seskupují do fází (WBS, sbalení, sumarizace), úsečky se v grafu táhnou s přichycením
@@ -43,7 +43,9 @@ Je určená studentům a praktikům bez zkušenosti s projektovým řízením. B
 > z **MS Project (XML)** a **GanttProject (.gan)** s náhledem a ochranu importu z Excelu proti „nafouknutým“
 > souborům; menu Soubor má podnabídky **Exportovat** a **Importovat**. Fáze 13c přidala ovládání na **tabletu**
 > (větší úchyty, dlouhý stisk = výběr), **novou činnost tažením** v pruhu pod plánem, ukládání **sbalených fází**
-> do souboru i zálohy a zrychlení pro plány s 300 činnostmi (viz [ZADANI.md](ZADANI.md), kap. 8).
+> do souboru i zálohy a zrychlení pro plány s 300 činnostmi. Fáze 13d přidala **státní svátky Slovenska, Polska,
+> Německa a Rakouska**, kontrolu přístupnosti (kontrast, popisky, „Přeskočit na obsah“) a vzhled podle **brand kitu 2.0**
+> (nové logo, písma Inter, přehlednější záhlaví s menu Nápověda) – viz [ZADANI.md](ZADANI.md), kap. 8.
 
 ## Soubory: co kdy použít
 
@@ -61,13 +63,16 @@ kdo je vidět nemá.
 
 ## Vzhled a značka
 
-Aplikace používá vizuální styl značky **MiRo project**:
-- **Barvy:** grafit `#262626`, papír `#F6F5F0` a žlutá `#FFC000` jako jediný barevný akcent
-  (primární tlačítka, výběr, kritická cesta). Žlutý text na světlém pozadí se nepoužívá, místo něj
-  tmavé zlato `#B38600`. Barvy jsou v `src/index.css` (`@theme`). Kontrast textu splňuje WCAG AA (≥ 4,5 : 1).
-- **Písmo:** Lato (licence SIL OFL) jako WOFF2 v `src/assets/fonts/`. Načítá se z vlastní adresy,
-  ne z Google Fonts, takže aplikace nic neposílá ven.
-- **Logo:** `src/assets/brand/` (světlá a tmavá varianta), ikony prohlížeče v `public/`.
+Aplikace používá vizuální styl značky **MiRo project** podle brand kitu 2.0 (logo „Monolinka“):
+- **Barvy:** grafit `#262626`, papír `#F6F5F0` a dva akcenty – **žlutá** `#FFC000` znamená „důležité“
+  (primární tlačítko, aktivní pohled, kritická cesta, varování) a **tyrkysová** `#3BDAFF` „interakce a stav“
+  (výběr, dnešek, fokus, přetahování, informace). Žlutá a jasná tyrkysová jsou jen plochy; text na světlém
+  pozadí je grafitový nebo tmavě tyrkysový `#0E7490`, místo žlutého textu tmavé zlato `#B38600`.
+  Barvy jsou v `src/index.css` (`@theme`); kontrast textu ≥ 4,5 : 1 (WCAG AA) hlídá test `src/ui/contrast.test.ts`.
+- **Písma (SIL OFL):** Inter Tight (nadpisy), Inter (text i čísla – se stejně širokými číslicemi), JetBrains Mono
+  (prompt pro AI, náhled exportu, klávesy zkratek) jako
+  zmenšené WOFF2 v `src/assets/fonts/`. Načítají se z vlastní adresy, ne z Google Fonts, takže aplikace nic neposílá ven.
+- **Logo:** `src/assets/brand/` (světlá a tmavá varianta), ikona aplikace (varianta dark) v `public/`.
 
 Přípony souborů (`.ganttbudget.json`, `.ganttbudget-lib.json`) a klíče v prohlížeči zůstávají
 z pracovního názvu GanttBudget beze změny, aby šly dál otevřít dříve uložené projekty a zálohy.

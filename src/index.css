@@ -5,51 +5,77 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Písmo značky MiRo project: Lato (licence SIL OFL, src/assets/fonts/LICENSE-Lato.txt).
- * Převedeno do WOFF2 jen s latinkou a češtinou (~36 kB na řez), načítá se z vlastní adresy (CSP).
- * font-display: swap = text je vidět hned, písmo se doplní, až se stáhne.
+ * Písma značky MiRo project 2.0 (MiRo-brand-kit/v2.0, licence SIL OFL – src/assets/fonts/LICENSE-*.txt):
+ *  - Inter Tight 500/600 = nadpisy (font-display),
+ *  - Inter 400/500/600 = text (font-sans, výchozí),
+ *  - JetBrains Mono 400/500 = strojový text (prompt pro AI, náhled exportu, klávesy ve zkratkách – font-mono).
+ *  Čísla, data a částky jsou písmem Inter s číslicemi stejné šířky (třída tabular-nums), aby sloupce lícovaly.
+ * Převedeno do WOFF2 jen s latinkou a středoevropskými znaky (~21 kB na řez), načítá se z vlastní
+ * adresy (CSP, nic z Google Fonts). Tučné (700) zobrazí polotučný řez. font-display: swap = text je
+ * vidět hned, písmo se doplní, až se stáhne.
  */
 @font-face {
-  font-family: 'Lato';
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-  src: url('./assets/fonts/lato-300.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Lato';
+  font-family: 'Inter';
   font-weight: 400;
   font-style: normal;
   font-display: swap;
-  src: url('./assets/fonts/lato-400.woff2') format('woff2');
+  src: url('./assets/fonts/inter-400.woff2') format('woff2');
 }
 @font-face {
-  font-family: 'Lato';
-  font-weight: 500 600;
+  font-family: 'Inter';
+  font-weight: 500;
   font-style: normal;
   font-display: swap;
-  src: url('./assets/fonts/lato-600.woff2') format('woff2');
+  src: url('./assets/fonts/inter-500.woff2') format('woff2');
 }
 @font-face {
-  font-family: 'Lato';
-  font-weight: 700;
+  font-family: 'Inter';
+  font-weight: 600 700;
   font-style: normal;
   font-display: swap;
-  src: url('./assets/fonts/lato-700.woff2') format('woff2');
+  src: url('./assets/fonts/inter-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter Tight';
+  font-weight: 400 500;
+  font-style: normal;
+  font-display: swap;
+  src: url('./assets/fonts/inter-tight-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter Tight';
+  font-weight: 600 700;
+  font-style: normal;
+  font-display: swap;
+  src: url('./assets/fonts/inter-tight-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url('./assets/fonts/jetbrains-mono-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-weight: 500 700;
+  font-style: normal;
+  font-display: swap;
+  src: url('./assets/fonts/jetbrains-mono-500.woff2') format('woff2');
 }
 
 /*
- * Barvy značky (MiRo-brand-kit/06-colors). Neutrální „slate“ škála Tailwindu je nahrazená
+ * Barvy značky (MiRo-brand-kit/v2.0/06-colors). Neutrální „slate“ škála Tailwindu je nahrazená
  * teplou škálou od papíru po grafit, takže celá aplikace dostane barevnost značky.
- * Žlutá je jediný barevný akcent – používá se střídmě (primární akce, výběr, kritická cesta).
- * Žlutý text na světlém pozadí se nepoužívá (kontrast 1,5 : 1) – místo něj tmavé zlato.
- *
- * Tyrkysová je druhý, doplňkový akcent (rozšíření značky, ZADANI v1.11): znamená „kde jsem a co
- * právě dělám“ – výběr, dnešek, najetí myší, aktivní pole, informace. Žlutá = důležité, tyrkysová = interakce.
- * Jasná #3bdaff má na bílé jen 1,7 : 1 → ve světlém vzhledu jen jako podklad; čáry a obrysy tmavou #08708c (5,2 : 1).
+ * Dva akcenty: žlutá = důležité (primární akce, kritická cesta, varování, neuloženo),
+ * tyrkysová = interakce a stav („kde jsem a co právě dělám“ – výběr, dnešek, najetí myší, fokus, informace).
+ * Žlutá a jasná tyrkysová jsou jen plochy; text na světlém je grafitový, nebo tmavá tyrkysová #0e7490
+ * (5,1 : 1 na papíře). Žlutý text na světlém se nepoužívá (1,5 : 1) – místo něj tmavé zlato.
  */
 @theme {
-  --font-sans: 'Lato', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Inter Tight', 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
 
   --color-miro-graphite: #262626;
   --color-miro-graphite-80: #4a4a47;
@@ -60,17 +86,17 @@
   --color-miro-yellow-light: #ffe699;
   --color-miro-gold: #b38600;
   --color-miro-turquoise: #3bdaff;
-  --color-miro-turquoise-dark: #08708c;
-  --color-miro-turquoise-light: #c4f3ff;
+  --color-miro-turquoise-dark: #0e7490;
+  --color-miro-turquoise-light: #c9f4ff;
 }
 
 /*
  * Rámeček aktivního prvku (fokus z klávesnice) a zvýraznění při tažení: tyrkysová.
- * Světlý vzhled tmavá #08708c (5,2 : 1 na papíře), tmavý vzhled jasná #3bdaff (9,1 : 1 na grafitu).
+ * Světlý vzhled tmavá #0e7490 (5,1 : 1 na papíře), tmavý vzhled jasná #3bdaff (9,1 : 1 na grafitu).
  * Třídy ring-focus, bg-focus, border-focus se přepínají samy podle vzhledu.
  */
 :root {
-  --focus-color: #08708c;
+  --focus-color: #0e7490;
 }
 html.dark {
   --focus-color: #3bdaff;
@@ -102,6 +128,14 @@ html.dark {
 /* Světlý vzhled: papír a grafitový text; tmavý vzhled: grafit a papírový text. */
 body {
   @apply bg-miro-paper font-sans text-miro-graphite antialiased dark:bg-miro-graphite dark:text-miro-paper;
+}
+
+/* Nadpisy písmem Inter Tight. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
 }
 
 /* Společný vzhled tlačítek. */

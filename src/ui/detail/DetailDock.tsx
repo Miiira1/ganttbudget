@@ -1,6 +1,8 @@
 /**
  * Plán nahoře, pod ním panel „Detail činnosti“ (fáze 6b). Panel jde sbalit a jeho výšku změnit
  * tažením vodorovného oddělovače (i šipkami ↑ ↓). Výšku i sbalení si pamatuje prohlížeč.
+ * Bez vybrané činnosti (`empty`) zbude jen úzký pruh s nápovědou – plán dostane celou výšku
+ * (brand 2.0 – přehlednost); uložené rozbalení se tím nemění.
  */
 import { useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -12,10 +14,11 @@ const KEY_STEP = 24
 /** Panel nesmí zabrat víc než 70 % okna – plán musí zůstat vidět. */
 const maxHeight = () => Math.max(MIN_HEIGHT, Math.round(window.innerHeight * 0.7))
 
-export function DetailDock({ plan, header, children }: { plan: ReactNode; header: ReactNode; children: ReactNode }) {
+export function DetailDock({ plan, header, children, empty = false }: { plan: ReactNode; header: ReactNode; children: ReactNode; empty?: boolean }) {
   const { t } = useTranslation()
   const [height, setHeightState] = useState(() => loadNumberPreference('detailHeight', DEFAULT_HEIGHT, MIN_HEIGHT, 2000))
-  const [open, setOpenState] = useState(() => loadPreference('detailOpen') !== 'false')
+  const [openPreference, setOpenState] = useState(() => loadPreference('detailOpen') !== 'false')
+  const open = openPreference && !empty
   const setHeight = (next: number) => {
     const value = Math.round(Math.min(maxHeight(), Math.max(MIN_HEIGHT, next)))
     setHeightState(value)
@@ -73,17 +76,19 @@ export function DetailDock({ plan, header, children }: { plan: ReactNode; header
         className="flex shrink-0 flex-col border-t border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"
         style={open ? { height } : undefined}
       >
-        <div className="flex items-center gap-2 border-b border-slate-200 px-3 py-1 dark:border-slate-700">
-          <button
-            type="button"
-            onClick={() => setOpen(!open)}
-            aria-expanded={open}
-            title={t(open ? 'detail.collapse' : 'detail.expand')}
-            className="rounded px-1.5 text-slate-500 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:bg-slate-800"
-          >
-            <span aria-hidden="true">{open ? '▾' : '▸'}</span>
-            <span className="sr-only">{t(open ? 'detail.collapse' : 'detail.expand')}</span>
-          </button>
+        <div className={`flex items-center gap-2 px-3 py-1 ${open ? 'border-b border-slate-200 dark:border-slate-700' : ''}`}>
+          {!empty && (
+            <button
+              type="button"
+              onClick={() => setOpen(!open)}
+              aria-expanded={open}
+              title={t(open ? 'detail.collapse' : 'detail.expand')}
+              className="rounded px-1.5 text-slate-500 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:bg-slate-800"
+            >
+              <span aria-hidden="true">{open ? '▾' : '▸'}</span>
+              <span className="sr-only">{t(open ? 'detail.collapse' : 'detail.expand')}</span>
+            </button>
+          )}
           <div className="min-w-0 flex-1">{header}</div>
         </div>
         {open && <div className="min-h-0 flex-1 overflow-auto px-3 py-2">{children}</div>}

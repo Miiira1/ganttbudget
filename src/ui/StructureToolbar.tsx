@@ -16,14 +16,19 @@ export function StructureToolbar() {
         <button
           key={command}
           type="button"
-          className="btn-secondary"
+          className="btn-secondary px-2.5 xl:px-3"
           disabled={count === 0}
+          // Na užších obrazovkách jen ikona (název zůstává pro čtečky i v bublině).
+          aria-label={t(`structure.${command}`)}
           title={count === 0 ? t('structure.noSelection') : t(`structure.${command}Hint`)}
           // Kliknutí nesmí vzít zaměření poli v tabulce (pak by se ztratil rozepsaný text).
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => runStructureCommand(command, t)}
         >
-          <span aria-hidden="true">{ICONS[command]}</span> {t(`structure.${command}`)}
+          <span aria-hidden="true">{ICONS[command]}</span>
+          <span aria-hidden="true" className="hidden xl:inline">
+            {t(`structure.${command}`)}
+          </span>
         </button>
       ))}
       {count > 1 && (

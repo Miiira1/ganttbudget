@@ -108,7 +108,7 @@ export function AbsenceDialog({ workerId, onClose }: { workerId: string | null; 
                     type="button"
                     onClick={() => save(absences.filter((_, j) => j !== i))}
                     aria-label={t('absence.delete', { range: t('absence.range', { from: date(a.start), to: date(a.end) }) })}
-                    className="rounded px-1.5 text-slate-400 hover:bg-red-100 hover:text-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:hover:bg-red-950 dark:hover:text-red-300"
+                    className="rounded px-1.5 text-slate-500 hover:bg-red-100 hover:text-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:hover:bg-red-950 dark:hover:text-red-300"
                   >
                     <span aria-hidden="true">✕</span>
                   </button>

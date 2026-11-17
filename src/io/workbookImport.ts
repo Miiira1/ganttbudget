@@ -10,6 +10,7 @@
  * Při jakékoli chybě se nepoužije nic – vrátí se chyby s listem a číslem řádku.
  * Hotový projekt se ověří schématem Zod (N-10).
  */
+import { HOLIDAY_COUNTRIES } from '../engine/calendar'
 import cs from '../i18n/locales/cs.json'
 import en from '../i18n/locales/en.json'
 import { createDefaultRateCalc, type RateCalc } from '../model/rates'
@@ -65,7 +66,10 @@ const aliases = <K extends string>(keys: readonly K[], label: (l: { workbook: ty
 const SHEETS = aliases(WORKBOOK_SHEETS, (l, k) => l.workbook.sheets[k])
 type ColumnKey = keyof typeof cs.workbook.columns
 const COLUMNS = aliases(Object.keys(cs.workbook.columns) as ColumnKey[], (l, k) => l.workbook.columns[k])
-const ITEMS = aliases(PROJECT_ITEMS, (l, k) => l.workbook.project[k])
+// Starší sešity (do fáze 13c) měly položku „České státní svátky (ano / ne)“.
+const ITEMS = aliases(PROJECT_ITEMS, (l, k) => l.workbook.project[k], (k) =>
+  k === 'czechHolidays' ? ['České státní svátky (ano / ne)', 'Czech public holidays (yes / no)'] : [],
+)
 const YES_NO = new Map<string, boolean>([...['ano', 'yes', 'true', '1', 'a', 'y'].map((v) => [v, true] as const), ...['ne', 'no', 'false', '0', 'n'].map((v) => [v, false] as const)])
 const OVERHEAD = aliases(['annual', 'percent'] as const, (l, k) => l.workbook.overheadMode[k], (k) => [k])
 const RATE_UNIT = aliases(['hour', 'day'] as const, (l, k) => l.workbook.rateUnit[k], (k) => [k])
@@ -148,6 +152,10 @@ export function importWorkbook(sheetsByName: Map<string, unknown[][]>, base: Pro
   }
   const holidays = YES_NO.get(nameKey(text(items.get('czechHolidays')?.value ?? null)))
   if (holidays === undefined) projectError('czechHolidays', 'badYesNo')
+  // Země státních svátků (fáze 13d); prázdné nebo chybí = Česko.
+  const countryText = text(items.get('holidayCountry')?.value ?? null).trim().toUpperCase()
+  const country = HOLIDAY_COUNTRIES.find((c) => c === countryText)
+  if (countryText !== '' && !country) projectError('holidayCountry', 'badCountry')
 
   // --- Kalendář ---
   const customHolidays: Project['calendar']['customHolidays'] = []
@@ -352,7 +360,13 @@ export function importWorkbook(sheetsByName: Map<string, unknown[][]>, base: Pro
     startDate: startDate as string,
     currency,
     language,
-    calendar: { workingWeekdays: weekdays, useCzechHolidays: holidays as boolean, customHolidays, removedHolidays },
+    calendar: {
+      workingWeekdays: weekdays,
+      useCzechHolidays: holidays as boolean,
+      ...(country && country !== 'CZ' ? { holidayCountry: country } : {}),
+      customHolidays,
+      removedHolidays,
+    },
     costCategories,
     departments,
     professions,

@@ -15,7 +15,7 @@ export interface SeriesColor {
 }
 
 export const SERIES_COLORS: readonly SeriesColor[] = [
-  { fill: 'fill-[#08708c] dark:fill-[#3bdaff]', swatch: 'bg-[#08708c] dark:bg-[#3bdaff]', stroke: 'stroke-[#08708c] dark:stroke-[#3bdaff]' }, // tyrkysová
+  { fill: 'fill-[#0e7490] dark:fill-[#3bdaff]', swatch: 'bg-[#0e7490] dark:bg-[#3bdaff]', stroke: 'stroke-[#0e7490] dark:stroke-[#3bdaff]' }, // tyrkysová
   { fill: 'fill-[#ffc000] dark:fill-[#ffc000]', swatch: 'bg-[#ffc000] dark:bg-[#ffc000]', stroke: 'stroke-[#ffc000] dark:stroke-[#ffc000]' }, // žlutá
   { fill: 'fill-[#4a4a47] dark:fill-[#b2b1ab]', swatch: 'bg-[#4a4a47] dark:bg-[#b2b1ab]', stroke: 'stroke-[#4a4a47] dark:stroke-[#b2b1ab]' }, // grafit / světle šedá
   { fill: 'fill-[#3bdaff] dark:fill-[#0b6b85]', swatch: 'bg-[#3bdaff] dark:bg-[#0b6b85]', stroke: 'stroke-[#3bdaff] dark:stroke-[#0b6b85]' }, // jasná / tmavá tyrkysová

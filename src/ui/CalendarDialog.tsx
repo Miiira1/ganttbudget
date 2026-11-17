@@ -5,7 +5,7 @@
  */
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { czechHolidays } from '../engine/calendar'
+import { HOLIDAY_COUNTRIES, holidayChoice, holidaySettings, publicHolidays, type HolidayChoice } from '../engine/calendar'
 import { formatIsoDate } from '../i18n/format'
 import { localeFor } from '../i18n/languages'
 import { isValidIsoDate } from '../model/dates'
@@ -44,7 +44,8 @@ export function CalendarDialog({ open, onClose }: { open: boolean; onClose: () =
   const fromYear = Number(project.startDate.slice(0, 4))
   const toYear = Math.max(fromYear, Number((projectFinish ?? project.startDate).slice(0, 4)))
   const holidays = []
-  for (let year = fromYear; year <= Math.min(toYear, fromYear + 9); year++) holidays.push(...czechHolidays(year))
+  const choice = holidayChoice(calendar)
+  for (let year = fromYear; year <= Math.min(toYear, fromYear + 9); year++) holidays.push(...publicHolidays(choice === 'none' ? 'CZ' : choice, year))
   const removed = new Set(calendar.removedHolidays)
 
   function toggleHoliday(date: string, counted: boolean) {
@@ -133,17 +134,25 @@ export function CalendarDialog({ open, onClose }: { open: boolean; onClose: () =
           </div>
         </fieldset>
 
-        {/* České svátky */}
+        {/* Státní svátky – země (fáze 13d) */}
         <div className={sectionClass}>
-          <label className="flex items-center gap-2 text-sm font-medium">
-            <input
-              type="checkbox"
-              checked={calendar.useCzechHolidays}
-              onChange={(e) => updateCalendar({ useCzechHolidays: e.target.checked })}
-            />
-            {t('calendar.czechHolidays')}
+          <label className="flex flex-wrap items-center gap-2 text-sm font-medium">
+            {t('calendar.holidaysLabel')}
+            <select
+              value={choice}
+              onChange={(e) => updateCalendar(holidaySettings(e.target.value as HolidayChoice))}
+              className="rounded border border-slate-300 bg-white px-2 py-1 font-normal dark:border-slate-600 dark:bg-slate-800"
+            >
+              {HOLIDAY_COUNTRIES.map((c) => (
+                <option key={c} value={c}>
+                  {t(`calendar.country.${c}`)}
+                </option>
+              ))}
+              <option value="none">{t('calendar.country.none')}</option>
+            </select>
           </label>
-          {calendar.useCzechHolidays && (
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t('calendar.holidaysHint')}</p>
+          {choice !== 'none' && (
             <details className="mt-2">
               <summary className="cursor-pointer text-sm text-slate-700 underline decoration-miro-turquoise decoration-2 underline-offset-4 dark:text-slate-200">
                 {fromYear === toYear

@@ -4,6 +4,7 @@
  * (jde vrátit Ctrl+Z); na neuložené změny se aplikace nejdřív zeptá.
  * Otevírá se z okna Nový projekt a z úvodní obrazovky prázdného plánu. Sám se neotevírá.
  */
+import { HOLIDAY_COUNTRIES, type HolidayChoice } from '../engine/calendar'
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatIsoDate } from '../i18n/format'
@@ -45,7 +46,7 @@ export function WizardDialog({ open, onClose }: { open: boolean; onClose: () => 
     language: lang,
     startDate: nextMonday(todayIso()),
     workingWeekdays: [1, 2, 3, 4, 5],
-    useCzechHolidays: true,
+    holidays: 'CZ',
     shutdowns: [],
     phases: [t('wizard.defaultPhases.p1'), t('wizard.defaultPhases.p2'), t('wizard.defaultPhases.p3')],
     addFirstTasks: true,
@@ -218,9 +219,20 @@ export function WizardDialog({ open, onClose }: { open: boolean; onClose: () => 
                   ))}
                 </div>
               </fieldset>
-              <label className="flex items-center gap-2">
-                <input type="checkbox" checked={answers.useCzechHolidays} onChange={(e) => set({ useCzechHolidays: e.target.checked })} className="h-4 w-4 accent-miro-turquoise-dark" />
-                {t('calendar.czechHolidays')}
+              <label className="flex flex-wrap items-center gap-2">
+                {t('calendar.holidaysLabel')}
+                <select
+                  value={answers.holidays}
+                  onChange={(e) => set({ holidays: e.target.value as HolidayChoice })}
+                  className="rounded border border-slate-300 bg-white px-2 py-1 dark:border-slate-600 dark:bg-slate-800"
+                >
+                  {HOLIDAY_COUNTRIES.map((c) => (
+                    <option key={c} value={c}>
+                      {t(`calendar.country.${c}`)}
+                    </option>
+                  ))}
+                  <option value="none">{t('calendar.country.none')}</option>
+                </select>
               </label>
               <fieldset>
                 <legend className="font-medium">{t('calendar.customTitle')}</legend>
@@ -318,7 +330,7 @@ export function WizardDialog({ open, onClose }: { open: boolean; onClose: () => 
                 <dt className="text-slate-600 dark:text-slate-400">{t('wizard.summaryLabels.workingDays')}</dt>
                 <dd>{answers.workingWeekdays.map((d) => weekdayName(d, lang)).join(', ')}</dd>
                 <dt className="text-slate-600 dark:text-slate-400">{t('wizard.summaryLabels.holidays')}</dt>
-                <dd>{answers.useCzechHolidays ? t('wizard.yes') : t('wizard.no')}</dd>
+                <dd>{t(`calendar.country.${answers.holidays}`)}</dd>
                 <dt className="text-slate-600 dark:text-slate-400">{t('wizard.summaryLabels.shutdowns')}</dt>
                 <dd>
                   {answers.shutdowns.length === 0

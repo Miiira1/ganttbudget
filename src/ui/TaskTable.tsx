@@ -65,7 +65,7 @@ function predecessorErrorText(t: TFunction, error: PredecessorError): string {
 function DateCell({ date, hint }: { date: string | null; hint: string }) {
   const { i18n, t } = useTranslation()
   return (
-    <span className={`block whitespace-nowrap px-1.5 tabular-nums ${date ? '' : 'text-slate-400 dark:text-slate-500'}`} title={hint}>
+    <span className={`block whitespace-nowrap px-1.5 tabular-nums ${date ? '' : 'text-slate-500 dark:text-slate-400'}`} title={hint}>
       {date ? formatIsoDate(date, i18n.language) : t('table.notComputed')}
     </span>
   )
@@ -128,14 +128,15 @@ interface RowDragHandlers {
 
 /** Ukazatel místa vložení: čára nad / pod řádkem, nebo rámeček „dovnitř fáze“. */
 const INDICATOR_SHADOW: Record<DropPosition, string> = {
-  before: 'inset 0 3px 0 0 rgb(37 99 235)',
-  after: 'inset 0 -3px 0 0 rgb(37 99 235)',
-  inside: 'inset 0 0 0 2px rgb(37 99 235)',
+  // Barva interakce značky (tyrkysová, ve tmavém vzhledu jasnější) – dříve modrá mimo značku.
+  before: 'inset 0 3px 0 0 var(--focus-color)',
+  after: 'inset 0 -3px 0 0 var(--focus-color)',
+  inside: 'inset 0 0 0 2px var(--focus-color)',
 }
 
 /** Vybraný řádek: modré pozadí a pruh vlevo (barva není jediným nositelem informace – U-06). */
 const selectedRowClass =
-  'bg-miro-turquoise-light/60 shadow-[inset_3px_0_0_0_#08708c] dark:bg-miro-turquoise/15 dark:shadow-[inset_3px_0_0_0_#3bdaff]'
+  'bg-miro-turquoise-light/60 shadow-[inset_3px_0_0_0_#0e7490] dark:bg-miro-turquoise/15 dark:shadow-[inset_3px_0_0_0_#3bdaff]'
 
 /**
  * Ikona 📌: činnost má omezení „začít nejdříve k datu“ (nastavené tažením nebo v tabulce).
@@ -274,7 +275,7 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
             title={t('table.dragHint')}
             onDragStart={(e) => drag.onDragStart(task.id, e)}
             onDragEnd={drag.onDragEnd}
-            className="cursor-grab select-none px-0.5 text-slate-400 hover:text-slate-700 active:cursor-grabbing dark:text-slate-500 dark:hover:text-slate-200"
+            className="cursor-grab select-none px-0.5 text-slate-500 hover:text-slate-700 active:cursor-grabbing dark:text-slate-400 dark:hover:text-slate-200"
           >
             ⠿
           </span>
@@ -401,7 +402,7 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
       </td>
       <td className={`${td}`}>
         {isPhase ? (
-          <span className="block px-1.5 text-slate-400" title={t('table.phasePredecessorsHint')}>
+          <span className="block px-1.5 text-slate-500" title={t('table.phasePredecessorsHint')}>
             {t('table.notComputed')}
           </span>
         ) : (

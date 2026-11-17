@@ -14,7 +14,7 @@ function answers(patch: Partial<WizardAnswers> = {}): WizardAnswers {
     language: 'cs',
     startDate: '2026-11-23',
     workingWeekdays: [1, 2, 3, 4, 5],
-    useCzechHolidays: true,
+    holidays: 'CZ',
     shutdowns: [],
     phases: ['Příprava', 'Realizace', 'Předání'],
     addFirstTasks: true,
@@ -29,7 +29,7 @@ const newId = () => `id-${++seq}`
 describe('průvodce prvním projektem – sestavení projektu', () => {
   it('název, měna, začátek a kalendář se převezmou; projekt je platný', () => {
     const p = createWizardProject(
-      answers({ name: '  Nová hala  ', currency: 'EUR', workingWeekdays: [1, 2, 3, 4, 5, 6], useCzechHolidays: false, shutdowns: [{ start: '2026-12-21', end: '2026-12-31', name: 'Vánoce' }] }),
+      answers({ name: '  Nová hala  ', currency: 'EUR', workingWeekdays: [1, 2, 3, 4, 5, 6], holidays: 'none', shutdowns: [{ start: '2026-12-21', end: '2026-12-31', name: 'Vánoce' }] }),
       newId,
     )
     expect(ProjectSchema.safeParse(p).success).toBe(true)

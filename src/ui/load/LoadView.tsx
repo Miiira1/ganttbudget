@@ -221,7 +221,7 @@ const ResourceRow = memo(function ResourceRow({
       <th
         scope="row"
         className={`sticky left-0 z-[5] border-b border-r border-slate-200 p-0 text-left font-normal dark:border-slate-700 ${rowBg} ${
-          selected ? 'shadow-[inset_3px_0_0_0_#08708c] dark:shadow-[inset_3px_0_0_0_#3bdaff]' : ''
+          selected ? 'shadow-[inset_3px_0_0_0_#0e7490] dark:shadow-[inset_3px_0_0_0_#3bdaff]' : ''
         }`}
       >
         <button

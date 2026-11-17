@@ -71,10 +71,10 @@ export function AiDialog({ open, onClose, initialTab = 'export' }: { open: boole
               aria-controls={`${tabsId}-${id}-panel`}
               tabIndex={tab === id ? 0 : -1}
               onClick={() => setTab(id)}
-              className={`-mb-px rounded-t-md border px-3 py-1.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-focus ${
+              className={`-mb-px border-b-2 px-3 pb-2 pt-1.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus ${
                 tab === id
-                  ? 'border-slate-200 border-b-white bg-white dark:border-slate-700 dark:border-b-slate-900 dark:bg-slate-900'
-                  : 'border-transparent text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+                  ? 'border-miro-graphite text-miro-graphite dark:border-miro-paper dark:text-miro-paper'
+                  : 'border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-900 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:text-slate-100'
               }`}
             >
               {t(`aiDialog.tabs.${id}`)}

@@ -79,7 +79,7 @@ export function MultiSelect({ label, options, selected, onChange }: { label: str
           </div>
           {options.map((o) => (
             <label key={o.value} className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 hover:bg-miro-turquoise-light/40 dark:hover:bg-slate-800">
-              <input type="checkbox" className="accent-[#08708c] dark:accent-[#3bdaff]" checked={isChecked(o.value)} onChange={() => toggle(o.value)} />
+              <input type="checkbox" className="accent-[#0e7490] dark:accent-[#3bdaff]" checked={isChecked(o.value)} onChange={() => toggle(o.value)} />
               {o.swatch && <span aria-hidden="true" className={`inline-block h-2.5 w-3 shrink-0 rounded-sm ${o.swatch}`} />}
               <span className="truncate">{o.label}</span>
             </label>

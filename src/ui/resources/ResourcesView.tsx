@@ -119,12 +119,13 @@ export function ResourcesView() {
               }}
               onDragOver={(e) => onDragOver(e, id)}
               onDragEnd={() => setDrag(null)}
-              className={`-mb-px rounded-t-md border px-3 py-1.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-focus ${
+              // Podkarty jako podtržené záložky (brand 2.0): druhá úroveň grafitovou čarou, pohledy žlutou.
+              className={`-mb-px border-b-2 px-3 pb-2 pt-1.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus ${
                 tab === id
-                  ? 'border-slate-300 border-b-miro-paper bg-miro-paper text-miro-graphite shadow-[inset_0_2px_0_0_#ffc000] dark:border-slate-700 dark:border-b-miro-graphite dark:bg-miro-graphite dark:text-miro-paper'
-                  : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'
-              } ${drag?.id === id ? 'opacity-50' : ''} ${markerBefore(id) ? 'shadow-[inset_3px_0_0_0_rgb(37_99_235)]' : ''} ${
-                markerAtEnd && id === order.filter((x) => x !== drag?.id).at(-1) ? 'shadow-[inset_-3px_0_0_0_rgb(37_99_235)]' : ''
+                  ? 'border-miro-graphite text-miro-graphite dark:border-miro-paper dark:text-miro-paper'
+                  : 'border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-900 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:text-slate-100'
+              } ${drag?.id === id ? 'opacity-50' : ''} ${markerBefore(id) ? 'shadow-[inset_3px_0_0_0_var(--focus-color)]' : ''} ${
+                markerAtEnd && id === order.filter((x) => x !== drag?.id).at(-1) ? 'shadow-[inset_-3px_0_0_0_var(--focus-color)]' : ''
               }`}
             >
               {t(`resources.tabs.${id}`)}
@@ -311,7 +312,7 @@ function RateButton(props: { rate: number | null; source: string; label: string;
       <span className={props.rate === null ? 'italic text-slate-500 dark:text-slate-400' : 'font-medium'}>
         {props.rate === null ? t('resources.noRate') : `${formatMoney(props.rate, currency, i18n.language)} / h`}
       </span>
-      <span aria-hidden="true" className="text-slate-400">✎</span>
+      <span aria-hidden="true" className="text-slate-500">✎</span>
     </button>
   )
 }
@@ -456,8 +457,8 @@ function WorkersTable() {
             title={t('absence.hint')}
             className="flex w-full items-center justify-end gap-2 rounded px-1.5 py-0.5 tabular-nums hover:bg-miro-turquoise-light/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:bg-slate-700"
           >
-            <span className={days > 0 ? '' : 'text-slate-400'}>{days > 0 ? t('absence.workingDays', { count: days }) : '—'}</span>
-            <span aria-hidden="true" className="text-slate-400">✎</span>
+            <span className={days > 0 ? '' : 'text-slate-500'}>{days > 0 ? t('absence.workingDays', { count: days }) : '—'}</span>
+            <span aria-hidden="true" className="text-slate-500">✎</span>
           </button>
         )
       },

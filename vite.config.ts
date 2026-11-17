@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -48,4 +49,6 @@ export default defineConfig({
     // stáhne až při prvním použití XLSX – proto vyšší limit, ať build zbytečně nevaruje.
     chunkSizeWarningLimit: 1000,
   },
+  // Testy: index.css se smí načíst jako text (kontrola kontrastu barev značky, fáze 13d).
+  test: { css: { include: [/index\.css/] } },
 })

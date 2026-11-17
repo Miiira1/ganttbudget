@@ -27,7 +27,7 @@ import { OutlineDialog } from './OutlineDialog'
 import { mindMapToOutline } from '../../model/outline'
 
 /** Barvy hlavních větví (odstíny značky s kontrastem ≥ 3 : 1 ve světlém i tmavém vzhledu). */
-const BRANCH_STROKES = ['stroke-[#08708c] dark:stroke-[#3bdaff]', 'stroke-[#b38600] dark:stroke-[#d9a400]', 'stroke-[#4a4a47] dark:stroke-[#b2b1ab]']
+const BRANCH_STROKES = ['stroke-[#0e7490] dark:stroke-[#3bdaff]', 'stroke-[#b38600] dark:stroke-[#d9a400]', 'stroke-[#4a4a47] dark:stroke-[#b2b1ab]']
 const branchStroke = (branch: number) => BRANCH_STROKES[((branch % BRANCH_STROKES.length) + BRANCH_STROKES.length) % BRANCH_STROKES.length]!
 
 const MIN_SCALE = 0.3
@@ -375,6 +375,8 @@ export function MindMapView({ onShowPlan }: { onShowPlan: () => void }) {
         {size.width > 0 && (
           <svg
             ref={svgRef}
+            // Pro čtečky „průhledné“: položky stromu (uzly) patří přímo do stromu na obalu (13d – přístupnost).
+            role="none"
             width={size.width}
             height={size.height}
             viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`}
@@ -419,7 +421,7 @@ export function MindMapView({ onShowPlan }: { onShowPlan: () => void }) {
                   className={`cursor-pointer ${dragged.has(n.id) ? 'opacity-35' : ''}`}
                 >
                   {isSelected && (
-                    <rect x={n.x - 4} y={n.y - 4} width={n.width + 8} height={n.height + 8} rx={12} fill="none" strokeWidth={2.5} className="stroke-[#08708c] dark:stroke-[#3bdaff]" />
+                    <rect x={n.x - 4} y={n.y - 4} width={n.width + 8} height={n.height + 8} rx={12} fill="none" strokeWidth={2.5} className="stroke-[#0e7490] dark:stroke-[#3bdaff]" />
                   )}
                   <rect
                     x={n.x}
@@ -507,7 +509,7 @@ export function MindMapView({ onShowPlan }: { onShowPlan: () => void }) {
 function DragPreview({ drag, layout }: { drag: { id: string; x: number; y: number; target: DropTarget | null }; layout: ReturnType<typeof layoutMindMap> }) {
   const node = layout.byId.get(drag.id)
   const target = drag.target ? layout.byId.get(drag.target.targetId) : undefined
-  const accent = 'stroke-[#08708c] dark:stroke-[#3bdaff]'
+  const accent = 'stroke-[#0e7490] dark:stroke-[#3bdaff]'
   return (
     <g pointerEvents="none" aria-hidden="true">
       {target && drag.target?.mode === 'inside' && (
