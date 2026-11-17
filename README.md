@@ -6,7 +6,7 @@ Je určená studentům a praktikům bez zkušenosti s projektovým řízením. B
 
 **▶ Vyzkoušet aplikaci: https://miiira1.github.io/ganttbudget/** (nic se neinstaluje, stačí prohlížeč)
 
-> Stav: **fáze 13a – export Gantta.** Termíny se počítají z délek, vazeb FS, SS, FF, SF
+> Stav: **fáze 13b – import z MS Project a GanttProject.** Termíny se počítají z délek, vazeb FS, SS, FF, SF
 > (s prodlevou), omezení „začít nejdříve“ a kalendáře (víkendy, české svátky, odstávky) a zobrazují
 > se v tabulce i v Ganttově diagramu. Vazby se zapisují textem (`3SS+2`) nebo kreslí tažením v grafu.
 > Činnosti se seskupují do fází (WBS, sbalení, sumarizace), úsečky se v grafu táhnou s přichycením
@@ -39,15 +39,19 @@ Je určená studentům a praktikům bez zkušenosti s projektovým řízením. B
 > neposílá samo a nepotřebuje to žádný klíč. Fáze 12 přidala pohled **Mapa**: myšlenkovou mapu ovládanou
 > klávesnicí i myší (tažení uzlů), uloženou v projektu, z níž jde jedním tlačítkem **vytvořit plán** (větve = fáze,
 > koncové uzly = činnosti); mapu jde vložit i zkopírovat jako **odsazený text**. Fáze 13a přidala export Ganttova
-> diagramu jako obrázek **SVG / PNG** a **Tisk / PDF** (Ctrl+P) se stránkováním na A4 / A3 (viz [ZADANI.md](ZADANI.md), kap. 8).
+> diagramu jako obrázek **SVG / PNG** a **Tisk / PDF** (Ctrl+P) se stránkováním na A4 / A3. Fáze 13b přidala import plánu
+> z **MS Project (XML)** a **GanttProject (.gan)** s náhledem a ochranu importu z Excelu proti „nafouknutým“
+> souborům; menu Soubor má podnabídky **Exportovat** a **Importovat** (viz [ZADANI.md](ZADANI.md), kap. 8).
 
 ## Soubory: co kdy použít
 
-| Potřebuji… | Použijte (menu Soubor) |
+| Potřebuji… | Použijte (menu Soubor, podnabídky Exportovat / Importovat) |
 |---|---|
 | zálohovat projekt nebo ho přenést na jiný počítač | **Uložit** / **Otevřít** – soubor projektu `.ganttbudget.json` |
 | upravit celý projekt v Excelu a vrátit ho | **Exportovat / Importovat celý projekt do / z Excelu** – jeden sešit, šedé sloupce jsou jen vypočtené |
 | rychle upravit jen činnosti, nebo jen řádky rozpočtu | dílčí export a import činností / rozpočtu (XLSX, CSV) |
+| převzít plán z MS Project nebo GanttProject | **Importovat → Plán z MS Project (XML)** (v MS Project Uložit jako → XML) / **Plán z GanttProject (.gan)** – jen plán, bez zdrojů a nákladů |
+| odevzdat plán jako obrázek nebo PDF | **Exportovat → Gantt jako SVG / PNG**, **Tisk / PDF…** (Ctrl+P) |
 | přenést databázi zdrojů do jiného projektu | **Exportovat / Načíst knihovnu zdrojů** – `.ganttbudget-lib.json` |
 
 Sešit celého projektu i soubor projektu obsahují všechna data včetně mezd z kalkulace sazeb – nesdílejte je s někým,
@@ -114,7 +118,7 @@ requesty. Nic se nesloučí samo: u každého počkejte, až projdou testy, a sl
 |---|---|
 | `src/engine/` | plánovací jádro: kalendář (svátky, pracovní dny), výpočet termínů, rezervy a kritická cesta – čisté funkce s testy |
 | `src/gantt/` | výpočty pro graf: časová osa, poloha úseček, trasy šipek, tažení, kreslení vazeb, export do SVG (`exportSvg.ts`) a stránkování tisku (`print.ts`) – čisté funkce s testy |
-| `src/io/` | soubor projektu, automatická záloha (IndexedDB), export a import CSV/XLSX (činnosti, rozpočet, celý projekt – `workbookExport.ts`, `workbookImport.ts`; export analýzy – `analysisExport.ts`, sledování – `trackingExport.ts`), knihovna zdrojů – kontrola dat s testy |
+| `src/io/` | soubor projektu, automatická záloha (IndexedDB), export a import CSV/XLSX (činnosti, rozpočet, celý projekt – `workbookExport.ts`, `workbookImport.ts`; export analýzy – `analysisExport.ts`, sledování – `trackingExport.ts`), knihovna zdrojů, export Gantta (`ganttExportActions.ts`), import plánu z MS Project / GanttProject (`msProjectImport.ts`, `ganttProjectImport.ts`, bezpečný čtenář XML `xml.ts`), kontrola archivu XLSX (`zipGuard.ts`) – kontrola dat s testy |
 | `src/model/` | formát projektu (schéma Zod), strom fází a přesuny (`hierarchy.ts`), práce s daty a zápis předchůdců, peníze v haléřích (`money.ts`), kalkulace sazby (`rates.ts`), náklady činností (`costs.ts`), vytížení zdrojů (`load.ts`), časový náběh nákladů, limity a ukazatele (`costTimeline.ts`), období (`periods.ts`), štítky (`tags.ts`), data pro analýzu (`facts.ts`), kontingenční tabulka (`pivot.ts`) a její grafy (`pivotChart.ts`), snímek baseline (`baseline.ts`) a Earned Value (`earnedValue.ts`), kontrola kvality plánu (`planCheck.ts`), průvodce prvním projektem (`wizard.ts`), formát odpovědi AI a jeho převod na projekt (`aiPlan.ts`) a prompty a export pro AI (`aiPrompts.ts`), myšlenková mapa – úpravy (`mindMap.ts`), rozložení (`mindMapLayout.ts`), převod na plán (`mindMapToPlan.ts`) a odsazený text (`outline.ts`) |
 | `src/store/` | stav aplikace s historií změn (Zpět / Znovu) |
 | `src/ui/` | obrazovky a komponenty (React); `src/ui/gantt/` kreslí Ganttův graf (SVG), `src/ui/resources/` obrazovku Zdroje, `src/ui/detail/` panel Detail činnosti, `src/ui/load/` pohled Vytížení, `src/ui/costs/` pohled Náklady, `src/ui/analysis/` pohled Analýza, `src/ui/tracking/` pohled Sledování, `src/ui/help/` nápověda ⓘ a Slovníček, `src/ui/check/` okno Kontrola plánu, `src/ui/ai/` okno AI, `src/ui/mindmap/` pohled Mapa |

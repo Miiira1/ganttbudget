@@ -55,3 +55,62 @@ Student potřebuje plán **odevzdat** – vložit do Wordu, poslat jako obrázek
 1. Proč je pro odevzdání do Wordu lepší SVG než PNG?
 2. Proč se plán tiskne bez řádků ve sbalených fázích a kdy je to výhoda?
 3. **Mini-úkol:** vytiskněte do PDF svůj projekt na A4 tak, aby se vešel na jednu stránku a byl čitelný (měřítko osy, sbalení fází).
+
+---
+
+## 13b – Import z MS Project a GanttProject, ochrana XLSX
+
+### 1. Cíl
+
+Kdo už má plán v jiném programu, nemusí ho přepisovat:
+
+- **Soubor → Importovat → Plán z MS Project (XML)…**: v MS Project nejdřív **Soubor → Uložit jako → XML**. Převezmou se fáze (souhrnné úkoly), činnosti, milníky, vazby s prodlevou, % hotovo, poznámky, omezení začátku a začátek projektu.
+- **Soubor → Importovat → Plán z GanttProject (.gan)…**: totéž ze souboru GanttProject.
+- Zdroje a náklady se nepřenášejí – ty se doplní v aplikaci.
+- Před potvrzením je vidět **náhled** s upozorněním, co se vynechalo (např. vazba na fázi), a nové datum začátku projektu. Import nahradí činnosti a jde vrátit **Ctrl+Z**.
+- Všechny importy z Excelu (XLSX) navíc odmítnou **„nafouknutý“ soubor** – malý soubor, který by se po rozbalení zvětšil na stovky megabajtů a zahltil prohlížeč.
+
+Mimo plán (na přání uživatele): **menu Soubor má dvě úrovně** – podnabídky **Exportovat** a **Importovat** – aby se vešlo na obrazovku notebooku.
+
+### 2. Co se naučíte z vibe codingu
+
+**Formát cizího programu je smlouva, kterou jste nepodepsali.** MS Project ukládá délku jako `PT40H0M0S` (40 hodin), prodlevu v desetinách minuty a strom podle čísla úrovně. GanttProject ukládá vazbu u předchůdce a typy čísly 1–4. Claude si formáty nastudoval a převod zapsal jako čistou funkci s testy na ukázkových souborech.
+
+**Co nejde převést, se nezamlčí.** U nás fáze nesmějí mít vazby, v MS Project mohou. Taková vazba se vynechá – ale náhled to napíše i s počtem. Tichá ztráta dat je horší než hláška.
+
+**Odchylka od plánu se hlásí.** Plán počítal s vestavěnou čtečkou XML prohlížeče (DOMParser). Ta ale v automatických testech (bez prohlížeče) neexistuje, a tak Claude napsal malou vlastní čtečku – odmítá DOCTYPE (tím i „externí entity“, známý útok přes XML) a má limity hloubky a počtu prvků. Uživateli to řekl a nabídl alternativu.
+
+**ZIP bomba.** Soubor XLSX je ZIP archiv. Kontrola nevěří jen tomu, co archiv „tvrdí“ v seznamu souborů: každý soubor zkusmo rozbalí po kouscích a jen počítá bajty. Když se rozbalí víc, než hlavička slibuje, hned skončí.
+
+**Testy najdou i cizí chyby.** Při zkoušce podvrženého souboru se ukázala starší chyba: v importu celého projektu se místo věty zobrazil technický klíč `import.error.missingSheet`. Opravilo se to hned.
+
+### 3. Prompty
+
+| Krok | Co přibude | Co ověřit |
+|---|---|---|
+| 5 | převod MS Project XML (nejdřív testy) | `npm test` |
+| 6 | převod GanttProject .gan (nejdřív testy) | `npm test` |
+| 7 | položky v menu Importovat, náhled s upozorněními | import ukázkového souboru, Ctrl+Z |
+| 8 | kontrola archivu XLSX (nejdřív testy) | běžný XLSX projde, podvržený ne |
+| 9 | uzavření: zadání, průvodce, README, `npm audit` | — |
+
+### 4. Jak ověřit výsledek
+
+1. V MS Project otevřete plán → **Soubor → Uložit jako → XML** (nebo v GanttProject uložte `.gan`).
+2. V aplikaci **Soubor → Importovat → Plán z MS Project (XML)…** → vyberte soubor.
+3. V náhledu zkontrolujte strom, typy (fáze / činnost / milník), délky a předchůdce; přečtěte si upozornění.
+4. **Nahradit činnosti** → v Ganttu sedí termíny i vazby → **Ctrl+Z** vrátí původní plán.
+5. **Soubor → Importovat → Činnosti z Excelu / CSV…** s běžným souborem z exportu aplikace → načte se jako dřív.
+
+### 5. Když se to rozbije
+
+| Co vidíte | Co napsat Claude |
+|---|---|
+| Import hlásí chybu, ale soubor je podle vás v pořádku | `Import z <MS Project/GanttProject> hlásí „<text chyby>“. Verze programu <…>. Přikládám soubor (bez citlivých údajů).` |
+| Termíny po importu nesedí s původním programem | `Po importu z <program> má činnost <název> začátek <datum>, v původním programu <datum>. Kalendář projektu: <…>.` |
+
+### 6. Kontrolní otázky
+
+1. Proč se vazba z fáze na činnost při importu vynechá, a ne převede?
+2. Proč nestačí věřit velikosti, kterou o sobě uvádí archiv ZIP?
+3. **Mini-úkol:** vytvořte v GanttProject tři úkoly s vazbami (jeden s prodlevou), uložte `.gan`, naimportujte ho a porovnejte termíny.

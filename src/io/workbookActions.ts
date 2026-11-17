@@ -10,6 +10,7 @@ import { getCostTimeline, getCosts, getSchedule, projectStore } from '../store/u
 import { showNotice } from '../ui/notice'
 import { saveBlob } from './fileActions'
 import { FILE_EXTENSION, fileNameFor, MAX_FILE_CHARS } from './projectFile'
+import { UnsafeXlsxError } from './zipGuard'
 import { buildWorkbook } from './workbookExport'
 import { importWorkbook, type WorkbookImportResult } from './workbookImport'
 
@@ -52,8 +53,8 @@ export async function prepareWorkbookImport(file: File, t: TFunction): Promise<v
   try {
     const { readXlsxSheets } = await import('./xlsxImport') // ExcelJS se stáhne až teď
     sheets = await readXlsxSheets(await file.arrayBuffer())
-  } catch {
-    return showNotice(t('import.error.unreadable'))
+  } catch (error) {
+    return showNotice(t(error instanceof UnsafeXlsxError ? 'import.error.unsafeXlsx' : 'import.error.unreadable'))
   }
   const result = importWorkbook(sheets, projectStore.getState().project, () => crypto.randomUUID())
   useWorkbookImportState.setState({ pending: { fileName: file.name, result } })

@@ -3,9 +3,21 @@
  *
  * Bere se první list. Hodnoty buněk se převedou na text, číslo nebo datum; vzorce se
  * NIKDY nespouštějí – použije se jen výsledek, který v souboru uložil Excel.
- * Kontrolu obsahu dělá tableImport.ts.
+ * Kontrolu obsahu dělá tableImport.ts. Před otevřením se archiv zkontroluje (zipGuard.ts),
+ * aby „nafouknutý“ soubor nezahltil prohlížeč.
  */
 import ExcelJS from 'exceljs'
+import { checkZip, UnsafeXlsxError } from './zipGuard'
+
+/** Otevře sešit až po kontrole archivu; podezřelý soubor → UnsafeXlsxError. */
+async function loadWorkbook(buffer: ArrayBuffer): Promise<ExcelJS.Workbook> {
+  const issue = await checkZip(buffer)
+  if (issue === 'tooLarge' || issue === 'tooManyEntries' || issue === 'ratio') throw new UnsafeXlsxError(issue)
+  if (issue) throw new Error(`xlsx: ${issue}`) // není to platný sešit → „soubor se nedá přečíst“
+  const workbook = new ExcelJS.Workbook()
+  await workbook.xlsx.load(buffer)
+  return workbook
+}
 
 /** Hodnota buňky ExcelJS → text / číslo / datum / prázdné. */
 function plain(value: ExcelJS.CellValue): string | number | Date | null {
@@ -28,8 +40,7 @@ function plain(value: ExcelJS.CellValue): string | number | Date | null {
  * (např. „Řádky“ z exportu rozpočtu); jinak první list.
  */
 export async function readXlsx(buffer: ArrayBuffer, preferredSheets: readonly string[] = []): Promise<unknown[][]> {
-  const workbook = new ExcelJS.Workbook()
-  await workbook.xlsx.load(buffer)
+  const workbook = await loadWorkbook(buffer)
   const wanted = new Set(preferredSheets.map((n) => n.trim().toLowerCase()))
   const sheet = workbook.worksheets.find((w) => wanted.has(w.name.trim().toLowerCase())) ?? workbook.worksheets[0]
   if (!sheet) return []
@@ -44,8 +55,7 @@ export async function readXlsx(buffer: ArrayBuffer, preferredSheets: readonly st
 
 /** Všechny listy sešitu: název listu → tabulka (pro import celého projektu). */
 export async function readXlsxSheets(buffer: ArrayBuffer): Promise<Map<string, unknown[][]>> {
-  const workbook = new ExcelJS.Workbook()
-  await workbook.xlsx.load(buffer)
+  const workbook = await loadWorkbook(buffer)
   const sheets = new Map<string, unknown[][]>()
   for (const sheet of workbook.worksheets) {
     const width = sheet.columnCount

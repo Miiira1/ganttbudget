@@ -2,7 +2,7 @@
  * Menu „Soubor“ v liště – dvouúrovňové, aby se vešlo i na obrazovku notebooku:
  *  - nahoře Nový, Otevřít, Uložit, Uložit jako, Tisk / PDF,
  *  - podnabídka **Exportovat** (Gantt jako obrázek, celý projekt, činnosti, rozpočet, knihovna zdrojů),
- *  - podnabídka **Importovat** (celý projekt, činnosti, rozpočet, knihovna zdrojů).
+ *  - podnabídka **Importovat** (celý projekt, činnosti, rozpočet, plán z MS Project / GanttProject, knihovna zdrojů).
  * Podnabídka se otevře najetím myší, kliknutím, nebo klávesou → / Enter; ← nebo Esc ji zavře.
  * Šipky ↑ / ↓ se pohybují v aktuální nabídce (vzor „menu“ pro klávesnici a čtečky obrazovky).
  */
@@ -13,7 +13,7 @@ import { exportCsv, exportXlsx } from '../io/exportActions'
 import { exportBudgetCsv, exportBudgetXlsx } from '../io/budgetExportActions'
 import { startBudgetImport } from '../io/budgetImportActions'
 import { exportWorkbook, startWorkbookImport } from '../io/workbookActions'
-import { startImport } from '../io/importActions'
+import { startImport, startPlanImport } from '../io/importActions'
 import { exportGanttPng, exportGanttSvg } from '../io/ganttExportActions'
 import { exportLibrary, startLibraryImport } from '../io/libraryActions'
 
@@ -35,6 +35,8 @@ type ActionId =
   | 'import'
   | 'importBudget'
   | 'importLibrary'
+  | 'importMsProject'
+  | 'importGanttProject'
 
 type SubmenuId = 'export' | 'import'
 
@@ -65,7 +67,14 @@ const SUBMENUS: Record<SubmenuId, Action[]> = {
     { id: 'exportBudgetCsv' },
     { id: 'exportLibrary', separatorBefore: true },
   ],
-  import: [{ id: 'importWorkbook' }, { id: 'import', separatorBefore: true }, { id: 'importBudget' }, { id: 'importLibrary', separatorBefore: true }],
+  import: [
+    { id: 'importWorkbook' },
+    { id: 'import', separatorBefore: true },
+    { id: 'importBudget' },
+    { id: 'importMsProject', separatorBefore: true },
+    { id: 'importGanttProject' },
+    { id: 'importLibrary', separatorBefore: true },
+  ],
 }
 
 const itemClass =
@@ -122,6 +131,8 @@ export function FileMenu({ onNew, onPrint }: { onNew: () => void; onPrint: () =>
     else if (id === 'importBudget') startBudgetImport(t)
     else if (id === 'exportLibrary') void exportLibrary(t)
     else if (id === 'importLibrary') startLibraryImport(t)
+    else if (id === 'importMsProject') startPlanImport('msp', t)
+    else if (id === 'importGanttProject') startPlanImport('gan', t)
     else void saveProject(t, id === 'saveAs')
   }
 

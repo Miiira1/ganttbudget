@@ -14,6 +14,7 @@ import { projectStore } from '../store/useProject'
 import { showNotice } from '../ui/notice'
 import { importBudget, type BudgetImportResult } from './budgetImport'
 import { MAX_FILE_CHARS } from './projectFile'
+import { UnsafeXlsxError } from './zipGuard'
 import { readCsv } from './tableImport'
 
 interface PendingBudgetImport {
@@ -38,8 +39,8 @@ export async function prepareBudgetImport(file: File, t: TFunction): Promise<voi
   let rows: unknown[][] | null
   try {
     rows = await readRows(file)
-  } catch {
-    return showNotice(t('import.error.unreadable'))
+  } catch (error) {
+    return showNotice(t(error instanceof UnsafeXlsxError ? 'import.error.unsafeXlsx' : 'import.error.unreadable'))
   }
   if (rows === null) return showNotice(t('import.error.unsupported'))
   const result = importBudget(rows, projectStore.getState().project, () => crypto.randomUUID())

@@ -19,11 +19,13 @@
     "rowError": "Row {{row}}: {{message}}",
     "moreErrors": "… and {{count}} more errors",
     "nothingChanged": "Fix the file (e.g. in Excel) and import it again. Nothing in the project has changed.",
+    "nothingChangedPlan": "Save the file again in the original program and import it again. Nothing in the project has changed.",
     "cancel": "Cancel",
     "confirm": "Replace tasks",
     "error": {
       "tooLarge": "The file is too large (over 5 MB). Nothing has changed.",
       "unreadable": "The file cannot be read – it is damaged or not an Excel / CSV table. Nothing has changed.",
+      "unsafeXlsx": "The file grows suspiciously when unpacked (more than 50 MB or unusual compression). It was not loaded for security reasons. Nothing has changed.",
       "unsupported": "Only .xlsx and .csv files can be imported. Nothing has changed.",
       "empty": "The table contains no tasks (the first row must be a header with a Name column).",
       "missingName": "The first row (table header) has no “Name” column.",
@@ -44,10 +46,38 @@
       "selfDependency": "a task cannot be its own predecessor.",
       "phaseDependency": "a phase cannot have a link (nor be a predecessor).",
       "parentNotPhase": "sub-items can only be under a phase (check the Level and Type columns).",
-      "cycle": "the links form a loop (the task waits for itself through other tasks)."
+      "cycle": "the links form a loop (the task waits for itself through other tasks).",
+      "msp": {
+        "invalidXml": "The file is not valid XML. Save the plan in MS Project again via File → Save as → XML.",
+        "notMsProject": "The file is not an MS Project plan (the task list is missing). For GanttProject, use “Plan from GanttProject (.gan)”.",
+        "noTasks": "The file contains no tasks.",
+        "tooMany": "The file has more than 5,000 tasks.",
+        "tooDeep": "Task no. {{row}} is nested deeper than 6 levels (the app cannot handle more).",
+        "cycle": "The dependencies in the file form a cycle – tasks wait for each other.",
+        "invalid": "The plan from the file did not pass the app check."
+      },
+      "gan": {
+        "invalidXml": "The file is not valid XML. Save the plan in GanttProject again.",
+        "notGanttProject": "The file is not a GanttProject plan (the task list is missing). For MS Project, use “Plan from MS Project (XML)”.",
+        "noTasks": "The file contains no tasks.",
+        "tooMany": "The file has more than 5,000 tasks.",
+        "tooDeep": "Task no. {{row}} is nested deeper than 6 levels (the app cannot handle more).",
+        "cycle": "The dependencies in the file form a cycle – tasks wait for each other.",
+        "invalid": "The plan from the file did not pass the app check."
+      }
     },
     "linesWarning_one": "{{count}} resource and cost line of the current tasks will also be lost (the table does not contain it).",
-    "linesWarning_other": "{{count}} resource and cost lines of the current tasks will also be lost (the table does not contain them)."
+    "linesWarning_other": "{{count}} resource and cost lines of the current tasks will also be lost (the table does not contain them).",
+    "titlePlan": "Plan import",
+    "startDate": "The project start will be set from the file to {{date}}.",
+    "warning": {
+      "summaryLink_one": "{{count}} dependency with a summary task was skipped (phases cannot have dependencies here).",
+      "summaryLink_other": "{{count}} dependencies with summary tasks were skipped (phases cannot have dependencies here).",
+      "unknownLink_one": "{{count}} dependency on a task that is not in the file was skipped.",
+      "unknownLink_other": "{{count}} dependencies on tasks that are not in the file were skipped.",
+      "percentLag_one": "{{count}} dependency had a lag in per cent – it was set to 0 days.",
+      "percentLag_other": "{{count}} dependencies had a lag in per cent – it was set to 0 days."
+    }
   },
   "export": {
     "csvType": "CSV table",
@@ -144,8 +174,14 @@
       "importWorkbook": "Whole project from Excel…",
       "import": "Tasks from Excel / CSV…",
       "importBudget": "Budget from Excel / CSV…",
-      "importLibrary": "Resource library…"
-    }
+      "importLibrary": "Resource library…",
+      "importMsProject": "Plan from MS Project (XML)…",
+      "importGanttProject": "Plan from GanttProject (.gan)…"
+    },
+    "importMsProject": "Plan from MS Project (XML)…",
+    "importMsProjectHint": "Load a plan from MS Project saved as XML (File → Save as → XML): phases, tasks, milestones, dependencies, % complete. Resources and costs are not transferred.",
+    "importGanttProject": "Plan from GanttProject (.gan)…",
+    "importGanttProjectHint": "Load a plan from a GanttProject file (.gan): phases, tasks, milestones, dependencies, % complete. Resources and costs are not transferred."
   },
   "toolbar": {
     "label": "Main tools",

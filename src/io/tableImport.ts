@@ -31,7 +31,13 @@ export interface ImportError {
   code: string
 }
 
-export type ImportResult = { ok: true; project: Project } | { ok: false; errors: ImportError[] }
+/** Upozornění importu, které ho neblokuje (např. vynechané vazby) – kód a počet. */
+export interface ImportWarning {
+  code: string
+  count: number
+}
+
+export type ImportResult = { ok: true; project: Project; warnings?: ImportWarning[] } | { ok: false; errors: ImportError[] }
 
 /** Hodnota buňky, jak ji dodá čtení CSV/XLSX. Cokoli jiného se bere jako prázdné. */
 export const CellSchema = z.union([z.string(), z.number(), z.date(), z.null()]).catch(null)

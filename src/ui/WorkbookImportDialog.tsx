@@ -41,7 +41,15 @@ export function WorkbookImportDialog() {
 
   /** Text chyby: list Činnosti a Řádky mají vlastní hlášky z dílčích importů. */
   function message(error: WorkbookError): string {
-    const key = error.sheet === 'tasks' ? `import.error.${error.code}` : error.sheet === 'lines' ? `budgetImport.error.${error.code}` : `workbook.error.${error.code}`
+    // Chybějící list má vlastní text sešitu; ostatní chyby listů Činnosti / Řádky berou texty svých importů.
+    const key =
+      error.code === 'missingSheet'
+        ? 'workbook.error.missingSheet'
+        : error.sheet === 'tasks'
+          ? `import.error.${error.code}`
+          : error.sheet === 'lines'
+            ? `budgetImport.error.${error.code}`
+            : `workbook.error.${error.code}`
     const sheet = t(`workbook.sheets.${error.sheet}`)
     return error.row === 1 ? t('workbook.error.sheetOnly', { sheet, message: t(key) }) : t('workbook.error.sheetRow', { sheet, row: error.row, message: t(key) })
   }

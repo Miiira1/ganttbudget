@@ -9,12 +9,14 @@ import { cancelImport, confirmImport, useImportState } from '../io/importActions
 import { depthMap, treeOrder } from '../model/hierarchy'
 import { formatPredecessors } from '../model/predecessors'
 import { useProject } from '../store/useProject'
+import { formatIsoDate } from '../i18n/format'
 
 const PREVIEW_ROWS = 8
 const MAX_ERRORS = 20
 
 export function ImportDialog() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const projectStart = useProject((s) => s.project.startDate)
   const pending = useImportState((s) => s.pending)
   const currentCount = useProject((s) => s.project.tasks.length)
   const currentLines = useProject((s) => s.project.tasks.reduce((sum, t) => sum + t.lines.length, 0))
@@ -43,13 +45,24 @@ export function ImportDialog() {
       {pending && result && (
         <div className="p-5">
           <h2 id={titleId} className="text-lg font-semibold">
-            {t('import.title')}
+            {pending.source === 'table' ? t('import.title') : t('import.titlePlan')}
           </h2>
           <p className="mt-1 break-all text-sm text-slate-600 dark:text-slate-400">{pending.fileName}</p>
 
           {imported ? (
             <>
               <p className="mt-3 text-sm">{t('import.summary', { count: imported.tasks.length })}</p>
+              {/* Import plánu (MS Project, GanttProject): co se vynechalo a nový začátek projektu. */}
+              {result.ok && (result.warnings ?? []).length > 0 && (
+                <ul className="mt-2 list-disc space-y-0.5 pl-5 text-sm text-slate-700 dark:text-slate-300">
+                  {result.warnings!.map((w) => (
+                    <li key={w.code}>{t(`import.warning.${w.code}`, { count: w.count })}</li>
+                  ))}
+                </ul>
+              )}
+              {pending.source !== 'table' && imported.startDate !== projectStart && (
+                <p className="mt-2 text-sm">{t('import.startDate', { date: formatIsoDate(imported.startDate, i18n.language) })}</p>
+              )}
               <table className="mt-3 w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-300 text-left dark:border-slate-600">
@@ -91,8 +104,8 @@ export function ImportDialog() {
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
                   {result.errors.slice(0, MAX_ERRORS).map((error, i) => (
                     <li key={i}>
-                      {error.row === 1 && ['empty', 'missingName', 'tooManyRows', 'invalid'].includes(error.code)
-                        ? t(`import.error.${error.code}`)
+                      {error.code.includes('.') || (error.row === 1 && ['empty', 'missingName', 'tooManyRows', 'invalid'].includes(error.code))
+                        ? t(`import.error.${error.code}`, { row: error.row })
                         : t('import.rowError', { row: error.row, message: t(`import.error.${error.code}`) })}
                     </li>
                   ))}
@@ -100,7 +113,7 @@ export function ImportDialog() {
                 {result.errors.length > MAX_ERRORS && (
                   <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t('import.moreErrors', { count: result.errors.length - MAX_ERRORS })}</p>
                 )}
-                <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">{t('import.nothingChanged')}</p>
+                <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">{pending.source === 'table' ? t('import.nothingChanged') : t('import.nothingChangedPlan')}</p>
               </>
             )
           )}

@@ -1,0 +1,35 @@
+import { describe, expect, it } from 'vitest'
+import { childElement, childElements, childText, parseXml, XmlError } from './xml'
+
+describe('čtení XML (bez knihovny)', () => {
+  it('prvky, atributy v obou uvozovkách, prázdné prvky, text a entity', () => {
+    const root = parseXml(`<?xml version="1.0" encoding="UTF-8"?>
+<!-- komentář -->
+<project name="Hala &amp; linka" version='3'>
+  <task id="1" meeting="true"/>
+  <task id="2"><notes><![CDATA[a < b & c]]></notes></task>
+  <name>A &lt;B&gt; &quot;C&quot; &#269;&#x0159;</name>
+</project>`)
+    expect(root.name).toBe('project')
+    expect(root.attrs).toEqual({ name: 'Hala & linka', version: '3' })
+    expect(childElements(root, 'task').map((t) => t.attrs.id)).toEqual(['1', '2'])
+    expect(childElements(root, 'task')[0]!.children).toEqual([])
+    expect(childText(childElements(root, 'task')[1]!, 'notes')).toBe('a < b & c')
+    expect(childText(root, 'name')).toBe('A <B> "C" čř')
+    expect(childElement(root, 'missing')).toBeUndefined()
+  })
+
+  it('jmenný prostor ve výchozím tvaru nevadí, předpona se u názvu prvku odstraní', () => {
+    const root = parseXml('<Project xmlns="http://schemas.microsoft.com/project"><p:Name xmlns:p="x">X</p:Name></Project>')
+    expect(root.name).toBe('Project')
+    expect(childText(root, 'Name')).toBe('X')
+  })
+
+  it('chyby: neuzavřený prvek, nesouhlasný konec, žádný kořen, DOCTYPE (ochrana proti entitám)', () => {
+    expect(() => parseXml('<a><b></a>')).toThrow(XmlError)
+    expect(() => parseXml('<a>')).toThrow(XmlError)
+    expect(() => parseXml('jen text')).toThrow(XmlError)
+    expect(() => parseXml('<!DOCTYPE a [<!ENTITY x "y">]><a>&x;</a>')).toThrow(XmlError)
+    expect(() => parseXml('<a></a><b></b>')).toThrow(XmlError)
+  })
+})

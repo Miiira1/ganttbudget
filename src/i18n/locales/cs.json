@@ -23,11 +23,13 @@
     "rowError": "Řádek {{row}}: {{message}}",
     "moreErrors": "… a další chyby ({{count}})",
     "nothingChanged": "Opravte soubor (např. v Excelu) a importujte ho znovu. V projektu se nic nezměnilo.",
+    "nothingChangedPlan": "Soubor uložte v původním programu znovu a importujte ho znovu. V projektu se nic nezměnilo.",
     "cancel": "Zrušit",
     "confirm": "Nahradit činnosti",
     "error": {
       "tooLarge": "Soubor je příliš velký (víc než 5 MB). Nic se nezměnilo.",
       "unreadable": "Soubor se nedá přečíst – je poškozený nebo to není tabulka Excelu / CSV. Nic se nezměnilo.",
+      "unsafeXlsx": "Soubor se po rozbalení podezřele zvětšuje (víc než 50 MB nebo neobvyklé stlačení). Z bezpečnostních důvodů se nenačetl. Nic se nezměnilo.",
       "unsupported": "Import umí jen soubory .xlsx a .csv. Nic se nezměnilo.",
       "empty": "Tabulka neobsahuje žádné činnosti (první řádek musí být hlavička se sloupcem Název).",
       "missingName": "V prvním řádku chybí sloupec „Název“ (hlavička tabulky).",
@@ -48,12 +50,46 @@
       "selfDependency": "činnost nemůže být sama sobě předchůdcem.",
       "phaseDependency": "fáze nemůže mít vazbu (ani být předchůdcem).",
       "parentNotPhase": "podřízené položky mohou být jen pod fází (zkontrolujte sloupce Úroveň a Typ).",
-      "cycle": "vazby tvoří kruh (činnost přes jiné činnosti čeká sama na sebe)."
+      "cycle": "vazby tvoří kruh (činnost přes jiné činnosti čeká sama na sebe).",
+      "msp": {
+        "invalidXml": "Soubor není platné XML. Uložte plán v MS Project znovu přes Soubor → Uložit jako → XML.",
+        "notMsProject": "Soubor není plán z MS Project (chybí seznam úkolů). Pro GanttProject použijte „Plán z GanttProject (.gan)“.",
+        "noTasks": "Soubor neobsahuje žádné úkoly.",
+        "tooMany": "Soubor má víc než 5 000 úkolů.",
+        "tooDeep": "Úkol č. {{row}} je zanořený hlouběji než 6 úrovní (víc aplikace nezvládne).",
+        "cycle": "Vazby v souboru tvoří kruh – úkoly čekají jeden na druhý.",
+        "invalid": "Plán ze souboru neprošel kontrolou aplikace."
+      },
+      "gan": {
+        "invalidXml": "Soubor není platné XML. Uložte plán v GanttProject znovu.",
+        "notGanttProject": "Soubor není plán z GanttProject (chybí seznam úkolů). Pro MS Project použijte „Plán z MS Project (XML)“.",
+        "noTasks": "Soubor neobsahuje žádné úkoly.",
+        "tooMany": "Soubor má víc než 5 000 úkolů.",
+        "tooDeep": "Úkol č. {{row}} je zanořený hlouběji než 6 úrovní (víc aplikace nezvládne).",
+        "cycle": "Vazby v souboru tvoří kruh – úkoly čekají jeden na druhý.",
+        "invalid": "Plán ze souboru neprošel kontrolou aplikace."
+      }
     },
     "linesWarning_one": "Zároveň zanikne {{count}} řádek zdrojů a nákladů ze současných činností (tabulka ho neobsahuje).",
     "linesWarning_few": "Zároveň zaniknou {{count}} řádky zdrojů a nákladů ze současných činností (tabulka je neobsahuje).",
     "linesWarning_many": "Zároveň zanikne {{count}} řádků zdrojů a nákladů ze současných činností (tabulka je neobsahuje).",
-    "linesWarning_other": "Zároveň zanikne {{count}} řádků zdrojů a nákladů ze současných činností (tabulka je neobsahuje)."
+    "linesWarning_other": "Zároveň zanikne {{count}} řádků zdrojů a nákladů ze současných činností (tabulka je neobsahuje).",
+    "titlePlan": "Import plánu",
+    "startDate": "Začátek projektu se nastaví podle souboru na {{date}}.",
+    "warning": {
+      "summaryLink_one": "Vynechána {{count}} vazba se souhrnným úkolem (fáze u nás vazby mít nesmějí).",
+      "summaryLink_few": "Vynechány {{count}} vazby se souhrnnými úkoly (fáze u nás vazby mít nesmějí).",
+      "summaryLink_many": "Vynecháno {{count}} vazeb se souhrnnými úkoly (fáze u nás vazby mít nesmějí).",
+      "summaryLink_other": "Vynecháno {{count}} vazeb se souhrnnými úkoly (fáze u nás vazby mít nesmějí).",
+      "unknownLink_one": "Vynechána {{count}} vazba na úkol, který v souboru není.",
+      "unknownLink_few": "Vynechány {{count}} vazby na úkoly, které v souboru nejsou.",
+      "unknownLink_many": "Vynecháno {{count}} vazeb na úkoly, které v souboru nejsou.",
+      "unknownLink_other": "Vynecháno {{count}} vazeb na úkoly, které v souboru nejsou.",
+      "percentLag_one": "U {{count}} vazby byla prodleva v procentech – nastavila se na 0 dní.",
+      "percentLag_few": "U {{count}} vazeb byla prodleva v procentech – nastavila se na 0 dní.",
+      "percentLag_many": "U {{count}} vazeb byla prodleva v procentech – nastavila se na 0 dní.",
+      "percentLag_other": "U {{count}} vazeb byla prodleva v procentech – nastavila se na 0 dní."
+    }
   },
   "export": {
     "csvType": "Tabulka CSV",
@@ -152,8 +188,14 @@
       "importWorkbook": "Celý projekt z Excelu…",
       "import": "Činnosti z Excelu / CSV…",
       "importBudget": "Rozpočet z Excelu / CSV…",
-      "importLibrary": "Knihovnu zdrojů…"
-    }
+      "importLibrary": "Knihovnu zdrojů…",
+      "importMsProject": "Plán z MS Project (XML)…",
+      "importGanttProject": "Plán z GanttProject (.gan)…"
+    },
+    "importMsProject": "Plán z MS Project (XML)…",
+    "importMsProjectHint": "Načíst plán z MS Project uloženého jako XML (Soubor → Uložit jako → XML): fáze, činnosti, milníky, vazby, % hotovo. Zdroje a náklady se nepřenášejí.",
+    "importGanttProject": "Plán z GanttProject (.gan)…",
+    "importGanttProjectHint": "Načíst plán ze souboru GanttProject (.gan): fáze, činnosti, milníky, vazby, % hotovo. Zdroje a náklady se nepřenášejí."
   },
   "toolbar": {
     "label": "Hlavní nástroje",
