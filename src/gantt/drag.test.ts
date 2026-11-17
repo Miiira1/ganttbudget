@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createWorkCalendar, dayToIso, isoToDay } from '../engine/calendar'
 import { createDefaultCalendar } from '../model/schema'
-import { applyDrag, applyGroupMove, durationForFinish, pixelsToDays, type DragMode } from './drag'
+import { applyDrag, applyGroupMove, createFromDrag, durationForFinish, pixelsToDays, type DragMode } from './drag'
 
 // Výchozí kalendář: Po–Pá, české svátky (17. 11. 2026 je úterý a svátek).
 const cal = createWorkCalendar(createDefaultCalendar())
@@ -126,5 +126,36 @@ describe('levý okraj (začátek, konec zůstane)', () => {
 
   it('nejvýš do konce (délka 1 den)', () => {
     expect(drag('start', '2026-11-16', '2026-11-19', 3, 10)).toEqual(['2026-11-19', 1, '2026-11-19', '2026-11-19'])
+  })
+})
+
+describe('nová činnost tažením v prázdném místě grafu (13c)', () => {
+  /** Tah od dne `from` do dne `to` při začátku projektu `projectStart`; vrátí [omezení, délka, začátek, konec]. */
+  function create(from: string, to: string, projectStart = '2026-11-02') {
+    const r = createFromDrag(cal, { fromDay: day(from), toDay: day(to), projectStartDay: day(projectStart) })
+    return [r.constraintStart ?? null, r.durationDays, dayToIso(r.startDay), dayToIso(r.finishDay)]
+  }
+
+  it('začátek a konec podle tahu, délka v pracovních dnech (bez svátku 17. 11.), 📌 na začátek', () => {
+    expect(create('2026-11-16', '2026-11-20')).toEqual(['2026-11-16', 4, '2026-11-16', '2026-11-20'])
+  })
+
+  it('tah zprava doleva dá totéž', () => {
+    expect(create('2026-11-20', '2026-11-16')).toEqual(['2026-11-16', 4, '2026-11-16', '2026-11-20'])
+  })
+
+  it('přichycení na pracovní dny: začátek ve volný den → další pracovní, konec ve volný den → předchozí', () => {
+    expect(create('2026-11-21', '2026-11-25')).toEqual(['2026-11-23', 3, '2026-11-23', '2026-11-25'])
+    expect(create('2026-11-23', '2026-11-29')).toEqual(['2026-11-23', 5, '2026-11-23', '2026-11-27'])
+  })
+
+  it('tah jen přes víkend nebo jeden den = jednodenní činnost', () => {
+    expect(create('2026-11-21', '2026-11-22')).toEqual(['2026-11-23', 1, '2026-11-23', '2026-11-23'])
+    expect(create('2026-11-19', '2026-11-19')).toEqual(['2026-11-19', 1, '2026-11-19', '2026-11-19'])
+  })
+
+  it('nezačne před začátkem projektu; v den začátku projektu není potřeba 📌', () => {
+    expect(create('2026-11-10', '2026-11-20', '2026-11-18')).toEqual([null, 3, '2026-11-18', '2026-11-20'])
+    expect(create('2026-11-09', '2026-11-13', '2026-11-18')).toEqual([null, 1, '2026-11-18', '2026-11-18'])
   })
 })

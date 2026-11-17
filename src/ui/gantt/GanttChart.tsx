@@ -29,6 +29,7 @@ import { BarDragLayer } from './BarDragLayer'
 import { LinkDragLayer } from './LinkDragLayer'
 import { DependencyArrows } from './DependencyArrows'
 import { TaskBars, type BaselineBar } from './TaskBars'
+import { CreateDragLayer } from './CreateDragLayer'
 import { activeBaseline } from '../../model/baseline'
 import { TimelineHeader } from './TimelineHeader'
 import { useSelectedIds, useVisibleRows } from '../viewState'
@@ -133,6 +134,7 @@ export function GanttChart() {
   // Jen viditelné řádky (bez položek sbalených fází) – stejné jako v tabulce.
   const rows = useVisibleRows(project)
   const selectedIds = useSelectedIds(project)
+  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds])
   const selectedIndexes = useMemo(() => {
     const index = new Map(rows.map((task, i) => [task.id, i]))
     return selectedIds.map((id) => index.get(id) ?? -1).filter((i) => i >= 0)
@@ -230,7 +232,8 @@ export function GanttChart() {
         role="img"
         aria-label={t('gantt.chartLabel')}
         className="block flex-1"
-        style={{ minHeight: bodyHeight }}
+        // Pod plánem vždy aspoň jeden prázdný řádek – tam jde tažením vytvořit novou činnost (13c).
+        style={{ minHeight: bodyHeight + ROW_HEIGHT }}
       >
         <defs>
           {/* Šrafování odliší svátky a odstávky i bez rozlišení barev (U-06). */}
@@ -288,9 +291,12 @@ export function GanttChart() {
           </g>
         )}
 
+        {/* Nová činnost tažením v prázdném místě pod plánem (13c). */}
+        <CreateDragLayer tl={tl} calendar={calendar} rowIndex={rows.length} projectStart={project.startDate} />
+
         {/* Šipky vazeb pod úsečkami, úsečky nad čárou dneška, aby byly čitelné. */}
         <DependencyArrows rows={rows} bars={bars} critical={critical} />
-        <TaskBars rows={rows} bars={bars} dates={dates} critical={critical} slackEnds={slackEnds} percents={percents} baseline={baselineBars} baselineName={baseline?.name ?? ''} />
+        <TaskBars rows={rows} bars={bars} dates={dates} critical={critical} slackEnds={slackEnds} percents={percents} baseline={baselineBars} baselineName={baseline?.name ?? ''} selectedIds={selectedSet} />
 
         {/* Náhled při tažení úsečky (G-02) – nad vším ostatním. */}
         <BarDragLayer svgRef={svgRef} tl={tl} calendar={calendar} rows={rows} dates={dates} />

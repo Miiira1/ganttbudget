@@ -360,13 +360,14 @@
     "mouseItems": {
       "dragBar": "Táhnout úsečku v grafu = posunout činnost (nastaví „začít nejdříve“ 📌).",
       "dragEdge": "Táhnout okraj úsečky = změnit začátek nebo konec (délku).",
+      "createByDrag": "Táhnout vodorovně v prázdném pruhu pod plánem = nová činnost s tímto začátkem (📌) a délkou; Esc zruší.",
       "dragRow": "Táhnout řádek za ⠿ = přesunout ho jinam nebo do fáze.",
       "resizeColumn": "Táhnout pravý okraj hlavičky sloupce = změnit jeho šířku; dvojklik = výchozí šířka.",
       "drawLink": "Táhnout z kolečka u začátku / konce úsečky na jinou činnost = nakreslit vazbu (typ FS, SS, FF, SF podle toho, odkud a kam).",
       "pin": "Kliknout na 📌 = zrušit omezení „začít nejdříve“.",
       "collapse": "Kliknout na ▾ / ▸ = sbalit nebo rozbalit fázi.",
       "zoom": "Ctrl + kolečko nebo roztažení / sevření dvou prstů na touchpadu nad grafem = podrobnější / hrubší časová osa (den pod kurzorem zůstane na místě).",
-      "multiSelect": "Ctrl + klik na řádek nebo úsečku = přidat ho do výběru / odebrat; Shift + klik = vybrat souvislý rozsah. Tlačítka, zkratky i tažení pak pracují se všemi vybranými.",
+      "multiSelect": "Ctrl + klik na řádek nebo úsečku = přidat ho do výběru / odebrat; Shift + klik = vybrat souvislý rozsah. Na dotykovém displeji: podržet prst ½ s = přidat / odebrat. Tlačítka, zkratky i tažení pak pracují se všemi vybranými.",
       "dragGroup": "Táhnout jednu z vybraných úseček = posunout všechny vybrané o stejný počet pracovních dnů; táhnout ⠿ u vybraného řádku = přesunout celý výběr.",
       "resourceTabs": "Zdroje: táhnout záložku (Profese, Pracovníci…) = změnit pořadí záložek; na vybrané záložce totéž Alt+Shift+← / →.",
       "rate": "Zdroje: kliknout na hodinovou sazbu (✎) = nastavit ji ručně, kalkulací nebo podle profese.",
@@ -489,7 +490,8 @@
     "shiftEarlier_one": "konec o {{count}} den dříve",
     "shiftEarlier_few": "konec o {{count}} dny dříve",
     "shiftEarlier_many": "konec o {{count}} dne dříve",
-    "shiftEarlier_other": "konec o {{count}} dnů dříve"
+    "shiftEarlier_other": "konec o {{count}} dnů dříve",
+    "createHint": "Táhněte sem vodorovně = nová činnost"
   },
   "notice": {
     "close": "Zavřít upozornění"

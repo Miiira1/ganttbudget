@@ -6,15 +6,19 @@
  * - Jinde (Firefox, Safari) se soubor stáhne a otevírá se výběrem souboru.
  * - Každý otevíraný soubor se před použitím ověří (projectFile.ts → schéma Zod).
  * - Aplikace si pamatuje verzi projektu z posledního uložení / otevření; jiná verze = „neuloženo“.
+ * - Sbalené fáze se uloží se souborem a po otevření obnoví (13c, model/collapsedIds.ts); samotné
+ *   sbalení projekt „neuloženým“ nedělá – je to jen zobrazení.
  *   Nový a Otevřít se před zahozením neuložených změn zeptají.
  *
  * Nic se neposílá na server – soubor zůstává v počítači uživatele.
  */
 import type { TFunction } from 'i18next'
 import { create } from 'zustand'
+import { attachCollapsed, detachCollapsed } from '../model/collapsedIds'
 import { createEmptyProject, type Project } from '../model/schema'
 import { projectStore } from '../store/useProject'
 import { showNotice } from '../ui/notice'
+import { useViewState } from '../ui/viewState'
 import { fileNameFor, MAX_FILE_CHARS, parseProjectFile, serializeProject, type ProjectFileError } from './projectFile'
 
 // --- Minimální popis File System Access API (není ve všech prohlížečích ani v typech TypeScriptu) ---
@@ -86,6 +90,7 @@ export function newProject(t: TFunction, language: string, project?: Project): b
   const next = project ?? createEmptyProject({ name: t('project.defaultName'), language })
   projectStore.getState().loadProject(next)
   useFileState.setState({ savedProject: next, fileName: null, handle: null })
+  useViewState.getState().setCollapsed(new Set())
   return true
 }
 
@@ -120,7 +125,7 @@ export async function saveBlob(
 /** Uložit (asNew = Uložit jako… – vždy se zeptá na místo a název). */
 export async function saveProject(t: TFunction, asNew = false): Promise<void> {
   const project = projectStore.getState().project
-  const blob = new Blob([serializeProject(project)], { type: 'application/json' })
+  const blob = new Blob([serializeProject(attachCollapsed(project, useViewState.getState().collapsed))], { type: 'application/json' })
   try {
     const previous = asNew ? null : useFileState.getState().handle
     const saved = await saveBlob(blob, fileNameFor(project), pickerTypes(t)[0]!, previous)
@@ -141,8 +146,10 @@ async function openFromFile(file: File, handle: FileHandle | null, t: TFunction)
     showNotice(fileErrorText(result.error, t)) // nic se nemění
     return
   }
-  projectStore.getState().loadProject(result.project)
-  useFileState.setState({ savedProject: result.project, fileName: file.name, handle })
+  const { project, collapsed } = detachCollapsed(result.project)
+  projectStore.getState().loadProject(project)
+  useFileState.setState({ savedProject: project, fileName: file.name, handle })
+  useViewState.getState().setCollapsed(collapsed)
 }
 
 /** Otevřít… (po potvrzení, pokud jsou neuložené změny). */

@@ -114,3 +114,58 @@ Mimo plán (na přání uživatele): **menu Soubor má dvě úrovně** – podna
 1. Proč se vazba z fáze na činnost při importu vynechá, a ne převede?
 2. Proč nestačí věřit velikosti, kterou o sobě uvádí archiv ZIP?
 3. **Mini-úkol:** vytvořte v GanttProject tři úkoly s vazbami (jeden s prodlevou), uložte `.gan`, naimportujte ho a porovnejte termíny.
+
+---
+
+## 13c – Tablet, nová činnost tažením, sbalené fáze, výkon
+
+### 1. Cíl
+
+- **Tablet**: na dotykovém displeji jsou úchyty úseček větší, kolečka pro kreslení vazeb jsou u vybraných řádků stále vidět a **podržení prstu ½ s** přidá řádek nebo úsečku do výběru (tablet nemá Ctrl).
+- **Nová činnost tažením**: pod posledním řádkem grafu je pruh „Táhněte sem vodorovně“. Tah vytvoří činnost s tímto začátkem (📌) a délkou.
+- **Sbalené fáze se pamatují**: uloží se do souboru projektu i do automatické zálohy. Sbalování není v historii Zpět.
+- **Rychlost**: plán s 300 činnostmi se táhne plynule.
+
+### 2. Co se naučíte z vibe codingu
+
+**Nejdřív měřit, pak opravovat.** Pocit „je to pomalé“ nestačí. Claude vytvořil plán s 300 navázanými činnostmi (přes import z GanttProject) a měřil. Výpočty termínů trvaly jen 7 ms – brzdilo překreslování stránky. Bez měření by se optimalizovalo něco, co nevadí.
+
+**Měřicí přístroj musí být v pořádku.** Když byl panel prohlížeče skrytý, prohlížeč stránku šetřil a stejný krok trval jednou 2 ms, podruhé 190 ms. Claude to poznal, zastavil se a požádal o otevřený panel. Teprve pak čísla dávala smysl.
+
+**Malé triky, velký účinek.** Řádek CSS `contain: strict` řekl prohlížeči, že změna v grafu neovlivní zbytek stránky – krok náhledu klesl z 35 na 16 ms. Pole s kalendářem v tabulce (540 kusů) nahradil text, pole se objeví až po kliknutí. Opakované překlady textů si aplikace pamatuje.
+
+**Co nejde do historie Zpět.** Sbalení fáze je jen pohled, ne změna plánu. Proto se ukládá vedle projektu („přibalí se“ při uložení, „vybalí“ po otevření), a Ctrl+Z ho nevrací.
+
+**Testovat dotyk bez tabletu.** Náhled umí předstírat dotykové zařízení. Claude posílal „prstové“ události a ověřil klepnutí, dlouhý stisk i tažení skupiny. Skutečný tablet to ale úplně nenahradí.
+
+### 3. Prompty
+
+| Krok | Co přibude | Co ověřit |
+|---|---|---|
+| 10 | větší úchyty a dlouhý stisk na dotyku (nejdřív testy) | tablet / dotykový notebook: podržet prst na dvou úsečkách |
+| 11 | nová činnost tažením pod plánem (nejdřív testy) | táhnout v pruhu pod plánem, Esc, Ctrl+Z |
+| 12 | sbalené fáze v souboru a záloze (nejdřív testy) | sbalit, zavřít a otevřít aplikaci |
+| 13 | měření a zrychlení na 300 činnostech | tažení úsečky ve velkém plánu |
+| 14 | uzavření: zadání, průvodce, README, `npm audit` | — |
+
+### 4. Jak ověřit výsledek
+
+1. Otevřete **Vzorový projekt**, sjeďte pod poslední řádek grafu a **táhněte vodorovně** přes pár dní → vznikne „Nová činnost“ s 📌, kurzor je v názvu. **Ctrl+Z** ji odebere.
+2. Sbalte dvě fáze (▾), zavřete záložku a otevřete aplikaci znovu → fáze zůstanou sbalené. Ctrl+Z sbalení nevrací.
+3. **Uložit**, otevřít jiný projekt, znovu otevřít svůj soubor → sbalení je zpět.
+4. Na tabletu / dotykovém displeji: podržte prst na dvou úsečkách → „Vybrány 2 řádky“; potáhněte jednu z nich → posunou se obě.
+5. V tabulce klikněte na datum začátku → otevře se kalendář; vyberte den a potvrďte Enterem.
+
+### 5. Když se to rozbije
+
+| Co vidíte | Co napsat Claude |
+|---|---|
+| Na tabletu nejde chytit úsečku nebo se místo tažení posouvá stránka | `Na tabletu <zařízení, prohlížeč> při tažení úsečky prstem <co se stane>. Posílám krátké video / screenshot.` |
+| Velký plán se táhne trhaně | `Plán s <počet> činnostmi: tažení úsečky trvá <odhad>. Prohlížeč <název>. Můžeš to změřit?` |
+| Po otevření souboru nejsou fáze sbalené | `Sbalil jsem fáze, uložil (Ctrl+S) a znovu otevřel soubor <název> – fáze jsou rozbalené.` |
+
+### 6. Kontrolní otázky
+
+1. Proč sbalení fáze nepatří do historie Zpět, i když se ukládá do souboru?
+2. Proč je dobré nejdřív změřit, co je pomalé, a teprve potom optimalizovat?
+3. **Mini-úkol:** naimportujte velký plán (např. z GanttProject) a zkuste, jestli je tažení úsečky plynulé. Všimněte si, jak dlouho trvá přepočet po puštění.

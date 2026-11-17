@@ -43,9 +43,10 @@ export interface ProjectState {
 
   /**
    * Přidá činnost a vrátí její ID. S `afterId` ji vloží hned pod tento řádek (za jeho podřízené)
-   * na stejnou úroveň; bez něj (nebo když řádek neexistuje) na konec.
+   * na stejnou úroveň; bez něj (nebo když řádek neexistuje) na konec. `timing` = rovnou délka
+   * a omezení „začít nejdříve“ (nová činnost tažením v grafu) – pořád jeden krok Zpět.
    */
-  addTask: (name: string, kind?: TaskKind, afterId?: string | null) => string
+  addTask: (name: string, kind?: TaskKind, afterId?: string | null, timing?: { durationDays: number; constraintStart?: string }) => string
   /** Odsadit / předsadit / nahoru / dolů / přesun tažením (model/hierarchy.ts). Vrací null, nebo důvod, proč to nejde. */
   indentTask: (id: string) => HierarchyError | null
   outdentTask: (id: string) => HierarchyError | null
@@ -214,11 +215,13 @@ export function createProjectStore(initialProject: Project) {
       past: [],
       future: [],
 
-      addTask(name, kind = 'task', afterId = null) {
+      addTask(name, kind = 'task', afterId = null, timing) {
         const { project } = get()
         const id = newId()
         const order = project.tasks.filter((t) => t.parentId === null).length
-        const added = { ...project, tasks: [...project.tasks, createTask({ id, name, order, kind })] }
+        const task = createTask({ id, name, order, kind, durationDays: timing?.durationDays })
+        if (timing?.constraintStart) task.constraintStart = timing.constraintStart
+        const added = { ...project, tasks: [...project.tasks, task] }
         // Pod vybraný řádek: přidat na konec a hned přesunout za něj – v historii je to jeden krok.
         const placed = afterId ? moveTo(added, id, afterId, 'after') : null
         commit(placed?.ok ? placed.project : added)

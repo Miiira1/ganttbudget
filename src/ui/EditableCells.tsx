@@ -3,7 +3,7 @@
  * Text se během psaní drží jen v buňce; do projektu (a do historie Zpět) se zapíše
  * až po opuštění pole nebo klávese Enter. Klávesa Esc úpravu zruší.
  */
-import { useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 
 const inputClass =
   'w-full rounded border border-transparent bg-transparent px-1.5 py-0.5 hover:border-slate-300 ' +
@@ -56,6 +56,10 @@ interface DateCellInputProps {
   disabled?: boolean
   /** Vrátí false, pokud datum nejde použít (pak se vrátí původní hodnota). Prázdný text = smazat. */
   onCommit: (value: string) => boolean | void
+  /** Po zobrazení rovnou zaměřit (a myší otevřít kalendář) – pro LazyDateCell. */
+  autoOpen?: 'keyboard' | 'pointer'
+  /** Pole se opustilo (po případném zápisu). */
+  onDone?: () => void
 }
 
 /**
@@ -63,10 +67,24 @@ interface DateCellInputProps {
  * při psaní roku po číslicích by se jinak ukládaly mezivýsledky (0002, 0020, 0202…).
  * Formát zobrazení (např. 14. 11. 2026) řídí prohlížeč podle nastavení systému.
  */
-export function DateInputCell({ value, label, title, disabled, onCommit }: DateCellInputProps) {
+export function DateInputCell({ value, label, title, disabled, onCommit, autoOpen, onDone }: DateCellInputProps) {
   const [draft, setDraft] = useState<string | null>(null)
+  const ref = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (!autoOpen) return
+    const input = ref.current
+    input?.focus()
+    if (autoOpen === 'pointer') {
+      try {
+        input?.showPicker?.() // kalendář hned po kliknutí (kde to prohlížeč umí)
+      } catch {
+        // Prohlížeč výběr nedovolil – pole je aspoň zaměřené.
+      }
+    }
+  }, [autoOpen])
   return (
     <input
+      ref={ref}
       type="date"
       aria-label={label}
       title={title}
@@ -79,9 +97,38 @@ export function DateInputCell({ value, label, title, disabled, onCommit }: DateC
       onBlur={() => {
         if (draft !== null && draft !== value) onCommit(draft)
         setDraft(null)
+        onDone?.()
       }}
       onKeyDown={(e) => handleKeys(e, () => setDraft(null))}
     />
+  )
+}
+
+/**
+ * Datum v tabulce činností (13c – výkon): dokud se needituje, je to jen text (tlačítko).
+ * Pole s kalendářem prohlížeče je „těžké“ a 300 řádků × 2 data zdržovalo překreslení plánu,
+ * proto se vytvoří až po kliknutí nebo po přechodu klávesou Tab a po opuštění zase zmizí.
+ */
+export function LazyDateCell(props: DateCellInputProps & { display: string }) {
+  const { value, label, title, disabled, display } = props
+  const [open, setOpen] = useState<'keyboard' | 'pointer' | null>(null)
+  const pointerRef = useRef(false)
+  if (open) return <DateInputCell {...props} autoOpen={open} onDone={() => setOpen(null)} />
+  return (
+    <button
+      type="button"
+      aria-label={value ? `${label}: ${display}` : label}
+      title={title}
+      disabled={disabled}
+      onPointerDown={() => (pointerRef.current = true)}
+      onFocus={() => {
+        setOpen(pointerRef.current ? 'pointer' : 'keyboard')
+        pointerRef.current = false
+      }}
+      className={`${inputClass} block min-h-[1.625rem] whitespace-nowrap text-left tabular-nums`}
+    >
+      {display}
+    </button>
   )
 }
 

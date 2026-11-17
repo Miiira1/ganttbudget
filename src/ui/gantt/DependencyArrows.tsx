@@ -4,7 +4,9 @@
  * Vazba se nekreslí, pokud předchůdce nebo následník nemá spočítaný termín.
  */
 import { memo, useId } from 'react'
+import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
+import { cachedT } from '../../i18n/cachedT'
 import { dependencyPoints, pointsToPath, type Bar } from '../../gantt/geometry'
 import type { Task } from '../../model/schema'
 
@@ -16,7 +18,9 @@ interface DependencyArrowsProps {
 }
 
 export const DependencyArrows = memo(function DependencyArrows({ rows, bars, critical }: DependencyArrowsProps) {
-  const { t } = useTranslation()
+  const { t: translate, i18n } = useTranslation()
+  // Bubliny šipek se mezi změnami termínů nemění – texty z paměti (13c – výkon).
+  const t = ((key: string, options?: Record<string, string | number>) => cachedT(translate, i18n.language, key, options)) as unknown as TFunction
   const markerId = useId()
   const criticalMarkerId = useId()
   const nameById = new Map(rows.map((task) => [task.id, task.name]))

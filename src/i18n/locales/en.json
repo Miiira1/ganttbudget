@@ -336,13 +336,14 @@
     "mouseItems": {
       "dragBar": "Drag a bar in the chart = move the task (sets “start no earlier than” 📌).",
       "dragEdge": "Drag the edge of a bar = change the start or finish (duration).",
+      "createByDrag": "Drag horizontally in the empty strip below the plan = new task with this start (📌) and duration; Esc cancels.",
       "dragRow": "Drag a row by ⠿ = move it elsewhere or into a phase.",
       "resizeColumn": "Drag the right edge of a column header = change its width; double-click = default width.",
       "drawLink": "Drag from the circle at the start / finish of a bar onto another task = draw a dependency (type FS, SS, FF, SF depending on where from and where to).",
       "pin": "Click 📌 = remove the “start no earlier than” constraint.",
       "collapse": "Click ▾ / ▸ = collapse or expand a phase.",
       "zoom": "Ctrl + mouse wheel or spreading / pinching two fingers on the touchpad over the chart = more / less detailed timeline (the day under the pointer stays in place).",
-      "multiSelect": "Ctrl + click a row or bar = add it to / remove it from the selection; Shift + click = select a continuous range. Buttons, shortcuts and dragging then work with all selected rows.",
+      "multiSelect": "Ctrl + click a row or bar = add it to / remove it from the selection; Shift + click = select a continuous range. On a touch screen: hold your finger for ½ s = add / remove. Buttons, shortcuts and dragging then work with all selected rows.",
       "dragGroup": "Drag one of the selected bars = move all selected by the same number of working days; drag ⠿ of a selected row = move the whole selection.",
       "resourceTabs": "Resources: drag a tab (Professions, Workers…) = change the tab order; on the selected tab the same with Alt+Shift+← / →.",
       "rate": "Resources: click an hourly rate (✎) = set it manually, by calculation or from the profession.",
@@ -449,7 +450,8 @@
     "shiftLater_one": "finish {{count}} day later",
     "shiftLater_other": "finish {{count}} days later",
     "shiftEarlier_one": "finish {{count}} day earlier",
-    "shiftEarlier_other": "finish {{count}} days earlier"
+    "shiftEarlier_other": "finish {{count}} days earlier",
+    "createHint": "Drag here horizontally = new task"
   },
   "notice": {
     "close": "Close notice"

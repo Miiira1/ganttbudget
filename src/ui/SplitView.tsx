@@ -106,7 +106,9 @@ export function SplitView({
     changeRatio(next)
   }
 
-  const pane = sync ? 'min-h-0 overflow-x-scroll overflow-y-auto' : 'min-h-0 overflow-auto'
+  // contain: strict (13c – výkon) = změna uvnitř panelu (náhled tažení, nové termíny) nenutí prohlížeč
+  // znovu rozvrhnout zbytek stránky; u plánu s 300 činnostmi to zkrátilo krok náhledu zhruba na polovinu.
+  const pane = `${sync ? 'min-h-0 overflow-x-scroll overflow-y-auto' : 'min-h-0 overflow-auto'} [contain:strict]`
 
   return (
     <div ref={containerRef} className={`flex h-full min-h-0 ${vertical ? 'flex-col' : ''}`}>

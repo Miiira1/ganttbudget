@@ -7,10 +7,13 @@
  * Činnosti bez termínu (např. v kruhu vazeb) se nekreslí.
  * Fáze 9 (G-08): % hotovo = tmavší výplň zleva; po zapnutí přepínače Baseline tenká šedá
  * stínová úsečka pod úsečkou s termíny vybrané baseline (posun konce v bublině).
+ * Fáze 13c (G-09): na dotykovém displeji jsou úchyty větší a kolečka vazeb u vybraných řádků stále vidět.
  */
 import { memo } from 'react'
+import { useCoarsePointer } from '../useCoarsePointer'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
+import { cachedT } from '../../i18n/cachedT'
 import type { ScheduledTask } from '../../engine/schedule'
 import { formatIsoDate } from '../../i18n/format'
 import { BAR_HALF_HEIGHT, MILESTONE_HALF, ROW_HEIGHT, type Bar } from '../../gantt/geometry'
@@ -63,24 +66,26 @@ function barTitle(task: Task, dates: { start: string; finish: string }, t: TFunc
 /** Polovina výšky řádku – zóna najetí myší pokryje celý řádek. */
 const ROW_HALF = ROW_HEIGHT / 2
 
-/** Šířka úchytu pro změnu délky na okraji úsečky (px). */
+/** Šířka úchytu pro změnu délky na okraji úsečky (px); na dotykovém displeji širší pro prst. */
 const EDGE_HANDLE = 6
+const EDGE_HANDLE_TOUCH = 16
 
 /**
  * Neviditelné úchyty pro tažení (zpracovává je BarDragLayer.tsx):
  * tělo úsečky = posun, okraje = změna začátku / konce. Fáze úchyty nemá.
  */
-function DragHandles({ bar, taskId }: { bar: Bar; taskId: string }) {
+function DragHandles({ bar, taskId, touch }: { bar: Bar; taskId: string; touch: boolean }) {
   if (bar.kind === 'phase') return null
-  const top = bar.centerY - TASK_BAR_HEIGHT / 2 - 2
-  const height = TASK_BAR_HEIGHT + 4
+  // Prstem se úsečka chytá po celé výšce řádku.
+  const top = touch ? bar.centerY - ROW_HALF : bar.centerY - TASK_BAR_HEIGHT / 2 - 2
+  const height = touch ? ROW_HEIGHT : TASK_BAR_HEIGHT + 4
   const width = Math.max(MIN_WIDTH, bar.xEnd - bar.xStart)
   const common = { y: top, height, fill: 'transparent', 'data-drag-task': taskId, style: { touchAction: 'none' } }
   if (bar.kind === 'milestone') {
     return <rect {...common} x={bar.xStart} width={width} data-drag-mode="move" className="cursor-grab" />
   }
   // U krátkých úseček zabírají okraje nejvýš třetinu šířky, aby šlo chytit i tělo.
-  const edge = Math.min(EDGE_HANDLE, width / 3)
+  const edge = Math.min(touch ? EDGE_HANDLE_TOUCH : EDGE_HANDLE, width / 3)
   return (
     <>
       <rect {...common} x={bar.xStart} width={width} data-drag-mode="move" className="cursor-grab" />
@@ -214,25 +219,31 @@ function Shape({ bar, critical }: { bar: Bar; critical: boolean | null }) {
 /** Jak daleko od okraje úsečky je kolečko pro kreslení vazby a jak je velké. */
 const LINK_OFFSET = 10
 const LINK_RADIUS = 4.5
+/** Na dotykovém displeji: větší kolečko dál od úsečky (aby se nechytal okraj). */
+const LINK_OFFSET_TOUCH = 18
+const LINK_RADIUS_TOUCH = 8
 
 /**
  * Kolečka pro kreslení vazby (G-03) na začátku a konci úsečky – objeví se po najetí myší
  * (zpracovává je LinkDragLayer.tsx). Neviditelná „zóna najetí“ kolem úsečky drží kolečka
  * viditelná i ve chvíli, kdy myš z úsečky přejíždí na kolečko. Fáze kolečka nemá.
  */
-function LinkHandles({ bar, taskId, label }: { bar: Bar; taskId: string; label: string }) {
+function LinkHandles({ bar, taskId, label, touch, selected }: { bar: Bar; taskId: string; label: string; touch: boolean; selected: boolean }) {
   if (bar.kind === 'phase') return null
+  // Prstem nejde „najet“ – u vybraného řádku jsou kolečka vidět stále.
+  const visible = touch && selected
+  const offset = touch ? LINK_OFFSET_TOUCH : LINK_OFFSET
   const cy = bar.centerY
   const xEnd = Math.max(bar.xEnd, bar.xStart + MIN_WIDTH)
   const circle = (anchor: 'start' | 'end', cx: number) => (
     <circle
       cx={cx}
       cy={cy}
-      r={LINK_RADIUS}
+      r={touch ? LINK_RADIUS_TOUCH : LINK_RADIUS}
       data-link-task={taskId}
       data-link-anchor={anchor}
       style={{ touchAction: 'none' }}
-      className="cursor-crosshair fill-white stroke-miro-turquoise-dark opacity-0 transition-opacity group-hover:opacity-100 dark:fill-slate-900 dark:stroke-miro-turquoise"
+      className={`cursor-crosshair fill-white stroke-miro-turquoise-dark transition-opacity group-hover:opacity-100 dark:fill-slate-900 dark:stroke-miro-turquoise ${visible ? 'opacity-100' : 'opacity-0'}`}
       strokeWidth={1.5}
     >
       <title>{label}</title>
@@ -240,8 +251,8 @@ function LinkHandles({ bar, taskId, label }: { bar: Bar; taskId: string; label: 
   )
   return (
     <>
-      {circle('start', bar.xStart - LINK_OFFSET)}
-      {circle('end', xEnd + LINK_OFFSET)}
+      {circle('start', bar.xStart - offset)}
+      {circle('end', xEnd + offset)}
     </>
   )
 }
@@ -260,10 +271,17 @@ interface TaskBarsProps {
   /** Stínové úsečky baseline (null = přepínač vypnutý nebo baseline není). */
   baseline: Map<string, BaselineBar> | null
   baselineName: string
+  /** Vybrané řádky (na dotykovém displeji u nich zůstanou vidět kolečka vazeb). */
+  selectedIds: ReadonlySet<string>
 }
 
-export const TaskBars = memo(function TaskBars({ rows, bars, dates, critical, slackEnds, percents, baseline, baselineName }: TaskBarsProps) {
-  const { t, i18n } = useTranslation()
+export const TaskBars = memo(function TaskBars({ rows, bars, dates, critical, slackEnds, percents, baseline, baselineName, selectedIds }: TaskBarsProps) {
+  const { t: translate, i18n } = useTranslation()
+  // Hotové texty bublin z paměti (13c – výkon): 300 úseček × několik překladů při každé změně plánu.
+  const t = ((key: string, options?: Record<string, string | number>) => cachedT(translate, i18n.language, key, options)) as unknown as TFunction
+  const touch = useCoarsePointer()
+  const linkOffset = touch ? LINK_OFFSET_TOUCH : LINK_OFFSET
+  const linkRadius = touch ? LINK_RADIUS_TOUCH : LINK_RADIUS
   return (
     <g>
       {rows.map((task) => {
@@ -276,9 +294,9 @@ export const TaskBars = memo(function TaskBars({ rows, bars, dates, critical, sl
         const hoverZone =
           bar.kind === 'phase' ? null : (
             <rect
-              x={bar.xStart - LINK_OFFSET - LINK_RADIUS - 2}
+              x={bar.xStart - linkOffset - linkRadius - 2}
               y={bar.centerY - ROW_HALF}
-              width={Math.max(bar.xEnd, bar.xStart + MIN_WIDTH) - bar.xStart + 2 * (LINK_OFFSET + LINK_RADIUS + 2)}
+              width={Math.max(bar.xEnd, bar.xStart + MIN_WIDTH) - bar.xStart + 2 * (linkOffset + linkRadius + 2)}
               height={2 * ROW_HALF}
               fill="transparent"
             />
@@ -291,8 +309,8 @@ export const TaskBars = memo(function TaskBars({ rows, bars, dates, critical, sl
             {slackEnds?.has(task.id) && <SlackBar bar={bar} to={slackEnds.get(task.id) as number} title={t('gantt.slackBar', { count: d.totalSlack ?? 0 })} />}
             <Shape bar={bar} critical={isCritical} />
             <Progress bar={bar} percent={percent} critical={isCritical} />
-            <DragHandles bar={bar} taskId={task.id} />
-            <LinkHandles bar={bar} taskId={task.id} label={t('gantt.linkHandle')} />
+            <DragHandles bar={bar} taskId={task.id} touch={touch} />
+            <LinkHandles bar={bar} taskId={task.id} label={t('gantt.linkHandle')} touch={touch} selected={selectedIds.has(task.id)} />
           </g>
         )
       })}

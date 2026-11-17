@@ -541,6 +541,8 @@ export const ProjectSchema = z
     views: z.array(SavedViewSchema).max(MAX_VIEWS).optional(),
     /** Myšlenková mapa (fáze 12) – nepovinná, starší soubory ji nemají. */
     mindMap: MindMapSchema.optional(),
+    /** Sbalené fáze (fáze 13c) – jen v souboru a záloze, v aplikaci je drží stav zobrazení (model/collapsedIds.ts). */
+    collapsedIds: z.array(IdSchema).max(5000).optional(),
   })
   .superRefine((project, ctx) => {
     checkCatalogs(project, ctx)

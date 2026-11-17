@@ -123,3 +123,28 @@ export function applyGroupMove(
   }
   return results
 }
+
+/** Tah myší / prstem v prázdném místě grafu pod plánem (13c): od kterého do kterého dne. */
+export interface CreateDragInput {
+  fromDay: number
+  toDay: number
+  /** Začátek projektu – nová činnost nezačne dřív. */
+  projectStartDay: number
+}
+
+/**
+ * Nová činnost z tahu v prázdném místě grafu: začátek = první pracovní den tahu (nejdřív začátek
+ * projektu), konec = poslední pracovní den tahu (nejméně jeden den). Směr tahu nehraje roli.
+ * Omezení „začít nejdříve“ (📌) se nastaví, jen když činnost začíná později než projekt.
+ */
+export function createFromDrag(calendar: WorkCalendar, input: CreateDragInput): DragResult {
+  const first = calendar.nextWorkingDay(input.projectStartDay)
+  const start = Math.max(calendar.nextWorkingDay(Math.min(input.fromDay, input.toDay)), first)
+  const finish = Math.max(start, calendar.previousWorkingDay(Math.max(input.fromDay, input.toDay)))
+  return {
+    constraintStart: start > first ? dayToIso(start) : undefined,
+    durationDays: calendar.countWorkingDays(start, finish),
+    startDay: start,
+    finishDay: finish,
+  }
+}

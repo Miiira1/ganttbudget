@@ -15,6 +15,15 @@ describe('úpravy činností', () => {
     expect(task).toMatchObject({ id, name: 'Analýza', kind: 'task', durationDays: 1, order: 0 })
   })
 
+  it('přidá činnost rovnou s délkou a 📌 (tažení v grafu) – jeden krok Zpět', () => {
+    const store = newStore()
+    store.getState().addTask('A')
+    const id = store.getState().addTask('Nová', 'task', null, { durationDays: 4, constraintStart: '2026-11-23' })
+    expect(store.getState().project.tasks.find((t) => t.id === id)).toMatchObject({ durationDays: 4, constraintStart: '2026-11-23', order: 1 })
+    store.getState().undo()
+    expect(store.getState().project.tasks.map((t) => t.name)).toEqual(['A'])
+  })
+
   it('upraví činnost a hlídá pravidla (milník = 0 dní, % do 100)', () => {
     const store = newStore()
     const id = store.getState().addTask('A')

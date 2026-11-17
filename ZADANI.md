@@ -1,7 +1,7 @@
 # ZADÁNÍ: Aplikace pro Ganttovy diagramy s navázaným rozpočtem
 
 > Název aplikace: **MiRo project** (pracovní název do v1.10: GanttBudget)
-> Verze zadání: 1.25 · Datum: 17. 11. 2026 (změny viz kap. 14)
+> Verze zadání: 1.26 · Datum: 17. 11. 2026 (změny viz kap. 14)
 > Dokument je zároveň vstupem pro Claude Code (vibe coding) a osnovou výukové case study.
 
 ---
@@ -61,7 +61,7 @@ Priorita: **M** = MVP (verze 1.0), **D** = další fáze (viz kap. 8).
 
 | ID | Požadavek | Prio |
 |---|---|---|
-| F-01 | Činnosti lze zadávat v **textové tabulce** (název, začátek, konec, délka, předchůdci, % hotovo, poznámka; sloupec zdroje přibude ve fázi 6) i **graficky** v úsečkovém diagramu. Obě podoby jsou vždy synchronní. | M |
+| F-01 | Činnosti lze zadávat v **textové tabulce** (název, začátek, konec, délka, předchůdci, % hotovo, poznámka; sloupec zdroje přibude ve fázi 6) i **graficky** v úsečkovém diagramu. Obě podoby jsou vždy synchronní. **Nová činnost tažením** (fáze 13c): pod posledním řádkem grafu je pruh „Táhněte sem vodorovně“; tah myší nebo prstem ukáže náhled s daty a délkou, po puštění vznikne činnost na konci plánu se začátkem 📌 (jen když začíná později než projekt, nikdy dřív) a délkou v pracovních dnech, kurzor skočí do jejího názvu; krátké kliknutí nic nevytvoří, Esc zruší, jeden krok Zpět. Tabulka má dole stejně vysoký prázdný řádek, aby řádky lícovaly. | M |
 | F-02 | Typy položek: **činnost**, **fáze** (sumární), **milník** (délka 0). | M |
 | F-03 | **Hierarchické sdružování** činností do fází, neomezené zanořování (rozumný limit např. 6 úrovní). Fázi lze sbalit a rozbalit. | M |
 | F-04 | Fáze automaticky počítá začátek, konec a délku z podřízených činností. | M |
@@ -85,7 +85,7 @@ Priorita: **M** = MVP (verze 1.0), **D** = další fáze (viz kap. 8).
 | G-06 | Klávesové zkratky (nová činnost, odsadit, smazat, duplikovat), přehled zkratek v aplikaci. | M |
 | G-07 | Zobrazení vazeb šipkami, milníků kosočtverci, fází jako sumárních úseček. | M |
 | G-08 | Zobrazení baseline a % hotovo: **% hotovo** = tmavší výplň úsečky zleva; u činnosti se zadává ručně, u fáze se počítá z jejích činností (váha = plánovaný náklad z vybrané baseline, bez něj délka, u samých milníků prostý průměr) a je jen ke čtení; milník má zaškrtávátko „splněno“ (0 / 100 %). Přepínač **Baseline** vedle Kritické cesty (pamatuje si ho prohlížeč) ukáže pod úsečkami tenkou šedou stínovou úsečku s termíny vybrané baseline; bublina úsečky ukáže % hotovo, termíny baseline a posun konce v kalendářních dnech. | D (fáze 9) |
-| G-09 | Funkční na tabletu (dotyk): větší úchyty u dotykových zařízení, tažení úseček, řádků i mapy prstem, dlouhý stisk = hromadný výběr. | D (fáze 13c) |
+| G-09 | Funkční na tabletu (dotyk): na zařízení s „hrubým“ ukazatelem (`pointer: coarse`) **větší úchyty** – úsečka se chytá po celé výšce řádku, okraje 16 px místo 6 px, kolečka pro kreslení vazeb větší a u vybraných řádků stále vidět (najet myší nejde). **Tažení úseček** (i skupiny) a **mapy** prstem. **Dlouhý stisk ½ s** na úsečce nebo řádku tabulky = přidat / odebrat z výběru (náhrada Ctrl+klik); pohyb prstu o víc než 8 bodů = tažení. Klepnutí vybere jen tuto položku. **Řádky** se na dotyku přesouvají tlačítky Nahoru / Dolů (tažení za ⠿ používá přetahování prohlížeče, které na dotyku spolehlivě nefunguje). Ověřeno v emulaci dotykového zařízení. | D (fáze 13c) |
 
 **Pravidlo posunu úsečky.** Při tažení činnosti s předchůdci se nastaví omezení „začít nejdříve k datu". Skutečný začátek = pozdější z (omezení, vyplývající z vazeb). Aplikace to uživateli srozumitelně vysvětlí (např. ikonou a tooltipem). Přesné chování se ověří ve fázi 4b roadmapy.
 
@@ -188,7 +188,7 @@ Státní svátky ČR k zakódování: 1. 1.; Velký pátek; Velikonoční pondě
 | ID | Požadavek |
 |---|---|
 | N-01 | Běží ve všech aktuálních prohlížečích (Chrome, Edge, Firefox, Safari) bez instalace. |
-| N-02 | Plynulé ovládání pro 300 činností (tažení úsečky bez zpoždění, přepočet do 100 ms). |
+| N-02 | Plynulé ovládání pro 300 činností (tažení úsečky bez zpoždění, přepočet do 100 ms). Změřeno ve fázi 13c na 300 činnostech v jednom řetězu vazeb (Chrome): přepočet (termíny, náklady, vytížení) ≈ 7 ms; krok náhledu tažení ≈ 16 ms (jeden snímek) i pro 100 vybraných úseček; po puštění včetně překreslení tabulky a grafu ≈ 0,2 s (posun první činnosti posune všech 270 následníků). Pomohlo: `contain: strict` u panelů tabulky a grafu, data v tabulce jako text (pole s kalendářem až po kliknutí), paměť hotových překladů. |
 | N-03 | Data zůstávají v počítači uživatele, nic se neposílá na server (zdůraznit v aplikaci). Aplikace nepoužívá sledovací nástroje. |
 | N-04 | Světlý i tmavý režim, přepínač a respektování systémového nastavení. |
 | N-05 | Rozumné rozložení na šířce od 1024 px; na menších šířkách alespoň čtení. |
@@ -289,6 +289,8 @@ Project      … activeBaselineId? (baseline ke srovnání), statusDate? (datum 
 Project      … mindMap?: { nodes: [{ id, parentId (null = střední téma), order, text, collapsed? }] }
              // myšlenková mapa (fáze 12): právě jeden kořen, max. 500 uzlů, 6 úrovní pod kořenem, text 1–200 znaků;
              // nepovinná (schemaVersion zůstává 2), import celého projektu z Excelu ji zachová
+Project      … collapsedIds?: string[]   // sbalené fáze (fáze 13c) – jen v souboru a v záloze; v aplikaci je drží
+             // stav zobrazení mimo historii Zpět (při uložení se přibalí, po otevření vybalí); neznámá ID se ignorují
 ```
 
 **Formát „AI plán“ (fáze 11)** – odpověď AI, ze které vznikne nový projekt (nové ID, peníze × 100 na haléře):
@@ -468,3 +470,4 @@ Technicky: build bez chyb, testy plánovacího jádra projdou, aplikace je nasaz
 | 1.23 | 17. 11. 2026 | Plán fáze 13 – doladění a export, rozdělená na 13a (export SVG / PNG / PDF přes tisk), 13b (import MS Project a GanttProject – jen plán; ochrana proti „nafouknutým“ XLSX), 13c (tablet, nová činnost tažením v grafu, ukládání sbalených fází `Project.collapsedIds` mimo historii Zpět, výkon), 13d (svátky SK, PL, DE, AT – `calendar.holidayCountry`; přístupnost); commit a nasazení po každé části |
 | 1.24 | 17. 11. 2026 | Fáze 13a – export Gantta: I-05 upřesněn podle implementace (SVG, PNG, okno Tisk / PDF s Ctrl+P, A4 / A3, automatické měřítko, stránkování po řádcích; tisk do PDF ověřen uživatelem) |
 | 1.25 | 17. 11. 2026 | Fáze 13b – import plánu a ochrana XLSX: I-06 upřesněn podle implementace (MS Project XML a GanttProject .gan, převod typů a prodlev vazeb, upozornění na vynechané vazby, začátek projektu, vlastní bezpečný čtenář XML místo DOMParseru – testy běží bez prohlížeče); N-10 doplněn o kontrolu archivu XLSX před ExcelJS (50 MB, 2 000 souborů, poměr 200 : 1, ověření skutečné velikosti). Mimo fázi (na žádost uživatele): **menu Soubor má dvě úrovně** – nahoře Nový, Otevřít, Uložit, Uložit jako, Tisk / PDF a podnabídky **Exportovat** a **Importovat** (otevřou se najetím myší, kliknutím nebo klávesou → / Enter, ← / Esc zavře), aby se menu vešlo na obrazovku notebooku. Oprava: v náhledu importu celého projektu se u chybějícího listu Činnosti / Řádky ukazoval technický klíč místo věty |
+| 1.26 | 17. 11. 2026 | Fáze 13c – tablet, tvorba tažením, sbalení, výkon: G-09 upřesněn podle implementace (větší úchyty pro prst, dlouhý stisk = hromadný výběr; řádky se na dotyku přesouvají tlačítky – tažení řádků prstem nebylo realizováno); F-01 doplněn o novou činnost tažením v pruhu pod plánem; `Project.collapsedIds` doplněno do kap. 7 (sbalené fáze v souboru a záloze, mimo historii Zpět; sbalení neoznačí projekt jako neuložený); N-02 doplněn o naměřené hodnoty. Puštění úsečky s 270 navázanými následníky trvá ≈ 0,2 s – další zrychlení (kreslit jen viditelné řádky) zatím ne |

@@ -16,6 +16,8 @@ interface ViewState {
   /** ID sbalených fází. */
   collapsed: ReadonlySet<string>
   toggleCollapsed: (id: string) => void
+  /** Nastavit sbalené fáze najednou (po otevření souboru / obnovení zálohy, 13c). */
+  setCollapsed: (ids: ReadonlySet<string>) => void
   /** Aktuální řádek (kde je kurzor) – sem se např. vloží nová činnost. */
   selectedId: string | null
   /** Všechny vybrané řádky (aktuální mezi nimi, pokud není null). */
@@ -54,6 +56,7 @@ export const useViewState = create<ViewState>((set) => ({
     set((s) => ({ selectedIds: new Set(rangeIds(rows, s.anchorId ?? s.selectedId, id)), selectedId: id })),
   clearMultiSelection: () => set((s) => (s.selectedIds.size <= 1 ? s : single(s.selectedId))),
   collapsed: new Set(),
+  setCollapsed: (ids) => set({ collapsed: new Set(ids) }),
   toggleCollapsed: (id) =>
     set(({ collapsed }) => {
       const next = new Set(collapsed)

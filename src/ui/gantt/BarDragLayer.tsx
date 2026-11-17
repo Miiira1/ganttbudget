@@ -9,6 +9,8 @@
  *   posunou se o stejný počet pracovních dnů (gantt/drag.ts → applyGroupMove). Okraje (délka)
  *   se táhnou vždy jen u jedné úsečky; fáze se neposouvají (počítají se ze svých položek).
  * - Esc tažení zruší. Výpočty přichycení na pracovní dny: gantt/drag.ts (otestované).
+ * - Dotyk (13c): výběr se mění až po zvednutí prstu (klepnutí = vybrat jen tuto úsečku);
+ *   podržení prstu ½ s bez pohybu = přidat / odebrat z výběru (náhrada Ctrl+klik), tažení se zruší.
  */
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -21,7 +23,8 @@ import { formatIsoDate } from '../../i18n/format'
 import type { Task } from '../../model/schema'
 import { getSchedule, projectStore } from '../../store/useProject'
 import { showNotice } from '../notice'
-import { currentSelection, finishPlainClick, selectWithModifiers } from '../viewState'
+import { isTouchLike, watchLongPress, type LongPressWatch } from '../longPress'
+import { currentSelection, finishPlainClick, selectWithModifiers, useViewState } from '../viewState'
 
 interface ActiveDrag {
   task: Task
@@ -74,6 +77,7 @@ export function BarDragLayer(props: BarDragLayerProps) {
   const propsRef = useRef(props)
   propsRef.current = props
   const activeRef = useRef<ActiveDrag | null>(null)
+  const longPressRef = useRef<LongPressWatch | null>(null)
   const tRef = useRef(t)
   tRef.current = t
   const { svgRef } = props
@@ -97,8 +101,10 @@ export function BarDragLayer(props: BarDragLayerProps) {
       const d = dates.get(taskId)
       if (!task || !d?.start || !d.finish) return
       event.preventDefault()
+      const touch = isTouchLike(event)
       // Ctrl+klik / Shift+klik na úsečku jen mění výběr (jako v tabulce), netáhne se.
-      if (selectWithModifiers(event, taskId)) return
+      // Prstem se výběr nemění hned – mohl by to být začátek dlouhého stisku (přidat do výběru).
+      if (!touch && selectWithModifiers(event, taskId)) return
       try {
         // Pohyb myši chodí do grafu, i když myš z úsečky „uteče“.
         svg.setPointerCapture(event.pointerId)
@@ -121,11 +127,21 @@ export function BarDragLayer(props: BarDragLayerProps) {
         deltaDays: 0,
         result: null,
       })
+      longPressRef.current?.cancel()
+      longPressRef.current = touch
+        ? watchLongPress(event.clientX, event.clientY, () => {
+            const drag = activeRef.current
+            if (!drag || drag.pointerId !== event.pointerId || drag.result) return
+            setActive(null) // místo tažení: přidat / odebrat z výběru
+            useViewState.getState().toggleSelect(taskId)
+          })
+        : null
     }
 
     function onPointerMove(event: PointerEvent) {
       const drag = activeRef.current
       if (!drag || event.pointerId !== drag.pointerId) return
+      longPressRef.current?.move(event.clientX, event.clientY)
       const { tl, calendar } = propsRef.current
       const deltaDays = pixelsToDays(event.clientX - drag.startX, tl.dayWidth)
       if (deltaDays === drag.deltaDays) return
@@ -150,10 +166,14 @@ export function BarDragLayer(props: BarDragLayerProps) {
 
     function onPointerUp(event: PointerEvent) {
       const drag = activeRef.current
+      longPressRef.current?.cancel()
       if (!drag || event.pointerId !== drag.pointerId) return
       setActive(null)
+      const touch = isTouchLike(event)
+      // Prst: klepnutí vybere jen tuto úsečku; po tažení mimo výběr se vybere tažená.
+      if (touch && (!drag.result || !useViewState.getState().selectedIds.has(drag.task.id))) useViewState.getState().select(drag.task.id)
       if (!drag.result) {
-        finishPlainClick(event, drag.task.id) // jen kliknutí: vybrat tento řádek, nic se nemění
+        if (!touch) finishPlainClick(event, drag.task.id) // jen kliknutí: vybrat tento řádek, nic se nemění
         return
       }
       const results = drag.groupResults ?? new Map([[drag.task.id, drag.result]])
@@ -172,7 +192,10 @@ export function BarDragLayer(props: BarDragLayerProps) {
       }
     }
 
-    const cancel = () => setActive(null)
+    const cancel = () => {
+      longPressRef.current?.cancel()
+      setActive(null)
+    }
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape' && activeRef.current) {
         event.preventDefault()

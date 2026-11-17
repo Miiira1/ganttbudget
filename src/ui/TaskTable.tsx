@@ -6,6 +6,7 @@
 import { memo, useMemo, useRef, useState, type DragEvent, type RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
+import { cachedT } from '../i18n/cachedT'
 import { formatIsoDate } from '../i18n/format'
 import {
   formatPredecessorsWith,
@@ -29,14 +30,18 @@ import { ROW_HEIGHT } from '../gantt/geometry'
 import { getSchedule, projectStore, useCosts, usePercents, useProject, useSchedule } from '../store/useProject'
 import { formatMoney } from '../model/money'
 import { milestoneAllows } from '../model/catalogs'
-import { DateInputCell, NumberCell, TextCell } from './EditableCells'
+import { LazyDateCell, NumberCell, TextCell } from './EditableCells'
 import { createWorkCalendar, isoToDay } from '../engine/calendar'
 import { durationForFinish } from '../gantt/drag'
 import { isValidIsoDate } from '../model/dates'
 import { showNotice } from './notice'
 import { confirmAndDelete } from './structureCommands'
 import { TableColumns, TableHeader, useTableWidth } from './TableHeader'
+import { isTouchLike, recentLongPress, watchLongPress, type LongPressWatch } from './longPress'
 import { currentSelection, finishPlainClick, selectWithModifiers, useSelectedIds, useViewState, useVisibleRows } from './viewState'
+
+/** Hlídání dlouhého stisku prstem na řádku (13c) – najednou se drží jen jeden řádek. */
+let rowLongPress: LongPressWatch | null = null
 
 // Výška řádků je pevná a stejná jako v grafu (gantt/geometry.ts), aby řádky lícovaly.
 // Šířky sloupců nastavuje uživatel (TableHeader.tsx); co se do buňky nevejde, ořízne se.
@@ -138,7 +143,8 @@ const selectedRowClass =
  * a bublina to vysvětlí.
  */
 function ConstraintPin({ task, ignored }: { task: Task; ignored: boolean }) {
-  const { t, i18n } = useTranslation()
+  const { t: translate, i18n } = useTranslation()
+  const t = (key: string, options?: Record<string, string | number>) => cachedT(translate, i18n.language, key, options)
   if (!task.constraintStart) return null
   const date = formatIsoDate(task.constraintStart, i18n.language)
   return (
@@ -158,7 +164,8 @@ function ConstraintPin({ task, ignored }: { task: Task; ignored: boolean }) {
 
 /** Tlačítko ▸/▾ pro sbalení a rozbalení fáze; u ostatních řádků jen stejně široké místo. */
 function CollapseToggle({ task, hasChildren, collapsed }: { task: Task; hasChildren: boolean; collapsed: boolean }) {
-  const { t } = useTranslation()
+  const { t: translate, i18n } = useTranslation()
+  const t = (key: string, options?: Record<string, string | number>) => cachedT(translate, i18n.language, key, options)
   const toggle = useViewState((s) => s.toggleCollapsed)
   if (!hasChildren) return <span aria-hidden="true" className="inline-block w-5 shrink-0" />
   return (
@@ -180,7 +187,9 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
   const { hasChildren, collapsed, selected, dropIndicator: indicator, dragging, drag, constraintIgnored } = props
   const { costTotal, costLabor, costMachines, costMaterial, costOther } = props
   const { totalSlack, freeSlack, critical, percent } = props
-  const { t, i18n } = useTranslation()
+  const { t: translate, i18n } = useTranslation()
+  // Hotové texty z paměti (13c – výkon): 300 řádků × desítky překladů zdržovalo překreslení.
+  const t = (key: string, options?: Record<string, string | number>) => cachedT(translate, i18n.language, key, options)
   const select = useViewState((s) => s.select)
   // Řádek nesleduje celý projekt (jinak by se překresloval při každé změně kdekoli);
   // aktuální projekt si vezme až ve chvíli, kdy ho opravdu potřebuje.
@@ -222,7 +231,7 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
   }
 
   // Před smazáním fáze řekne, kolik podřízených položek zmizí s ní (N-08).
-  const handleDelete = () => confirmAndDelete(task.id, t)
+  const handleDelete = () => confirmAndDelete(task.id, translate)
 
   return (
     <tr
@@ -230,13 +239,26 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
       style={{ height: ROW_HEIGHT, boxShadow: indicator ? INDICATOR_SHADOW[indicator] : undefined }}
       // Kliknutí do řádku nebo do jeho pole řádek vybere (s ním pracují Odsadit, Nahoru…).
       // Ctrl+klik přidá / odebere řádek z výběru, Shift+klik vybere rozsah – a nezačne psaní do pole.
+      // Na dotykovém displeji: podržet prst ½ s = přidat / odebrat řádek z výběru (místo Ctrl+klik).
       onFocus={() => {
-        if (!useViewState.getState().selectedIds.has(task.id)) select(task.id)
+        if (!recentLongPress() && !useViewState.getState().selectedIds.has(task.id)) select(task.id)
       }}
       onMouseDown={(e) => {
         if (e.button === 0 && selectWithModifiers(e, task.id)) e.preventDefault()
       }}
-      onClick={(e) => finishPlainClick(e, task.id)}
+      onClick={(e) => {
+        if (!recentLongPress()) finishPlainClick(e, task.id)
+      }}
+      onPointerDown={(e) => {
+        rowLongPress?.cancel()
+        rowLongPress = isTouchLike(e) ? watchLongPress(e.clientX, e.clientY, () => useViewState.getState().toggleSelect(task.id)) : null
+      }}
+      onPointerMove={(e) => rowLongPress?.move(e.clientX, e.clientY)}
+      onPointerUp={() => rowLongPress?.cancel()}
+      onPointerCancel={() => rowLongPress?.cancel()}
+      onContextMenu={(e) => {
+        if (recentLongPress()) e.preventDefault() // po dlouhém stisku neotvírat nabídku prohlížeče
+      }}
       onDragOver={(e) => drag.onDragOver(task, e)}
       onDrop={drag.onDrop}
       className={`${selected ? selectedRowClass : `hover:bg-miro-turquoise-light/30 dark:hover:bg-slate-800 ${kindRowClass[task.kind]}`} ${
@@ -330,11 +352,18 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
       ) : (
         <>
           <td className={td}>
-            <DateInputCell value={start ?? ''} label={label('table.start')} title={t('table.startHint')} onCommit={commitStart} />
+            <LazyDateCell
+              value={start ?? ''}
+              display={start ? formatIsoDate(start, i18n.language) : ''}
+              label={label('table.start')}
+              title={t('table.startHint')}
+              onCommit={commitStart}
+            />
           </td>
           <td className={td}>
-            <DateInputCell
+            <LazyDateCell
               value={finish ?? ''}
+              display={finish ? formatIsoDate(finish, i18n.language) : ''}
               label={label('table.finish')}
               title={task.kind === 'milestone' ? t('table.milestoneFinishHint') : t('table.finishHint')}
               disabled={task.kind === 'milestone'}
@@ -386,7 +415,7 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
               const project = projectStore.getState().project
               const resolved = parsed.ok ? resolvePredecessors(project, task.id, parsed.items) : parsed
               if (!resolved.ok) {
-                showNotice(predecessorErrorText(t, resolved.error))
+                showNotice(predecessorErrorText(translate, resolved.error))
                 return false
               }
               setDependencies(task.id, resolved.dependencies)
@@ -622,6 +651,12 @@ export function TaskTable({
           )
         })}
       </tbody>
+      {/* Prázdný řádek navíc – v grafu je pod plánem pruh pro novou činnost tažením; výšky musí sedět. */}
+      <tfoot aria-hidden="true">
+        <tr style={{ height: ROW_HEIGHT }}>
+          <td colSpan={99} />
+        </tr>
+      </tfoot>
     </table>
   )
 }

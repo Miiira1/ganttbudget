@@ -6,7 +6,7 @@ Je určená studentům a praktikům bez zkušenosti s projektovým řízením. B
 
 **▶ Vyzkoušet aplikaci: https://miiira1.github.io/ganttbudget/** (nic se neinstaluje, stačí prohlížeč)
 
-> Stav: **fáze 13b – import z MS Project a GanttProject.** Termíny se počítají z délek, vazeb FS, SS, FF, SF
+> Stav: **fáze 13c – tablet, tvorba tažením, výkon.** Termíny se počítají z délek, vazeb FS, SS, FF, SF
 > (s prodlevou), omezení „začít nejdříve“ a kalendáře (víkendy, české svátky, odstávky) a zobrazují
 > se v tabulce i v Ganttově diagramu. Vazby se zapisují textem (`3SS+2`) nebo kreslí tažením v grafu.
 > Činnosti se seskupují do fází (WBS, sbalení, sumarizace), úsečky se v grafu táhnou s přichycením
@@ -41,7 +41,9 @@ Je určená studentům a praktikům bez zkušenosti s projektovým řízením. B
 > koncové uzly = činnosti); mapu jde vložit i zkopírovat jako **odsazený text**. Fáze 13a přidala export Ganttova
 > diagramu jako obrázek **SVG / PNG** a **Tisk / PDF** (Ctrl+P) se stránkováním na A4 / A3. Fáze 13b přidala import plánu
 > z **MS Project (XML)** a **GanttProject (.gan)** s náhledem a ochranu importu z Excelu proti „nafouknutým“
-> souborům; menu Soubor má podnabídky **Exportovat** a **Importovat** (viz [ZADANI.md](ZADANI.md), kap. 8).
+> souborům; menu Soubor má podnabídky **Exportovat** a **Importovat**. Fáze 13c přidala ovládání na **tabletu**
+> (větší úchyty, dlouhý stisk = výběr), **novou činnost tažením** v pruhu pod plánem, ukládání **sbalených fází**
+> do souboru i zálohy a zrychlení pro plány s 300 činnostmi (viz [ZADANI.md](ZADANI.md), kap. 8).
 
 ## Soubory: co kdy použít
 
