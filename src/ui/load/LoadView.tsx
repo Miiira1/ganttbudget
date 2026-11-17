@@ -1,19 +1,26 @@
 /**
  * Pohled Vytížení (fáze 6c, Z-03): mřížka zdrojů × období a pod ní detail vybraného zdroje
  * (histogram poptávky proti kapacitě a seznam činností, které ho vytěžují).
+ * Dashboard (fáze 8, A-04): filtry (druh zdroje, středisko, jen přetížené), ukazatele
+ * a souhrnný histogram skupiny (jeden za každý druh zdroje ve filtru).
  * Jen čte – nic v projektu nemění, takže nevzniká žádný krok Zpět.
  */
 import { memo, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { absenceWorkingDays } from '../../model/catalogs'
-import { loadPeriods, summarizePeriod, type LoadPeriodUnit, type LoadResourceKind, type PeriodLoad, type ResourceLoad } from '../../model/load'
+import { filterLoad, groupLoad, loadKpis, loadPeriods, NO_DEPARTMENT, summarizePeriod, type LoadPeriodUnit, type LoadResourceKind, type PeriodLoad, type ResourceLoad } from '../../model/load'
 import { useLoad, useProject } from '../../store/useProject'
 import { loadPreference, savePreference } from '../preferences'
-import { LoadDetail } from './LoadDetail'
+import { MultiSelect, NOTHING } from '../costs/MultiSelect'
+import { Kpi } from '../Kpi'
+import { Segmented } from '../Segmented'
+import { Histogram, LoadDetail } from './LoadDetail'
 import { CELL_CLASS, cellLevel, cellText, cellTitle, periodLabel } from './loadCells'
 
 const UNITS: readonly LoadPeriodUnit[] = ['day', 'week', 'month']
 const GROUPS: readonly LoadResourceKind[] = ['worker', 'profession', 'machine']
+const PANELS = ['resource', 'group'] as const
+type Panel = (typeof PANELS)[number]
 /** Šířka sloupce období podle jednotky (dny jsou užší, měsíce širší). */
 const COLUMN_WIDTH: Record<LoadPeriodUnit, string> = { day: 'min-w-[3rem]', week: 'min-w-[3.5rem]', month: 'min-w-[4.25rem]' }
 
@@ -27,6 +34,15 @@ export function LoadView({ onShowPlan }: { onShowPlan: () => void }) {
     savePreference('loadUnit', next)
   }
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const [panel, setPanelState] = useState<Panel>(() => PANELS.find((x) => x === loadPreference('loadPanel')) ?? 'resource')
+  const setPanel = (next: Panel) => {
+    setPanelState(next)
+    savePreference('loadPanel', next)
+  }
+  // Filtry dashboardu (prázdná množina = vše); pamatují se jen do zavření stránky.
+  const [filterKinds, setFilterKinds] = useState<Set<string>>(new Set())
+  const [filterDepartments, setFilterDepartments] = useState<Set<string>>(new Set())
+  const [onlyOverloaded, setOnlyOverloaded] = useState(false)
 
   const range = load.range
   const periods = useMemo(() => (range ? loadPeriods(range, unit) : []), [range, unit])
@@ -35,16 +51,29 @@ export function LoadView({ onShowPlan }: { onShowPlan: () => void }) {
     [load, range, periods],
   )
   const labels = useMemo(() => periods.map((p) => periodLabel(p, unit, t, i18n.language)), [periods, unit, t, i18n.language])
+  // Do filtru jdou jen střediska, která v projektu opravdu jsou (po smazání apod.).
+  const departments = useMemo(() => {
+    const allowed = new Set([...project.departments.map((d) => d.id), NO_DEPARTMENT, NOTHING])
+    return new Set([...filterDepartments].filter((d) => allowed.has(d)))
+  }, [filterDepartments, project.departments])
+  const visible = useMemo(
+    () => filterLoad(project, load.resources, { kinds: filterKinds, departments, onlyOverloaded }),
+    [project, load.resources, filterKinds, departments, onlyOverloaded],
+  )
+  const kpis = useMemo(() => loadKpis(visible), [visible])
+  const filtersActive = filterKinds.size > 0 || departments.size > 0 || onlyOverloaded
 
   if (load.resources.length === 0) return <Empty text={t('load.noResources')} />
   if (!range) return <Empty text={t('load.noPlan')} />
 
-  // Výchozí výběr: první přetížený zdroj, jinak první vytížený, jinak první vůbec.
+  // Výchozí výběr (mezi zdroji ve filtru): první přetížený, jinak první vytížený, jinak první vůbec.
   const selected =
-    load.resources.find((r) => r.key === selectedKey) ??
-    load.resources.find((r) => r.overloadedDays.length > 0) ??
-    load.resources.find((r) => r.contributions.length > 0) ??
-    load.resources[0]!
+    visible.find((r) => r.key === selectedKey) ??
+    visible.find((r) => r.overloadedDays.length > 0) ??
+    visible.find((r) => r.contributions.length > 0) ??
+    visible[0] ??
+    null
+  const pct = (value: number | null) => (value === null ? '–' : `${value} %`)
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -52,6 +81,48 @@ export function LoadView({ onShowPlan }: { onShowPlan: () => void }) {
         <p className="min-w-60 flex-1 text-sm text-slate-600 dark:text-slate-400">{t('load.intro')}</p>
         <Legend />
         <UnitSwitch unit={unit} onChange={setUnit} />
+      </div>
+
+      {/* Filtry dashboardu – omezí mřížku, ukazatele i souhrn skupiny. */}
+      <div role="group" aria-label={t('load.filter.label')} className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-2 dark:border-slate-700">
+        <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('load.filter.label')}</span>
+        <MultiSelect label={t('load.filter.kind')} options={GROUPS.map((k) => ({ value: k, label: t(`load.groups.${k}`) }))} selected={filterKinds} onChange={setFilterKinds} />
+        {project.departments.length > 0 && (
+          <MultiSelect
+            label={t('load.filter.department')}
+            options={[...project.departments.map((d) => ({ value: d.id, label: d.name })), { value: NO_DEPARTMENT, label: t('load.filter.noDepartment') }]}
+            selected={departments}
+            onChange={setFilterDepartments}
+          />
+        )}
+        <label className="flex items-center gap-2 rounded px-1 text-sm">
+          <input type="checkbox" checked={onlyOverloaded} onChange={(e) => setOnlyOverloaded(e.target.checked)} className="h-4 w-4 accent-miro-turquoise-dark" />
+          {t('load.filter.onlyOverloaded')}
+        </label>
+        {filtersActive && (
+          <button
+            type="button"
+            className="rounded px-2 py-1 text-sm underline decoration-miro-turquoise decoration-2 underline-offset-4 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:bg-slate-800"
+            onClick={() => {
+              setFilterKinds(new Set())
+              setFilterDepartments(new Set())
+              setOnlyOverloaded(false)
+            }}
+          >
+            {t('costs.filter.clear')}
+          </button>
+        )}
+      </div>
+
+      {/* Ukazatele (A-04) za celý rozsah plánu a přepínač spodního panelu. */}
+      <div className="flex flex-wrap items-stretch gap-2 border-b border-slate-200 px-4 py-2 dark:border-slate-700">
+        <Kpi label={t('load.kpi.overloaded')} value={`${kpis.overloadedResources} / ${kpis.resources}`} hint={t('load.kpi.overloadedHint')} alert={kpis.overloadedResources > 0} />
+        <Kpi label={t('load.kpi.overloadedDays')} value={String(kpis.overloadedDays)} hint={t('load.kpi.overloadedDaysHint')} />
+        <Kpi label={t('load.kpi.peak')} value={pct(kpis.peakPct)} hint={t('load.kpi.peakHint')} />
+        <Kpi label={t('load.kpi.average')} value={pct(kpis.averagePct)} hint={t('load.kpi.averageHint')} />
+        <div className="ml-auto self-end">
+          <Segmented label={t('load.panel.label')} options={PANELS} value={panel} onChange={setPanel} text={(x) => t(`load.panel.${x}`)} />
+        </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto">
@@ -75,7 +146,7 @@ export function LoadView({ onShowPlan }: { onShowPlan: () => void }) {
             </tr>
           </thead>
           {GROUPS.map((kind) => {
-            const rows = load.resources.filter((r) => r.kind === kind)
+            const rows = visible.filter((r) => r.kind === kind)
             if (rows.length === 0) return null
             return (
               <tbody key={kind}>
@@ -93,7 +164,7 @@ export function LoadView({ onShowPlan }: { onShowPlan: () => void }) {
                     key={r.key}
                     resource={r}
                     summaries={summaries.get(r.key) ?? []}
-                    selected={r.key === selected.key}
+                    selected={r.key === selected?.key}
                     onSelect={setSelectedKey}
                     widthClass={COLUMN_WIDTH[unit]}
                   />
@@ -102,17 +173,24 @@ export function LoadView({ onShowPlan }: { onShowPlan: () => void }) {
             )
           })}
         </table>
+        {visible.length === 0 && <p className="px-4 py-6 text-sm text-slate-600 dark:text-slate-400">{t('load.filter.empty')}</p>}
       </div>
 
-      <LoadDetail
-        key={selected.key}
-        resource={selected}
-        periods={periods}
-        summaries={summaries.get(selected.key) ?? []}
-        labels={labels}
-        absenceDays={selected.kind === 'worker' ? absenceWorkingDays(project.workers.find((w) => w.id === selected.id) ?? {}, project.calendar) : 0}
-        onShowPlan={onShowPlan}
-      />
+      {panel === 'group' ? (
+        <GroupPanel resources={visible} range={range} periods={periods} labels={labels} />
+      ) : (
+        selected && (
+          <LoadDetail
+            key={selected.key}
+            resource={selected}
+            periods={periods}
+            summaries={summaries.get(selected.key) ?? []}
+            labels={labels}
+            absenceDays={selected.kind === 'worker' ? absenceWorkingDays(project.workers.find((w) => w.id === selected.id) ?? {}, project.calendar) : 0}
+            onShowPlan={onShowPlan}
+          />
+        )
+      )}
     </div>
   )
 }
@@ -172,6 +250,37 @@ const ResourceRow = memo(function ResourceRow({
     </tr>
   )
 })
+
+/**
+ * Souhrn skupiny: za každý druh zdroje ve filtru jeden histogram – součet naplánovaných hodin
+ * proti součtu kapacit. Druhy se nesčítají dohromady (profese obsahuje hodiny svých pracovníků).
+ */
+function GroupPanel({ resources, range, periods, labels }: { resources: ResourceLoad[]; range: { startDay: number; endDay: number }; periods: { startDay: number; endDay: number }[]; labels: { top: string; bottom: string; title: string }[] }) {
+  const { t } = useTranslation()
+  const groups = GROUPS.map((kind) => {
+    const members = resources.filter((r) => r.kind === kind)
+    const group = groupLoad(members, range, t(`load.groups.${kind}`))
+    return group ? { kind, count: members.length, group, summaries: periods.map((p) => summarizePeriod(group, range, p)) } : null
+  }).filter((g) => g !== null)
+  return (
+    <section aria-label={t('load.panel.group')} className="max-h-[45%] shrink-0 overflow-auto border-t-2 border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
+      <p className="text-sm text-slate-600 dark:text-slate-400">{t('load.group.intro')}</p>
+      {groups.length === 0 && <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{t('load.filter.empty')}</p>}
+      <div className="mt-2 flex flex-wrap gap-x-8 gap-y-4">
+        {groups.map(({ kind, count, group, summaries }) => (
+          <div key={kind} className="min-w-0">
+            <h3 className="flex flex-wrap items-baseline gap-x-2 text-sm font-semibold">
+              {t('load.group.title', { name: group.name, count })}
+              {group.overloadedDays.length > 0 && <span className="font-semibold text-red-700 dark:text-red-300">{t('load.overloadedDays', { count: group.overloadedDays.length })}</span>}
+              {!group.hasCapacity && <span className="font-normal text-slate-600 dark:text-slate-400">{t('load.group.noCapacity')}</span>}
+            </h3>
+            <Histogram resource={group} periods={periods} summaries={summaries} labels={labels} />
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
 
 function UnitSwitch({ unit, onChange }: { unit: LoadPeriodUnit; onChange: (u: LoadPeriodUnit) => void }) {
   const { t } = useTranslation()

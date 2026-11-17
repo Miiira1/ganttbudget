@@ -30,15 +30,16 @@ import { isDirty, openProject, saveProject, useFileState } from '../io/fileActio
 import { startAutosave } from '../io/autosaveRunner'
 import { deleteSelected, duplicateSelected } from './structureCommands'
 import { ResourcesView } from './resources/ResourcesView'
-import { CostsIcon, LoadIcon, PlanIcon, ResourcesIcon } from './icons'
+import { AnalysisIcon, CostsIcon, LoadIcon, PlanIcon, ResourcesIcon } from './icons'
 import { LoadView } from './load/LoadView'
 import { CostsView } from './costs/CostsView'
+import { AnalysisView } from './analysis/AnalysisView'
 import { DetailDock } from './detail/DetailDock'
 import { TaskDetailBody, TaskDetailHeader } from './detail/TaskDetail'
 import { loadPreference, savePreference } from './preferences'
 
 /** Hlavní pohledy: Plán (tabulka + graf) a Zdroje (databáze, fáze 6a). */
-const VIEWS = ['plan', 'resources', 'load', 'costs'] as const
+const VIEWS = ['plan', 'resources', 'load', 'costs', 'analysis'] as const
 type View = (typeof VIEWS)[number]
 
 /** Je kurzor v textovém poli? Tam necháme Ctrl+Z prohlížeči (vrací psaní v poli). */
@@ -283,7 +284,7 @@ export default function App() {
                   view === id ? 'bg-miro-graphite text-miro-paper dark:bg-miro-paper dark:text-miro-graphite' : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
                 }`}
               >
-                {id === 'plan' ? <PlanIcon /> : id === 'resources' ? <ResourcesIcon /> : id === 'load' ? <LoadIcon /> : <CostsIcon />}
+                {id === 'plan' ? <PlanIcon /> : id === 'resources' ? <ResourcesIcon /> : id === 'load' ? <LoadIcon /> : id === 'costs' ? <CostsIcon /> : <AnalysisIcon />}
                 {t(`view.${id}`)}
                 {id === 'load' && overloadedCount > 0 && (
                   <span
@@ -376,6 +377,10 @@ export default function App() {
       ) : view === 'costs' ? (
         <main className="min-h-0 flex-1">
           <CostsView />
+        </main>
+      ) : view === 'analysis' ? (
+        <main className="min-h-0 flex-1">
+          <AnalysisView />
         </main>
       ) : project.tasks.length === 0 ? (
         // Prázdný projekt: jen uvítání přes celou šířku, graf by byl prázdný.

@@ -370,6 +370,31 @@ function checkTaskLines(
 /** Nejvíc položek v jednom číselníku. */
 export const MAX_CATALOG_ITEMS = 2000
 
+/**
+ * Uložené pohledy analýzy (fáze 8, A-06): nastavení kontingenční tabulky pod názvem.
+ * Dimenze jsou zde jako text (ne import z pivot.ts – zabránilo by to kruhovému importu);
+ * test v pivot.test.ts hlídá, že se seznamy shodují.
+ */
+export const VIEW_FACT_DIMS = ['phase', 'task', 'category', 'tag', 'kind', 'resource', 'profession', 'department'] as const
+export const VIEW_DIMS = [...VIEW_FACT_DIMS, 'period'] as const
+/** Nejvíc uložených pohledů v projektu. */
+export const MAX_VIEWS = 50
+
+export const PivotConfigSchema = z.object({
+  rows: z.array(z.enum(VIEW_DIMS)).min(1).max(2),
+  column: z.enum(VIEW_DIMS).nullable(),
+  metric: z.enum(['cost', 'hours']),
+  agg: z.enum(['sum', 'avg', 'count', 'min', 'max']),
+  period: z.enum(['week', 'month', 'quarter']),
+  filters: z.partialRecord(z.enum(VIEW_FACT_DIMS), z.array(z.string().max(200)).max(MAX_CATALOG_ITEMS)),
+})
+
+export const SavedViewSchema = z.object({
+  id: IdSchema,
+  name: z.string().trim().min(1).max(100),
+  config: PivotConfigSchema,
+})
+
 /** Limit rozpočtu v haléřích: kladné celé číslo (fáze 7, R-06). */
 const LimitSchema = z.number().int().min(1).max(1_000_000_000_000)
 
@@ -400,6 +425,8 @@ export const ProjectSchema = z
     baselines: futureList,
     /** Limity rozpočtu (fáze 7) – nepovinné, starší soubory je nemají. */
     budget: BudgetSchema.optional(),
+    /** Uložené pohledy analýzy (fáze 8) – nepovinné. */
+    views: z.array(SavedViewSchema).max(MAX_VIEWS).optional(),
   })
   .superRefine((project, ctx) => {
     checkCatalogs(project, ctx)
@@ -475,6 +502,7 @@ export type Profession = z.infer<typeof ProfessionSchema>
 export type Worker = z.infer<typeof WorkerSchema>
 export type Department = z.infer<typeof DepartmentSchema>
 export type Absence = z.infer<typeof AbsenceSchema>
+export type SavedView = z.infer<typeof SavedViewSchema>
 export type Machine = z.infer<typeof MachineSchema>
 export type Material = z.infer<typeof MaterialSchema>
 

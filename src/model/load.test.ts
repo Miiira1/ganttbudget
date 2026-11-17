@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { dayToIso, isoToDay } from '../engine/calendar'
 import { schedule } from '../engine/schedule'
-import { computeLoad, lineLoadWarnings, loadPeriods, summarizePeriod, type ResourceLoad } from './load'
+import { computeLoad, filterLoad, groupLoad, lineLoadWarnings, loadKpis, loadPeriods, NO_DEPARTMENT, summarizePeriod, type ResourceLoad } from './load'
 import { createEmptyProject, createTask, type Project, type Task, type TaskLine } from './schema'
 
 /*
@@ -238,6 +238,58 @@ describe('varování u řádku činnosti (panel Detail činnosti)', () => {
     expect(warnings(p, 'A', 0)).toEqual({ absenceDays: 0, overloadedDays: 5 })
     expect(warnings(p, 'A', 1)).toEqual({ absenceDays: 0, overloadedDays: 0 })
     expect(warnings(p, 'A', 2)).toEqual({ absenceDays: 0, overloadedDays: 0 })
+  })
+})
+
+describe('dashboard vytížení (fáze 8, A-04)', () => {
+  // Eva 200 % = 12 h/den (kapacita 6), Jan 50 % = 4 h/den (8), jeřáb 100 % = 8 h/den (8); 5 pracovních dnů.
+  const p = project([task('A', 5, [labor('pr-plc', 200, 'w-eva'), labor('pr-plc', 50, 'w-jan'), machine(100)])], (x) => {
+    x.departments = [{ id: 'd1', name: 'Konstrukce' }]
+    x.workers[0]!.departmentId = 'd1'
+  })
+  const result = load(p)
+  const keys = (list: ResourceLoad[]) => list.map((r) => r.key)
+
+  it('ukazatele: přetížené zdroje, přetížené dny, nejvyšší a průměrné vytížení', () => {
+    // Profese Programátor: 16 h/den proti 14 → přetížená; Bez lidí bez kapacity se nepočítá.
+    // Průměr = poptávka / kapacita zdrojů s kapacitou: (60 + 20 + 80 + 40) / (30 + 40 + 70 + 40) = 111 %.
+    expect(loadKpis(result.resources)).toEqual({ resources: 5, overloadedResources: 2, overloadedDays: 10, peakPct: 200, averagePct: 111 })
+    expect(loadKpis([])).toEqual({ resources: 0, overloadedResources: 0, overloadedDays: 0, peakPct: null, averagePct: null })
+  })
+
+  it('filtr: druh zdroje, středisko (bez střediska = profese, stroje a lidé bez střediska), jen přetížené', () => {
+    expect(keys(filterLoad(p, result.resources, { kinds: new Set(['worker']) }))).toEqual(['worker:w-eva', 'worker:w-jan'])
+    expect(keys(filterLoad(p, result.resources, { departments: new Set(['d1']) }))).toEqual(['worker:w-eva'])
+    expect(keys(filterLoad(p, result.resources, { departments: new Set([NO_DEPARTMENT]) }))).toEqual([
+      'worker:w-jan',
+      'profession:pr-plc',
+      'profession:pr-none',
+      'machine:m-crane',
+    ])
+    expect(keys(filterLoad(p, result.resources, { onlyOverloaded: true }))).toEqual(['worker:w-eva', 'profession:pr-plc'])
+    expect(filterLoad(p, result.resources, {})).toHaveLength(5)
+  })
+
+  it('souhrn skupiny: součet poptávky a kapacity, přetížení skupiny po dnech', () => {
+    const workers = filterLoad(p, result.resources, { kinds: new Set(['worker']) })
+    const group = groupLoad(workers, result.range!, 'Pracovníci')!
+    expect(group.name).toBe('Pracovníci')
+    expect(group.hasCapacity).toBe(true)
+    // 16 h proti 14 h v každém z 5 pracovních dnů; víkend a svátek 0.
+    expect(summarizePeriod(group, result.range!, result.range!)).toEqual({ demand: 80, capacity: 70, overloadedDays: 5, peakPct: 114 })
+    expect(group.contributions).toHaveLength(2)
+    // Profese bez lidí: jen poptávka, přetížení se nehlídá.
+    const none = groupLoad(filterLoad(p, result.resources, { kinds: new Set(['profession']) }).filter((r) => !r.hasCapacity), result.range!, 'x')!
+    expect(none.hasCapacity).toBe(false)
+    expect(none.overloadedDays).toEqual([])
+    expect(groupLoad([], result.range!, 'x')).toBeNull()
+  })
+
+  it('souhrn skupiny nesčítá poptávku zdrojů bez kapacity s ostatními (falešné přetížení)', () => {
+    const p2 = project([task('A', 5, [labor('pr-none', 100), labor('pr-plc', 50, 'w-jan')])])
+    const r2 = load(p2)
+    const group = groupLoad(r2.resources.filter((r) => r.kind === 'profession'), r2.range!, 'Profese')!
+    expect(summarizePeriod(group, r2.range!, r2.range!)).toEqual({ demand: 20, capacity: 70, overloadedDays: 0, peakPct: 29 })
   })
 })
 

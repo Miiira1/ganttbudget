@@ -8,6 +8,7 @@ import { schedule, type ScheduleResult } from '../engine/schedule'
 import { computeCosts, type CostsResult } from '../model/costs'
 import { computeLoad, type LoadResult } from '../model/load'
 import { budgetStatus, computeCostTimeline, type BudgetStatus, type CostTimeline } from '../model/costTimeline'
+import { buildFacts, type Facts } from '../model/facts'
 import { createEmptyProject, type Project } from '../model/schema'
 import { createProjectStore, type ProjectState } from './projectStore'
 
@@ -105,4 +106,20 @@ export function getBudgetStatus(project: Project): BudgetStatus {
 
 export function useBudgetStatus(): BudgetStatus {
   return getBudgetStatus(useProject((s) => s.project))
+}
+
+// Fakta pro analýzu (fáze 8) – řádky činností s rozpadem nákladu a hodin po dnech.
+const factsCache = new WeakMap<Project, Facts>()
+
+export function getFacts(project: Project): Facts {
+  let result = factsCache.get(project)
+  if (!result) {
+    result = buildFacts(project, getSchedule(project), getCostTimeline(project))
+    factsCache.set(project, result)
+  }
+  return result
+}
+
+export function useFacts(): Facts {
+  return getFacts(useProject((s) => s.project))
 }

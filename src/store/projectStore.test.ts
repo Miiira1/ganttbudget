@@ -607,3 +607,51 @@ describe('název projektu (kritérium 12.1)', () => {
     expect(store.getState().project.name).toBe('Nová linka')
   })
 })
+
+describe('vlastní pohledy analýzy (fáze 8, A-06)', () => {
+  const config = { rows: ['category' as const], column: 'period' as const, metric: 'cost' as const, agg: 'sum' as const, period: 'month' as const, filters: { kind: ['labor'] } }
+
+  it('uložit, změnit, přejmenovat, smazat – každá změna jeden krok Zpět; název je jedinečný', () => {
+    const store = newStore()
+    const before = store.getState().past.length
+    const id = store.getState().saveView('  Mzdy po měsících  ', config)!
+    const id2 = store.getState().saveView('mzdy po měsících', { ...config, metric: 'hours' })!
+    expect(store.getState().project.views!.map((v) => v.name)).toEqual(['Mzdy po měsících', 'mzdy po měsících 2'])
+    store.getState().updateView(id, { ...config, agg: 'avg' })
+    expect(store.getState().project.views![0]!.config.agg).toBe('avg')
+    store.getState().renameView(id2, 'Hodiny')
+    store.getState().deleteView(id)
+    expect(store.getState().project.views!.map((v) => [v.id, v.name])).toEqual([[id2, 'Hodiny']])
+    expect(ProjectSchema.safeParse(store.getState().project).success).toBe(true)
+    store.getState().deleteView(id2)
+    expect(store.getState().project.views).toBeUndefined()
+    expect(store.getState().past.length - before).toBe(6)
+    store.getState().undo()
+    expect(store.getState().project.views).toHaveLength(1)
+  })
+
+  it('prázdný název, neznámý pohled, nic nového = nic se nezapíše', () => {
+    const store = newStore()
+    const id = store.getState().saveView('A', config)!
+    const before = store.getState().past.length
+    expect(store.getState().saveView('   ', config)).toBeNull()
+    store.getState().renameView(id, '  ')
+    store.getState().renameView(id, 'A')
+    store.getState().renameView('nic', 'B')
+    store.getState().updateView(id, config)
+    store.getState().deleteView('nic')
+    expect(store.getState().past.length).toBe(before)
+  })
+
+  it('schéma: nepovinné; neznámá dimenze, 3 úrovně řádků nebo 51 pohledů neprojde', () => {
+    const base = newStore().getState().project
+    const view = (c: object) => ({ ...base, views: [{ id: 'v', name: 'V', config: { ...config, ...c } }] })
+    expect(ProjectSchema.safeParse(view({})).success).toBe(true)
+    expect(ProjectSchema.safeParse(view({ rows: ['kouzlo'] })).success).toBe(false)
+    expect(ProjectSchema.safeParse(view({ rows: ['phase', 'kind', 'tag'] })).success).toBe(false)
+    expect(ProjectSchema.safeParse(view({ rows: [] })).success).toBe(false)
+    expect(ProjectSchema.safeParse(view({ filters: { kouzlo: ['x'] } })).success).toBe(false)
+    const many = Array.from({ length: 51 }, (_, i) => ({ id: `v${i}`, name: `V${i}`, config }))
+    expect(ProjectSchema.safeParse({ ...base, views: many }).success).toBe(false)
+  })
+})

@@ -151,8 +151,8 @@ const PLOT_HEIGHT = 120
 const AXIS_WIDTH = 44
 const LABEL_HEIGHT = 18
 
-/** Histogram v SVG (bez knihovny): sloupec = hodiny v období, schodovitá čára = kapacita. */
-function Histogram({ resource, periods, summaries, labels }: { resource: ResourceLoad; periods: LoadRange[]; summaries: PeriodLoad[]; labels: Label[] }) {
+/** Histogram v SVG (bez knihovny): sloupec = hodiny v období, schodovitá čára = kapacita. Sdílený se souhrnem skupiny. */
+export function Histogram({ resource, periods, summaries, labels }: { resource: ResourceLoad; periods: LoadRange[]; summaries: PeriodLoad[]; labels: Label[] }) {
   const { t, i18n } = useTranslation()
   const lang = i18n.language
   // Celé období se má vejít do ~600 px (sloupec 3–24 px); jen u velmi dlouhých řad dnů se posouvá.

@@ -661,7 +661,9 @@
     "load": "Vytížení",
     "loadHint": "Vytížení pracovníků, profesí a strojů v čase; přetížení vyznačeno červeně",
     "costs": "Náklady",
-    "costsHint": "Časový náběh nákladů: kolik projekt stojí v každém týdnu, měsíci nebo čtvrtletí"
+    "costsHint": "Časový náběh nákladů: kolik projekt stojí v každém týdnu, měsíci nebo čtvrtletí",
+    "analysis": "Analýza",
+    "analysisHint": "Kontingenční tabulka: náklady a hodiny podle fází, kategorií, štítků, zdrojů, středisek a období"
   },
   "rate": {
     "title": "Hodinová sazba – {{name}}",
@@ -933,6 +935,34 @@
         "dates": "Termín",
         "hours": "Hodin"
       }
+    },
+    "filter": {
+      "label": "Filtr",
+      "kind": "Druh zdroje",
+      "department": "Středisko",
+      "noDepartment": "(bez střediska)",
+      "onlyOverloaded": "Jen přetížené",
+      "empty": "Filtru neodpovídá žádný zdroj."
+    },
+    "kpi": {
+      "overloaded": "Přetížené zdroje",
+      "overloadedHint": "přetížené / zdroje ve filtru",
+      "overloadedDays": "Přetížené dny celkem",
+      "overloadedDaysHint": "součet za všechny zdroje",
+      "peak": "Nejvyšší vytížení",
+      "peakHint": "nejhorší den",
+      "average": "Průměrné vytížení",
+      "averageHint": "naplánováno / kapacita"
+    },
+    "panel": {
+      "label": "Spodní panel",
+      "resource": "Vybraný zdroj",
+      "group": "Souhrn skupiny"
+    },
+    "group": {
+      "intro": "Součet naplánovaných hodin všech zdrojů ve filtru proti součtu jejich kapacit – ukáže, jestli by skupina práci zvládla při jiném rozdělení. Druhy zdrojů se nesčítají dohromady.",
+      "title": "{{name}} ({{count}})",
+      "noCapacity": "kapacita neznámá – jen poptávka"
     }
   },
   "periods": {
@@ -1000,10 +1030,16 @@
     },
     "limitTitle": "Limit {{limit}} – čerpání {{pct}} %",
     "chart": {
-      "period": "Za období (pravá osa)",
-      "cumulative": "Kumulativně (levá osa)",
+      "label": "Graf",
+      "modes": {
+        "scurve": "S-křivka",
+        "cashflow": "Cash flow"
+      },
+      "cumulative": "Kumulativní náklady",
       "limit": "Limit projektu {{amount}}",
-      "summary": "Graf nákladů projektu po obdobích, celkem {{total}}",
+      "today": "Dnes",
+      "scurveSummary": "S-křivka: kumulativní náklady projektu, celkem {{total}}",
+      "cashflowSummary": "Cash flow: výdaje projektu po obdobích, celkem {{total}}",
       "bar": "{{period}}: {{amount}} (kumulativně {{cumulative}})",
       "exceed": "Kumulativní náklady přesáhnou limit v období {{period}}"
     },
@@ -1013,7 +1049,21 @@
       "some": "{{count}} z {{total}}",
       "selectAll": "Vybrat vše",
       "clear": "Zrušit filtry",
-      "note": "Filtr: zobrazeno {{amount}} z celkových {{total}}. Limity a záhlaví platí pro celý projekt."
+      "note": "Filtr: zobrazeno {{amount}} z celkových {{total}}. Limity a záhlaví platí pro celý projekt.",
+      "none": "nic",
+      "selectNone": "Odebrat vše"
+    },
+    "kpi": {
+      "total": "Celkem",
+      "filtered": "podle filtru",
+      "toDate": "Plánováno do dneška",
+      "toDateHint": "do {{date}} včetně",
+      "remaining": "Zbývá",
+      "peak": "Nejdražší období",
+      "average": "Průměr za období",
+      "limit": "Čerpání limitu",
+      "limitOf": "z {{limit}} (celý projekt)",
+      "limitNone": "limit nenastaven"
     }
   },
   "budgetExport": {
@@ -1189,6 +1239,114 @@
       "badRateUnit": "sazba stroje musí být „za hodinu“, nebo „za den“.",
       "badUnit": "chybí jednotka (nebo je delší než 20 znaků).",
       "invalid": "Data ze sešitu neprošla kontrolou."
+    }
+  },
+  "analysis": {
+    "rows": "Řádky",
+    "rows2": "Druhá úroveň řádků",
+    "columns": "Sloupce",
+    "noDim": "—",
+    "metric": "Metrika",
+    "agg": "Agregace",
+    "period": "Období",
+    "metrics": {
+      "cost": "Náklad",
+      "hours": "Hodiny"
+    },
+    "aggs": {
+      "sum": "Součet",
+      "avg": "Průměr na řádek činnosti",
+      "count": "Počet řádků",
+      "min": "Minimum",
+      "max": "Maximum"
+    },
+    "dims": {
+      "phase": "Fáze",
+      "task": "Činnost",
+      "category": "Kategorie",
+      "tag": "Štítek",
+      "kind": "Druh",
+      "resource": "Zdroj",
+      "profession": "Profese",
+      "department": "Středisko",
+      "period": "Období"
+    },
+    "none": "(neuvedeno)",
+    "anyOfProfession": "{{name}} (kdokoli z profese)",
+    "unitCost": "Částky v celých jednotkách měny ({{currency}}), přesná hodnota v bublině. „Řádek“ = jeden zdroj nebo náklad činnosti z panelu Detail činnosti.",
+    "unitHours": "Hodiny práce lidí a strojů (h/den × pracovní dny). „Řádek“ = jeden zdroj nebo náklad činnosti.",
+    "unitCount": "Počet řádků činností (zdrojů a nákladů), které do buňky patří.",
+    "tagNote": "Řádek se dvěma štítky je v obou skupinách – součet skupin proto může být větší než Celkem (Celkem ho počítá jednou).",
+    "skipped_one": "{{count}} řádek činnosti bez spočítaného termínu (kruh vazeb) se nezapočítal.",
+    "skipped_few": "{{count}} řádky činností bez spočítaného termínu (kruh vazeb) se nezapočítaly.",
+    "skipped_many": "{{count}} řádku činností bez spočítaného termínu (kruh vazeb) se nezapočítalo.",
+    "skipped_other": "{{count}} řádků činností bez spočítaného termínu (kruh vazeb) se nezapočítalo.",
+    "caption": "Kontingenční tabulka",
+    "empty": "Projekt zatím nemá žádné zdroje ani náklady na činnostech. Přidejte je v panelu Detail činnosti.",
+    "noRows": "Zvoleným filtrům nic neodpovídá.",
+    "exportXlsx": "Excel",
+    "exportCsv": "CSV",
+    "exportHint": "Uložit zobrazenou tabulku do souboru",
+    "fileSuffix": "analýza",
+    "sheetName": "Analýza",
+    "chart": {
+      "label": "Graf",
+      "types": {
+        "none": "Bez grafu",
+        "bar": "Sloupcový",
+        "pie": "Koláčový",
+        "line": "Čárový",
+        "stacked": "Skládaný"
+      },
+      "blocked": {
+        "needsColumns": "Čárový a skládaný graf potřebují dimenzi ve sloupcích (např. Období).",
+        "notAdditive": "Průměr, minimum a maximum nejde sčítat do celku – koláčový a skládaný graf by klamaly.",
+        "overlapping": "Se štítky v řádcích se skupiny překrývají (řádek může mít víc štítků) – podíly by klamaly."
+      },
+      "legend": "Legenda grafu",
+      "other": "Ostatní",
+      "otherNote": "Graf ukazuje prvních {{count}} skupin podle pořadí, ostatní jsou sloučené do „Ostatní“ – všechny jsou v tabulce.",
+      "empty": "Pro graf nejsou žádné hodnoty.",
+      "barSummary": "Sloupcový graf součtů {{count}} skupin",
+      "pieSummary": "Koláčový graf podílů {{count}} skupin",
+      "lineSummary": "Čárový graf {{count}} řad přes {{columns}} sloupců",
+      "stackedSummary": "Skládaný graf {{count}} řad přes {{columns}} sloupců"
+    },
+    "splitter": "Rozdělení tabulky a grafu",
+    "splitterHint": "Tažením (nebo šipkami ← →) změníte poměr tabulky a grafu",
+    "layout": "Rozvržení",
+    "layouts": {
+      "side": "Vedle sebe",
+      "stacked": "Pod sebou"
+    },
+    "splitterHintVertical": "Tažením (nebo šipkami ↑ ↓) změníte poměr grafu a tabulky",
+    "presets": {
+      "costByCategoryMonth": "Náklady podle kategorií po měsících",
+      "costByPhaseKind": "Náklady podle fází a druhu",
+      "hoursByWorkerWeek": "Hodiny lidí podle zdroje po týdnech",
+      "costByDepartmentQuarter": "Mzdové náklady podle středisek po čtvrtletích",
+      "tagsByCategory": "Štítky × kategorie"
+    },
+    "views": {
+      "label": "Pohled",
+      "hint": "Přednastavené pohledy pro začátek a vlastní pohledy uložené v projektu",
+      "custom": "vlastní nastavení",
+      "changed": "upraveno",
+      "presets": "Přednastavené",
+      "own": "Moje pohledy (v projektu)",
+      "noOwn": "Zatím žádné – nastavte tabulku a uložte ji níže.",
+      "saveAs": "Uložit jako nový pohled…",
+      "saveChanges": "Uložit změny do „{{name}}“",
+      "rename": "Přejmenovat…",
+      "delete": "Smazat",
+      "confirmDelete": "Opravdu smazat pohled „{{name}}“? Jde vrátit tlačítkem Zpět (Ctrl+Z).",
+      "note": "Vlastní pohledy se ukládají do souboru projektu – putují s ním.",
+      "saveTitle": "Uložit pohled",
+      "renameTitle": "Přejmenovat pohled",
+      "name": "Název",
+      "save": "Uložit",
+      "renameConfirm": "Přejmenovat",
+      "undo": "Změnu jde vrátit tlačítkem Zpět (Ctrl+Z)."
     }
   }
 }

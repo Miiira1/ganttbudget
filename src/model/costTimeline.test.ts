@@ -247,3 +247,11 @@ describe('výkon', () => {
     expect(performance.now() - t0).toBeLessThan(100)
   })
 })
+
+describe('ukazatele dashboardu Náklady v čase (A-03)', () => {
+  it('celkem, do dneška, zbývá, nejdražší období a průměr za období', async () => {
+    const { costKpis } = await import('./costTimeline')
+    expect(costKpis([100, 0, 400, 300], 250)).toEqual({ total: 800, toDate: 250, remaining: 550, peakIndex: 2, peak: 400, average: 200 })
+    expect(costKpis([], 0)).toEqual({ total: 0, toDate: 0, remaining: 0, peakIndex: null, peak: 0, average: 0 })
+  })
+})

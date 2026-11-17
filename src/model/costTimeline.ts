@@ -318,3 +318,32 @@ export function totalsByCategory(timeline: CostTimeline): Map<string, number> {
   for (const line of timeline.lines) totals.set(line.categoryId, (totals.get(line.categoryId) ?? 0) + line.total)
   return totals
 }
+
+export interface CostKpis {
+  total: number
+  /** Plánované náklady do dneška (včetně). */
+  toDate: number
+  remaining: number
+  /** Období s nejvyššími náklady (index do period); null = žádné náklady. */
+  peakIndex: number | null
+  peak: number
+  /** Průměr na období (všechna zobrazená období), zaokrouhlený na haléře. */
+  average: number
+}
+
+/** Ukazatele dashboardu Náklady v čase z nákladů po obdobích a nákladů do dneška. */
+export function costKpis(totals: readonly number[], toDate: number): CostKpis {
+  const total = totals.reduce((a, b) => a + b, 0)
+  let peakIndex: number | null = null
+  totals.forEach((v, i) => {
+    if (v > 0 && (peakIndex === null || v > totals[peakIndex]!)) peakIndex = i
+  })
+  return {
+    total,
+    toDate,
+    remaining: total - toDate,
+    peakIndex,
+    peak: peakIndex === null ? 0 : totals[peakIndex]!,
+    average: totals.length > 0 ? Math.round(total / totals.length) : 0,
+  }
+}

@@ -61,3 +61,15 @@ export function CostsIcon({ className = '' }: { className?: string }) {
     </svg>
   )
 }
+
+/** Analýza: kontingenční tabulka – mřížka se zvýrazněnou hlavičkou a prvním sloupcem. */
+export function AnalysisIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg {...common} className={className}>
+      <rect x="1.5" y="1.5" width="13" height="13" rx="1.6" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M1.5 5.5h13M5.5 1.5v13" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M2.2 2.2h12v2.6H6.2v9.1H2.2z" fill="currentColor" opacity="0.35" />
+      <path d="M5.5 10h9M10 5.5v9" stroke="currentColor" strokeWidth="1" opacity="0.55" />
+    </svg>
+  )
+}

@@ -26,8 +26,8 @@ import {
   type HierarchyError,
   type HierarchyResult,
 } from '../model/hierarchy'
-import { milestoneAllows, syncLaborLines, type CatalogItem } from '../model/catalogs'
-import { createTask, type Calendar, type CatalogKey, type Dependency, type Project, type Task, type TaskKind, type TaskLine } from '../model/schema'
+import { milestoneAllows, syncLaborLines, uniqueName, type CatalogItem } from '../model/catalogs'
+import { createTask, MAX_VIEWS, type Calendar, type CatalogKey, type Dependency, type Project, type SavedView, type Task, type TaskKind, type TaskLine } from '../model/schema'
 
 /** Kolik kroků zpět si aplikace pamatuje. */
 export const HISTORY_LIMIT = 100
@@ -108,6 +108,12 @@ export interface ProjectState {
   setBudgetLimit: (limit: number | null) => void
   /** Limit kategorie nákladů v haléřích; null = zrušit. */
   setCategoryLimit: (categoryId: string, limit: number | null) => void
+  /** Uložit nastavení analýzy jako nový pohled; vrátí jeho ID (null = prázdný název nebo plno). Fáze 8. */
+  saveView: (name: string, config: SavedView['config']) => string | null
+  /** Přepsat nastavení uloženého pohledu. */
+  updateView: (id: string, config: SavedView['config']) => void
+  renameView: (id: string, name: string) => void
+  deleteView: (id: string) => void
   /** Nahradí celý projekt (např. vzorovým). Lze vrátit přes Zpět. */
   loadProject: (project: Project) => void
   /** Nahradí projekt a smaže historii (obnova ze zálohy po otevření aplikace – není co vracet). */
@@ -397,6 +403,41 @@ export function createProjectStore(initialProject: Project) {
           categoryLimits = categoryLimits.map((c) => (c.categoryId === categoryId ? { categoryId, limit } : c))
         } else categoryLimits = [...categoryLimits, { categoryId, limit }]
         commit(withBudget(project, { ...current, categoryLimits }))
+      },
+
+      saveView(rawName, config) {
+        const { project } = get()
+        const views = project.views ?? []
+        const name = rawName.trim().slice(0, 100).trim()
+        if (name === '' || views.length >= MAX_VIEWS) return null
+        const id = newId()
+        commit({ ...project, views: [...views, { id, name: uniqueName(name, views.map((v) => v.name)), config }] })
+        return id
+      },
+
+      updateView(id, config) {
+        const { project } = get()
+        const view = project.views?.find((v) => v.id === id)
+        if (!view || JSON.stringify(view.config) === JSON.stringify(config)) return
+        commit({ ...project, views: project.views!.map((v) => (v.id === id ? { ...v, config } : v)) })
+      },
+
+      renameView(id, rawName) {
+        const { project } = get()
+        const view = project.views?.find((v) => v.id === id)
+        const name = rawName.trim().slice(0, 100).trim()
+        if (!view || name === '' || name === view.name) return
+        const others = project.views!.filter((v) => v.id !== id).map((v) => v.name)
+        commit({ ...project, views: project.views!.map((v) => (v.id === id ? { ...v, name: uniqueName(name, others) } : v)) })
+      },
+
+      deleteView(id) {
+        const { project } = get()
+        if (!project.views?.some((v) => v.id === id)) return
+        const views = project.views.filter((v) => v.id !== id)
+        const { views: _old, ...rest } = project
+        void _old
+        commit(views.length > 0 ? { ...rest, views } : (rest as Project))
       },
 
       renameProject(rawName) {

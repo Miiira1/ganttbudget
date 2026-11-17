@@ -623,7 +623,9 @@
     "load": "Load",
     "loadHint": "Workload of workers, professions and machines over time; overloads in red",
     "costs": "Costs",
-    "costsHint": "Cost phasing: how much the project costs in each week, month or quarter"
+    "costsHint": "Cost phasing: how much the project costs in each week, month or quarter",
+    "analysis": "Analysis",
+    "analysisHint": "Pivot table: costs and hours by phase, category, tag, resource, department and period"
   },
   "rate": {
     "title": "Hourly rate – {{name}}",
@@ -871,6 +873,34 @@
         "dates": "Dates",
         "hours": "Hours"
       }
+    },
+    "filter": {
+      "label": "Filter",
+      "kind": "Resource type",
+      "department": "Department",
+      "noDepartment": "(no department)",
+      "onlyOverloaded": "Overloaded only",
+      "empty": "No resource matches the filter."
+    },
+    "kpi": {
+      "overloaded": "Overloaded resources",
+      "overloadedHint": "overloaded / resources in the filter",
+      "overloadedDays": "Overloaded days in total",
+      "overloadedDaysHint": "sum over all resources",
+      "peak": "Peak load",
+      "peakHint": "worst day",
+      "average": "Average load",
+      "averageHint": "planned / capacity"
+    },
+    "panel": {
+      "label": "Bottom panel",
+      "resource": "Selected resource",
+      "group": "Group summary"
+    },
+    "group": {
+      "intro": "Planned hours of all resources in the filter against their total capacity – shows whether the group could handle the work if it were shared differently. Resource types are not added together.",
+      "title": "{{name}} ({{count}})",
+      "noCapacity": "capacity unknown – demand only"
     }
   },
   "periods": {
@@ -934,10 +964,16 @@
     },
     "limitTitle": "Limit {{limit}} – used {{pct}}%",
     "chart": {
-      "period": "Per period (right axis)",
-      "cumulative": "Cumulative (left axis)",
+      "label": "Chart",
+      "modes": {
+        "scurve": "S-curve",
+        "cashflow": "Cash flow"
+      },
+      "cumulative": "Cumulative costs",
       "limit": "Project limit {{amount}}",
-      "summary": "Chart of project costs by period, {{total}} in total",
+      "today": "Today",
+      "scurveSummary": "S-curve: cumulative project costs, total {{total}}",
+      "cashflowSummary": "Cash flow: project expenses per period, total {{total}}",
       "bar": "{{period}}: {{amount}} (cumulative {{cumulative}})",
       "exceed": "Cumulative costs exceed the limit in {{period}}"
     },
@@ -947,7 +983,21 @@
       "some": "{{count}} of {{total}}",
       "selectAll": "Select all",
       "clear": "Clear filters",
-      "note": "Filter: showing {{amount}} of {{total}} in total. Limits and the header apply to the whole project."
+      "note": "Filter: showing {{amount}} of {{total}} in total. Limits and the header apply to the whole project.",
+      "none": "none",
+      "selectNone": "Clear all"
+    },
+    "kpi": {
+      "total": "Total",
+      "filtered": "filtered",
+      "toDate": "Planned to date",
+      "toDateHint": "up to and incl. {{date}}",
+      "remaining": "Remaining",
+      "peak": "Most expensive period",
+      "average": "Average per period",
+      "limit": "Limit used",
+      "limitOf": "of {{limit}} (whole project)",
+      "limitNone": "no limit set"
     }
   },
   "budgetExport": {
@@ -1121,6 +1171,112 @@
       "badRateUnit": "the machine rate must be per hour or per day.",
       "badUnit": "the unit is missing (or longer than 20 characters).",
       "invalid": "The workbook data did not pass the check."
+    }
+  },
+  "analysis": {
+    "rows": "Rows",
+    "rows2": "Second row level",
+    "columns": "Columns",
+    "noDim": "—",
+    "metric": "Metric",
+    "agg": "Aggregation",
+    "period": "Period",
+    "metrics": {
+      "cost": "Cost",
+      "hours": "Hours"
+    },
+    "aggs": {
+      "sum": "Sum",
+      "avg": "Average per task line",
+      "count": "Number of lines",
+      "min": "Minimum",
+      "max": "Maximum"
+    },
+    "dims": {
+      "phase": "Phase",
+      "task": "Task",
+      "category": "Category",
+      "tag": "Tag",
+      "kind": "Type",
+      "resource": "Resource",
+      "profession": "Profession",
+      "department": "Department",
+      "period": "Period"
+    },
+    "none": "(not specified)",
+    "anyOfProfession": "{{name}} (anyone in the profession)",
+    "unitCost": "Amounts in whole currency units ({{currency}}), exact value in the tooltip. A \"line\" = one resource or cost of a task from the Task detail panel.",
+    "unitHours": "Working hours of people and machines (h/day × working days). A \"line\" = one resource or cost of a task.",
+    "unitCount": "Number of task lines (resources and costs) in the cell.",
+    "tagNote": "A line with two tags is in both groups – the sum of groups can therefore exceed the Total (the Total counts it once).",
+    "skipped_one": "{{count}} task line without computed dates (dependency loop) is not included.",
+    "skipped_other": "{{count}} task lines without computed dates (dependency loop) are not included.",
+    "caption": "Pivot table",
+    "empty": "The project has no resources or costs on tasks yet. Add them in the Task detail panel.",
+    "noRows": "Nothing matches the selected filters.",
+    "exportXlsx": "Excel",
+    "exportCsv": "CSV",
+    "exportHint": "Save the displayed table to a file",
+    "fileSuffix": "analysis",
+    "sheetName": "Analysis",
+    "chart": {
+      "label": "Chart",
+      "types": {
+        "none": "No chart",
+        "bar": "Bar",
+        "pie": "Pie",
+        "line": "Line",
+        "stacked": "Stacked"
+      },
+      "blocked": {
+        "needsColumns": "Line and stacked charts need a column dimension (e.g. Period).",
+        "notAdditive": "Average, minimum and maximum cannot be added up – pie and stacked charts would mislead.",
+        "overlapping": "With tags in rows the groups overlap (a line can have several tags) – shares would mislead."
+      },
+      "legend": "Chart legend",
+      "other": "Other",
+      "otherNote": "The chart shows the first {{count}} groups in order, the rest are merged into \"Other\" – all are in the table.",
+      "empty": "There are no values to chart.",
+      "barSummary": "Bar chart of totals of {{count}} groups",
+      "pieSummary": "Pie chart of shares of {{count}} groups",
+      "lineSummary": "Line chart of {{count}} series over {{columns}} columns",
+      "stackedSummary": "Stacked chart of {{count}} series over {{columns}} columns"
+    },
+    "splitter": "Table and chart divider",
+    "splitterHint": "Drag (or use ← → keys) to change the table / chart ratio",
+    "layout": "Layout",
+    "layouts": {
+      "side": "Side by side",
+      "stacked": "Stacked"
+    },
+    "splitterHintVertical": "Drag (or use ↑ ↓ keys) to change the chart / table ratio",
+    "presets": {
+      "costByCategoryMonth": "Costs by category per month",
+      "costByPhaseKind": "Costs by phase and type",
+      "hoursByWorkerWeek": "People hours by resource per week",
+      "costByDepartmentQuarter": "Labour costs by department per quarter",
+      "tagsByCategory": "Tags × categories"
+    },
+    "views": {
+      "label": "View",
+      "hint": "Preset views to get started and your own views saved in the project",
+      "custom": "custom settings",
+      "changed": "modified",
+      "presets": "Presets",
+      "own": "My views (in the project)",
+      "noOwn": "None yet – set up the table and save it below.",
+      "saveAs": "Save as new view…",
+      "saveChanges": "Save changes to \"{{name}}\"",
+      "rename": "Rename…",
+      "delete": "Delete",
+      "confirmDelete": "Really delete view \"{{name}}\"? It can be undone with Undo (Ctrl+Z).",
+      "note": "Your views are saved in the project file – they travel with it.",
+      "saveTitle": "Save view",
+      "renameTitle": "Rename view",
+      "name": "Name",
+      "save": "Save",
+      "renameConfirm": "Rename",
+      "undo": "The change can be undone with Undo (Ctrl+Z)."
     }
   }
 }

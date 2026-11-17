@@ -219,3 +219,102 @@ export function lineLoadWarnings(project: Project, scheduleResult: ScheduleResul
   }
   return { absenceDays, overloadedDays }
 }
+
+/* ---------- Dashboard Vytížení (fáze 8, A-04) ---------- */
+
+/** Hodnota filtru střediska „bez střediska“ (profese, stroje a pracovníci bez střediska). */
+export const NO_DEPARTMENT = '∅'
+
+export interface LoadFilter {
+  /** Druhy zdrojů; prázdné / chybí = všechny. */
+  kinds?: ReadonlySet<string>
+  /** Střediska (ID nebo NO_DEPARTMENT); prázdné / chybí = všechna. Středisko mají jen pracovníci. */
+  departments?: ReadonlySet<string>
+  /** Jen zdroje s aspoň jedním přetíženým dnem. */
+  onlyOverloaded?: boolean
+}
+
+/** Zdroje podle filtru dashboardu (pořadí zůstává). */
+export function filterLoad(project: Project, resources: readonly ResourceLoad[], filter: LoadFilter): ResourceLoad[] {
+  const kinds = filter.kinds && filter.kinds.size > 0 ? filter.kinds : null
+  const departments = filter.departments && filter.departments.size > 0 ? filter.departments : null
+  const departmentOf = new Map(project.workers.map((w) => [w.id, w.departmentId ?? NO_DEPARTMENT]))
+  return resources.filter(
+    (r) =>
+      (!kinds || kinds.has(r.kind)) &&
+      (!departments || departments.has(r.kind === 'worker' ? (departmentOf.get(r.id) ?? NO_DEPARTMENT) : NO_DEPARTMENT)) &&
+      (!filter.onlyOverloaded || r.overloadedDays.length > 0),
+  )
+}
+
+export interface LoadKpis {
+  resources: number
+  /** Zdroje s aspoň jedním přetíženým dnem. */
+  overloadedResources: number
+  /** Součet přetížených dnů všech zdrojů. */
+  overloadedDays: number
+  /** Nejvyšší denní vytížení v % (dny s kapacitou); null = žádná poptávka. */
+  peakPct: number | null
+  /** Průměrné vytížení = poptávka / kapacita za celý rozsah (zdroje s kapacitou); null = bez kapacity. */
+  averagePct: number | null
+}
+
+/** Ukazatele dashboardu Vytížení za celý rozsah plánu. */
+export function loadKpis(resources: readonly ResourceLoad[]): LoadKpis {
+  let overloadedResources = 0
+  let overloadedDays = 0
+  let peak: number | null = null
+  let demand = 0
+  let capacity = 0
+  for (const r of resources) {
+    if (r.overloadedDays.length > 0) overloadedResources++
+    overloadedDays += r.overloadedDays.length
+    if (!r.hasCapacity) continue
+    for (let i = 0; i < r.demand.length; i++) {
+      const d = r.demand[i]!
+      const c = r.capacity[i]!
+      demand += d
+      capacity += c
+      if (d > EPS && c > 0) peak = Math.max(peak ?? 0, (d / c) * 100)
+    }
+  }
+  return {
+    resources: resources.length,
+    overloadedResources,
+    overloadedDays,
+    peakPct: peak === null ? null : Math.round(peak),
+    averagePct: capacity > 0 ? Math.round((demand / capacity) * 100) : null,
+  }
+}
+
+/**
+ * Souhrn skupiny zdrojů jako jeden „zdroj“ (pro histogram): součet poptávky a kapacity po dnech,
+ * přetížený den = poptávka skupiny > kapacita skupiny. Zdroje bez kapacity (profese bez lidí)
+ * se do poptávky nezapočtou, pokud ve skupině je aspoň jeden zdroj s kapacitou – jinak by
+ * vzniklo falešné přetížení. null = prázdná skupina.
+ */
+export function groupLoad(resources: readonly ResourceLoad[], range: LoadRange, name: string): ResourceLoad | null {
+  if (resources.length === 0) return null
+  const withCapacity = resources.filter((r) => r.hasCapacity)
+  const members = withCapacity.length > 0 ? withCapacity : resources
+  const n = range.endDay - range.startDay + 1
+  const group: ResourceLoad = {
+    key: 'group',
+    kind: resources[0]!.kind,
+    id: 'group',
+    name,
+    demand: new Float64Array(n),
+    capacity: new Float64Array(n),
+    hasCapacity: withCapacity.length > 0,
+    overloadedDays: [],
+    contributions: members.flatMap((r) => r.contributions),
+  }
+  for (const r of members) {
+    for (let i = 0; i < n; i++) {
+      group.demand[i]! += r.demand[i]!
+      group.capacity[i]! += r.capacity[i]!
+    }
+  }
+  if (group.hasCapacity) for (let i = 0; i < n; i++) if (group.demand[i]! > group.capacity[i]! + EPS) group.overloadedDays.push(range.startDay + i)
+  return group
+}

@@ -1,7 +1,7 @@
 # ZADÁNÍ: Aplikace pro Ganttovy diagramy s navázaným rozpočtem
 
 > Název aplikace: **MiRo project** (pracovní název do v1.10: GanttBudget)
-> Verze zadání: 1.14 · Datum: 16. 11. 2026 (změny viz kap. 14)
+> Verze zadání: 1.15 · Datum: 17. 11. 2026 (změny viz kap. 14)
 > Dokument je zároveň vstupem pro Claude Code (vibe coding) a osnovou výukové case study.
 
 ---
@@ -126,12 +126,12 @@ Státní svátky ČR k zakódování: 1. 1.; Velký pátek; Velikonoční pondě
 
 | ID | Požadavek | Prio |
 |---|---|---|
-| A-01 | **Interaktivní kontingenční tabulka**: uživatel volí řádky, sloupce, metriku a agregaci z dimenzí (fáze, činnost, kategorie, štítek, zdroj, měsíc/týden/čtvrtletí). | D (fáze 8) |
-| A-02 | K tabulce přiložené **grafy** (sloupcový, čárový, koláčový, skládaný), přepínání jedním klikem. | D |
-| A-03 | **Dashboard „Náklady v čase"**: S-křivka (kumulativní náklady) a cash flow po obdobích (základní graf v pohledu Náklady hotový ve fázi 7; fáze 8 přidá plnohodnotný dashboard). | D |
-| A-04 | **Dashboard „Vytížení zdrojů"**: histogram po týdnech, zvýraznění přetížení (základní pohled Vytížení hotový ve fázi 6c; fáze 8 přidá grafy a filtry). | D |
+| A-01 | **Interaktivní kontingenční tabulka** (pátý pohled **Analýza**): uživatel volí řádky (1–2 úrovně), sloupce (žádné nebo 1 dimenze), metriku a agregaci. Dimenze: fáze (položka nejvyšší úrovně), činnost, kategorie, štítek, druh nákladu, zdroj (pracovník / profese / stroj / materiál / název nákladu), profese, středisko, týden/měsíc/čtvrtletí; chybějící hodnota = „(neuvedeno)“. Metrika náklad (Kč) nebo hodiny, agregace součet / průměr na řádek činnosti / počet / minimum / maximum. Filtry s více volbami pro každou dimenzi (tlačítka „Vybrat vše“ a „Odebrat vše“). Součty řádků, sloupců i celkem; řádek se dvěma štítky patří do obou skupin, ale „Celkem“ ho počítá jen jednou (tabulka to vysvětlí poznámkou). Čísla vycházejí ze stejného rozkladu po dnech jako pohledy Náklady a Vytížení, takže se s nimi nikdy nerozejdou. Export tabulky do XLSX a CSV (s ochranou proti vzorcům). | D (fáze 8) |
+| A-02 | K tabulce přiložené **grafy** (sloupcový, čárový, koláčový, skládaný, nebo bez grafu), přepínání jedním klikem; SVG bez knihovny, odstíny značky v pevném pořadí (skupiny nad 9 se sloučí do „Ostatní“), legenda a bubliny s přesnými čísly. Typ, který by klamal, je zablokovaný s vysvětlením (čárový a skládaný potřebují sloupce; průměr, minimum a maximum nejde sčítat do celku; štítky v řádcích se překrývají). Tabulka a graf **vedle sebe** (výchozí poměr 2/3 : 1/3) nebo **pod sebou**, podíl se mění rozdělovníkem; volba se pamatuje v prohlížeči. | D |
+| A-03 | **Dashboard „Náklady v čase"** v pohledu Náklady: ukazatele celkem, plánováno do dneška (včetně), zbývá, nejdražší období, průměr za období (všechny podle filtrů) a čerpání limitu (vždy za celý projekt, při překročení červeně). Graf s přepínačem **S-křivka** (kumulativní náklady, čára limitu a bod překročení – jen bez filtrů) / **Cash flow** (výdaje za období skládané podle členění); každý má **jedinou osu** (graf se dvěma osami z fáze 7 zrušen); tyrkysová čára „Dnes“. Cash flow zatím jen výdaje, příjmy později. | D |
+| A-04 | **Dashboard „Vytížení zdrojů"** v pohledu Vytížení: filtry druh zdroje, středisko (mají ho jen pracovníci; profese, stroje a lidé bez střediska = „(bez střediska)“) a „jen přetížené“; ukazatele přetížené zdroje, přetížené dny celkem, nejvyšší a průměrné vytížení (naplánováno / kapacita) za celý plán. Spodní panel přepíná **Vybraný zdroj / Souhrn skupiny**: souhrnný histogram (součet poptávky proti součtu kapacit po obdobích, přetížení červeně) zvlášť pro každý druh zdroje – profese obsahuje hodiny svých pracovníků, sčítání by je zdvojilo; profese bez pracovníků se do souhrnu s kapacitou nezapočte (falešné přetížení). | D |
 | A-05 | **Dashboard „Plán vs. skutečnost"**: baseline vs. aktuální plán, % dokončení, **Earned Value** (PV, EV, AC, CPI, SPI, EAC) s vysvětlením pojmů. | D (fáze 9) |
-| A-06 | Přednastavené pohledy pro začátečníky + možnost uložit vlastní pohled. | D |
+| A-06 | Nabídka **Pohled** v Analýze: pět přednastavených pohledů pro začátečníky (náklady podle kategorií po měsících, podle fází a druhu, hodiny lidí po týdnech, mzdové náklady podle středisek po čtvrtletích, štítky × kategorie) a vlastní pohledy uložené **v souboru projektu** (uložit jako nový, uložit změny, přejmenovat, smazat – každé jeden krok Zpět; nejvýš 50). | D |
 
 ### 4.7 Import a export
 
@@ -245,6 +245,7 @@ Project
   materials: Material[]
   costCategories: Category[]
   budget?: { limit?, categoryLimits: { categoryId, limit }[] }   // limity rozpočtu v haléřích (fáze 7)
+  views?: { id, name, config }[]   // uložené pohledy Analýzy (fáze 8, max. 50, ověřené Zod); import celého projektu z Excelu je zachová
   baselines: Baseline[]
 
 Calendar
@@ -437,3 +438,4 @@ Technicky: build bez chyb, testy plánovacího jádra projdou, aplikace je nasaz
 | 1.12 | 16. 11. 2026 | Fáze 6c – kritická cesta a vytížení: F-09, K-05 a Z-03 upřesněny podle implementace (pravidla rezerv a kritičnosti; vytížení = h/den × % v pracovních dnech, kapacita profese = součet pracovníků, nepřítomnost nemění termíny); nový třetí pohled **Vytížení** (základ A-04); varování v Detailu činnosti; datový model: vypočtené pozdní termíny a rezervy, `Worker.absences` s limitem 731 dnů na záznam (ochrana proti zamrznutí podvrženým souborem) |
 | 1.13 | 16. 11. 2026 | Fáze 7 – rozpočet v čase: R-03 (štítky), R-04 (náběh na haléř, materiál v den začátku, pohled **Náklady** jako čtvrtý pohled s tabulkou, skládaným grafem v odstínech značky a filtry s více volbami), R-06 (limity projektu a kategorií, varování s datem překročení) a I-04 (export XLSX s listy Řádky a Náběh, CSV; import řádků s náhledem, nahrazení řádků činností ze souboru) upřesněny podle implementace; A-03 má základní graf; datový model: `TaskLine.tags`, `Project.budget`; otevřená otázka 4 uzavřena. Úpravy rozhraní: tlačítko „Přidat činnost“ v druhé řadě před „Předsadit“, jazyk a vzhled na řádku loga, ikona Náklady (euro + křivka) |
 | 1.14 | 16. 11. 2026 | Doplněk po fázi 7 – celý projekt v Excelu: nový požadavek **I-07** (export sešitu se všemi daty projektu, vypočtené sloupce šedé a při importu ignorované, import celého sešitu s náhledem a nahrazením projektu); I-04 – list Řádky má navíc vypočtené h/den a Sazba Kč/h, aby bylo vidět, jak náklad vznikl; otevřená otázka 8 doplněna o sešit XLSX. Výpočet náběhu nákladů zrychlen (≈ 33 → 12 ms pro 300 činností) – rezerva pro testy výkonu i automatické nasazení |
+| 1.15 | 17. 11. 2026 | Fáze 8 – analytika a dashboardy: A-01 (pohled **Analýza**; dimenze rozšířeny o druh nákladu, profesi a středisko, metrika Kč / hodiny, agregace, filtry „Vybrat vše / Odebrat vše“, štítky v Celkem jednou, export XLSX/CSV), A-02 (4 typy grafů, blokace klamavých typů, rozložení vedle sebe / pod sebou s rozdělovníkem), A-03 (ukazatele, S-křivka / Cash flow s jedinou osou, čára Dnes; cash flow jen výdaje), A-04 (filtry, ukazatele, souhrnný histogram po druzích zdrojů) a A-06 (5 přednastavených a vlastní pohledy v projektu) upřesněny podle implementace; datový model: `Project.views` |

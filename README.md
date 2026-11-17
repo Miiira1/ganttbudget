@@ -6,7 +6,7 @@ Je určená studentům a praktikům bez zkušenosti s projektovým řízením. B
 
 **▶ Vyzkoušet aplikaci: https://miiira1.github.io/ganttbudget/** (nic se neinstaluje, stačí prohlížeč)
 
-> Stav: **fáze 7 – rozpočet v čase.** Termíny se počítají z délek, vazeb FS, SS, FF, SF
+> Stav: **fáze 8 – analytika a dashboardy.** Termíny se počítají z délek, vazeb FS, SS, FF, SF
 > (s prodlevou), omezení „začít nejdříve“ a kalendáře (víkendy, české svátky, odstávky) a zobrazují
 > se v tabulce i v Ganttově diagramu. Vazby se zapisují textem (`3SS+2`) nebo kreslí tažením v grafu.
 > Činnosti se seskupují do fází (WBS, sbalení, sumarizace), úsečky se v grafu táhnou s přichycením
@@ -24,7 +24,10 @@ Je určená studentům a praktikům bez zkušenosti s projektovým řízením. B
 > volné **štítky** u řádků, **limity rozpočtu** (projekt a kategorie, varování s datem překročení) a export / import
 > rozpočtu do Excelu a CSV. Doplněk po fázi 7: **celý projekt v jednom sešitu Excelu** (12 listů – projekt, kalendář,
 > činnosti, řádky, databáze zdrojů, náběh) jde exportovat, upravit a zase načíst; šedé sloupce „(vypočteno)“ import
-> ignoruje (viz [ZADANI.md](ZADANI.md), kap. 8).
+> ignoruje. Fáze 8 přidala pohled **Analýza** (kontingenční tabulka nákladů a hodin podle fází, kategorií, štítků,
+> zdrojů, středisek a období; čtyři typy grafů; přednastavené a vlastní pohledy uložené v projektu; export do Excelu
+> a CSV) a dashboardy: v pohledu Náklady ukazatele a graf **S-křivka / Cash flow** s čarou „Dnes“, v pohledu
+> Vytížení filtry, ukazatele a souhrnný histogram skupiny (viz [ZADANI.md](ZADANI.md), kap. 8).
 
 ## Soubory: co kdy použít
 
@@ -99,10 +102,10 @@ requesty. Nic se nesloučí samo: u každého počkejte, až projdou testy, a sl
 |---|---|
 | `src/engine/` | plánovací jádro: kalendář (svátky, pracovní dny), výpočet termínů, rezervy a kritická cesta – čisté funkce s testy |
 | `src/gantt/` | výpočty pro graf: časová osa, poloha úseček, trasy šipek, tažení, kreslení vazeb – čisté funkce s testy |
-| `src/io/` | soubor projektu, automatická záloha (IndexedDB), export a import CSV/XLSX (činnosti, rozpočet, celý projekt – `workbookExport.ts`, `workbookImport.ts`), knihovna zdrojů – kontrola dat s testy |
-| `src/model/` | formát projektu (schéma Zod), strom fází a přesuny (`hierarchy.ts`), práce s daty a zápis předchůdců, peníze v haléřích (`money.ts`), kalkulace sazby (`rates.ts`), náklady činností (`costs.ts`), vytížení zdrojů (`load.ts`), časový náběh nákladů a limity (`costTimeline.ts`), období (`periods.ts`), štítky (`tags.ts`) |
+| `src/io/` | soubor projektu, automatická záloha (IndexedDB), export a import CSV/XLSX (činnosti, rozpočet, celý projekt – `workbookExport.ts`, `workbookImport.ts`; export analýzy – `analysisExport.ts`), knihovna zdrojů – kontrola dat s testy |
+| `src/model/` | formát projektu (schéma Zod), strom fází a přesuny (`hierarchy.ts`), práce s daty a zápis předchůdců, peníze v haléřích (`money.ts`), kalkulace sazby (`rates.ts`), náklady činností (`costs.ts`), vytížení zdrojů (`load.ts`), časový náběh nákladů, limity a ukazatele (`costTimeline.ts`), období (`periods.ts`), štítky (`tags.ts`), data pro analýzu (`facts.ts`), kontingenční tabulka (`pivot.ts`) a její grafy (`pivotChart.ts`) |
 | `src/store/` | stav aplikace s historií změn (Zpět / Znovu) |
-| `src/ui/` | obrazovky a komponenty (React); `src/ui/gantt/` kreslí Ganttův graf (SVG), `src/ui/resources/` obrazovku Zdroje, `src/ui/detail/` panel Detail činnosti, `src/ui/load/` pohled Vytížení, `src/ui/costs/` pohled Náklady |
+| `src/ui/` | obrazovky a komponenty (React); `src/ui/gantt/` kreslí Ganttův graf (SVG), `src/ui/resources/` obrazovku Zdroje, `src/ui/detail/` panel Detail činnosti, `src/ui/load/` pohled Vytížení, `src/ui/costs/` pohled Náklady, `src/ui/analysis/` pohled Analýza |
 | `src/i18n/` | překlady (`locales/cs.json`, `locales/en.json`) a formát data a čísel |
 | `src/samples/` | vzorový projekt „Zavedení automatizace do výroby“ |
 | `pruvodce/` | výuková case study – jedna kapitola na fázi vývoje |

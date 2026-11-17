@@ -143,3 +143,12 @@ describe('celý projekt z Excelu – chyby s názvem listu a číslem řádku', 
     ).toEqual(['lines:2:unknownProfession'])
   })
 })
+
+describe('celý projekt z Excelu – uložené pohledy analýzy', () => {
+  it('sešit pohledy neobsahuje, import ponechá současné pohledy projektu', () => {
+    const p = sample()
+    p.views = [{ id: 'v1', name: 'Mzdy po měsících', config: { rows: ['category'], column: 'period', metric: 'cost', agg: 'sum', period: 'month', filters: {} } }]
+    const result = importWorkbook(toSheets(p), p, makeId)
+    expect(result.ok && result.project.views).toEqual(p.views)
+  })
+})

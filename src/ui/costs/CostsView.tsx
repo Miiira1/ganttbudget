@@ -11,7 +11,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { dayToIso, isoToDay } from '../../engine/calendar'
 import { formatIsoDate, formatNumber } from '../../i18n/format'
-import { cumulative, KIND_ORDER, rootsOf, summarizeCosts, type CostGroupBy } from '../../model/costTimeline'
+import { costKpis, cumulative, KIND_ORDER, rootsOf, summarizeCosts, type CostGroupBy } from '../../model/costTimeline'
 import { todayIso } from '../../model/dates'
 import { wbsNumbers } from '../../model/hierarchy'
 import { formatMoney } from '../../model/money'
@@ -19,10 +19,12 @@ import { splitPeriods, type PeriodUnit } from '../../model/periods'
 import { allTags } from '../../model/tags'
 import { useBudgetStatus, useCostTimeline, useProject } from '../../store/useProject'
 import { BudgetDialog } from './BudgetDialog'
-import { CostsChart, type ChartSeries } from './CostsChart'
-import { MultiSelect, type MultiOption } from './MultiSelect'
+import { CHART_MODES, CostsChart, type ChartSeries } from './CostsChart'
+import { MultiSelect, NOTHING, type MultiOption } from './MultiSelect'
 import { seriesColor } from './palette'
 import { periodLabel } from '../load/loadCells'
+import { Kpi } from '../Kpi'
+import { Segmented } from '../Segmented'
 import { loadPreference, savePreference } from '../preferences'
 
 const GROUPS: readonly CostGroupBy[] = ['category', 'phase', 'kind']
@@ -49,6 +51,7 @@ export function CostsView() {
   const [groupBy, setGroupBy] = usePreference('costsGroup', GROUPS, 'category')
   const [unit, setUnit] = usePreference('costsUnit', UNITS, 'month')
   const [mode, setMode] = usePreference('costsMode', MODES, 'period')
+  const [chartMode, setChartMode] = usePreference('costsChart', CHART_MODES, 'scurve')
   const tags = useMemo(() => allTags(project), [project])
   const [tagState, setTag] = useState<string>('')
   const [budgetOpen, setBudgetOpen] = useState(false)
@@ -66,7 +69,7 @@ export function CostsView() {
   const roots = useMemo(() => rootsOf(project).order, [project])
   // Do filtru jdou jen volby, které v projektu opravdu jsou (po smazání kategorie apod.).
   const filter = useMemo(() => {
-    const valid = (set: Set<string>, allowed: readonly string[]) => new Set([...set].filter((v) => allowed.includes(v)))
+    const valid = (set: Set<string>, allowed: readonly string[]) => new Set([...set].filter((v) => v === NOTHING || allowed.includes(v)))
     return {
       categories: valid(filterCategories, project.costCategories.map((c) => c.id)),
       phases: valid(filterPhases, roots),
@@ -78,11 +81,18 @@ export function CostsView() {
     () => summarizeCosts(project, timeline, periods, { groupBy, tag: tag || null, filter }),
     [project, timeline, periods, groupBy, tag, filter],
   )
+  // Plánované náklady od začátku projektu do dneška (se stejnými filtry jako tabulka).
+  const todayDay = isoToDay(todayIso())
+  const toDate = useMemo(() => {
+    if (!range || todayDay < range.startDay) return 0
+    const upToToday = [{ startDay: range.startDay, endDay: Math.min(todayDay, range.endDay) }]
+    return summarizeCosts(project, timeline, upToToday, { groupBy, tag: tag || null, filter }).grandTotal
+  }, [project, timeline, range, todayDay, groupBy, tag, filter])
 
   if (timeline.lines.length === 0 && timeline.skippedLines === 0) return <Empty text={t('costs.empty')} />
 
-  const today = isoToDay(todayIso())
-  const currentPeriod = periods.findIndex((p) => today >= p.startDay && today <= p.endDay)
+  const currentPeriod = periods.findIndex((p) => todayDay >= p.startDay && todayDay <= p.endDay)
+  const kpis = costKpis(summary.totals, toDate)
   const money = (value: number) => formatMoney(value, project.currency, lang)
   /** Buňka: celé koruny (přesná částka v bublině). */
   const cell = (value: number) => (value === 0 ? '' : formatNumber(Math.round(value / 100), lang))
@@ -223,7 +233,30 @@ export function CostsView() {
 
       {periods.length > 0 && (
         <div className="shrink-0 border-b border-slate-200 dark:border-slate-700">
+          {/* Dashboard (A-03): ukazatele a graf S-křivka / Cash flow. */}
+          <div className="flex flex-wrap items-stretch gap-2 px-4 pt-3">
+            <Kpi label={t('costs.kpi.total')} value={money(kpis.total)} hint={filtersActive ? t('costs.kpi.filtered') : undefined} />
+            <Kpi label={t('costs.kpi.toDate')} value={money(kpis.toDate)} hint={t('costs.kpi.toDateHint', { date: formatIsoDate(todayIso(), lang) })} />
+            <Kpi label={t('costs.kpi.remaining')} value={money(kpis.remaining)} />
+            <Kpi
+              label={t('costs.kpi.peak')}
+              value={kpis.peakIndex === null ? '–' : money(kpis.peak)}
+              hint={kpis.peakIndex === null ? undefined : labels[kpis.peakIndex]!.title}
+            />
+            <Kpi label={t('costs.kpi.average')} value={money(kpis.average)} />
+            <Kpi
+              label={t('costs.kpi.limit')}
+              value={status.project ? `${Math.round((status.project.spent / status.project.limit) * 100)} %` : '–'}
+              hint={status.project ? t('costs.kpi.limitOf', { limit: money(status.project.limit) }) : t('costs.kpi.limitNone')}
+              alert={(status.project?.over ?? 0) > 0}
+            />
+            <div className="ml-auto self-end">
+              <Segmented label={t('costs.chart.label')} options={CHART_MODES} value={chartMode} onChange={setChartMode} text={(m) => t(`costs.chart.modes.${m}`)} />
+            </div>
+          </div>
           <CostsChart
+            mode={chartMode}
+            todayDay={todayDay}
             periods={periods}
             labels={labels}
             totals={summary.totals}
@@ -329,30 +362,6 @@ function LimitMark({ status, text }: { status: { limit: number; spent: number; o
 }
 
 const stickyFirst = 'sticky left-0 min-w-56 border-b border-r border-slate-200 px-3 py-1 text-left dark:border-slate-700'
-
-function Segmented<T extends string>({ label, options, value, onChange, text }: { label: string; options: readonly T[]; value: T; onChange: (v: T) => void; text: (v: T) => string }) {
-  return (
-    <div role="group" aria-label={label} title={label} className="inline-flex">
-      {options.map((o, i) => (
-        <button
-          key={o}
-          type="button"
-          aria-pressed={value === o}
-          onClick={() => onChange(o)}
-          className={`border px-3 py-1.5 text-sm font-medium focus:z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus ${
-            i === 0 ? 'rounded-l-md' : '-ml-px'
-          } ${i === options.length - 1 ? 'rounded-r-md' : ''} ${
-            value === o
-              ? 'border-miro-graphite bg-miro-graphite text-miro-paper dark:border-miro-paper dark:bg-miro-paper dark:text-miro-graphite'
-              : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700'
-          }`}
-        >
-          {text(o)}
-        </button>
-      ))}
-    </div>
-  )
-}
 
 function Empty({ text }: { text: string }) {
   return (
