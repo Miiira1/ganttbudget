@@ -11,7 +11,7 @@ import { HEADER_HEIGHT } from '../../gantt/geometry'
 import { headerRows, type HeaderSegment, type Timeline } from '../../gantt/timeline'
 
 /** Text úseku; u úzkých úseků kratší varianta. */
-function segmentLabel(s: HeaderSegment, isTop: boolean, t: TFunction, lang: string): string {
+export function segmentLabel(s: HeaderSegment, isTop: boolean, t: TFunction, lang: string): string {
   switch (s.unit) {
     case 'year':
       return String(s.value)

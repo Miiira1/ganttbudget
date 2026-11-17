@@ -1,7 +1,7 @@
 # ZADÁNÍ: Aplikace pro Ganttovy diagramy s navázaným rozpočtem
 
 > Název aplikace: **MiRo project** (pracovní název do v1.10: GanttBudget)
-> Verze zadání: 1.22 · Datum: 17. 11. 2026 (změny viz kap. 14)
+> Verze zadání: 1.24 · Datum: 17. 11. 2026 (změny viz kap. 14)
 > Dokument je zároveň vstupem pro Claude Code (vibe coding) a osnovou výukové case study.
 
 ---
@@ -85,7 +85,7 @@ Priorita: **M** = MVP (verze 1.0), **D** = další fáze (viz kap. 8).
 | G-06 | Klávesové zkratky (nová činnost, odsadit, smazat, duplikovat), přehled zkratek v aplikaci. | M |
 | G-07 | Zobrazení vazeb šipkami, milníků kosočtverci, fází jako sumárních úseček. | M |
 | G-08 | Zobrazení baseline a % hotovo: **% hotovo** = tmavší výplň úsečky zleva; u činnosti se zadává ručně, u fáze se počítá z jejích činností (váha = plánovaný náklad z vybrané baseline, bez něj délka, u samých milníků prostý průměr) a je jen ke čtení; milník má zaškrtávátko „splněno“ (0 / 100 %). Přepínač **Baseline** vedle Kritické cesty (pamatuje si ho prohlížeč) ukáže pod úsečkami tenkou šedou stínovou úsečku s termíny vybrané baseline; bublina úsečky ukáže % hotovo, termíny baseline a posun konce v kalendářních dnech. | D (fáze 9) |
-| G-09 | Funkční na tabletu (dotyk). | D |
+| G-09 | Funkční na tabletu (dotyk): větší úchyty u dotykových zařízení, tažení úseček, řádků i mapy prstem, dlouhý stisk = hromadný výběr. | D (fáze 13c) |
 
 **Pravidlo posunu úsečky.** Při tažení činnosti s předchůdci se nastaví omezení „začít nejdříve k datu". Skutečný začátek = pozdější z (omezení, vyplývající z vazeb). Aplikace to uživateli srozumitelně vysvětlí (např. ikonou a tooltipem). Přesné chování se ověří ve fázi 4b roadmapy.
 
@@ -96,7 +96,7 @@ Priorita: **M** = MVP (verze 1.0), **D** = další fáze (viz kap. 8).
 | K-01 | Projektový kalendář: pracovní dny (výchozí Po–Pá), pracovní doba se v dnech neřeší. | M |
 | K-02 | **České státní svátky se načtou automaticky** pro libovolný rok (včetně pohyblivých: Velký pátek, Velikonoční pondělí; výpočet algoritmem, bez externí služby). | M |
 | K-03 | **Vlastní výjimky**: libovolné dny nebo rozsahy (podniková odstávka, dovolená) a ruční přidání/odebrání svátků. Lze i vypnout automatické svátky. | M |
-| K-04 | Možnost zvolit jinou sadu svátků než českou (struktura připravená na další země). | D |
+| K-04 | Možnost zvolit jinou sadu svátků než českou: **Slovensko, Polsko, Německo (celostátní svátky), Rakousko** nebo bez státních svátků (struktura připravená na další země). Nepovinné pole `calendar.holidayCountry` (chybí = Česko). Seznamy se ověří proti platným zákonům. | D (fáze 13d) |
 | K-05 | Kalendáře zdrojů: nepřítomnosti pracovníka jako rozsahy od–do s poznámkou (dialog z tabulky Pracovníci, sloupec s počtem pracovních dnů; max. 200 záznamů, jeden nejvýš 731 dnů). Ovlivní **jen vytížení a varování**, termíny činností se nemění. | D (fáze 6c) |
 
 Státní svátky ČR k zakódování: 1. 1.; Velký pátek; Velikonoční pondělí; 1. 5.; 8. 5.; 5. 7.; 6. 7.; 28. 9.; 28. 10.; 17. 11.; 24. 12.; 25. 12.; 26. 12. (Claude Code má jejich seznam před zakódováním ověřit proti aktuální legislativě.) ✅ Ověřeno 14. 11. 2026 proti zákonu č. 245/2000 Sb. ve znění novely 59/2026 Sb. (ta přidala jen významný den 30. 3., který není dnem pracovního klidu).
@@ -141,8 +141,8 @@ Státní svátky ČR k zakódování: 1. 1.; Velký pátek; Velikonoční pondě
 | I-02 | Automatická záloha rozpracovaného projektu v prohlížeči (obnova po zavření záložky). | M |
 | I-03 | **Export a import činností do CSV a XLSX** (včetně hierarchie, vazeb, délek). Import s náhledem a kontrolou chyb před potvrzením. | M |
 | I-04 | **Export a import rozpočtu a časového náběhu nákladů do CSV a XLSX**: export XLSX má list **Řádky** (WBS, Činnost, Typ, Zdroj / název, Pracovník, Podíl % / množství, Částka / cena, Kdy / období, Datum, Kategorie, Štítky, Poznámka a vypočtené h/den, Sazba Kč/h, Hodiny, Náklad) a list **Náběh** (kategorie × měsíce, Celkem, kumulativně); CSV obsahuje Řádky. Import (CSV nebo list Řádky) s náhledem: činnost podle WBS, zdroje a kategorie podle názvu (nic se nevytvoří samo), Hodiny a Náklad se ignorují; **nahradí řádky činností uvedených v souboru**, ostatní zůstanou; jakákoli chyba (s číslem řádku) import zablokuje; jeden krok Zpět; limit 5 MB / 20 000 řádků; české i anglické hlavičky. | D (fáze 7) |
-| I-05 | Export Gantta do **PDF** a obrázku (PNG/SVG) pro odevzdávání úkolů. | D (fáze 13) |
-| I-06 | Import ze souborů MS Project (XML) a GanttProject. | D (fáze 13) |
+| I-05 | Export Gantta do **PDF** a obrázku (PNG/SVG) pro odevzdávání úkolů – tak, jak je plán vidět (měřítko osy, sbalené fáze, kritická cesta). Obrázek: nadpis a podtitul (začátek, konec, počet položek, datum vytvoření), tabulka (č., WBS, název, začátek, konec, délka), časová osa s volnými dny, úsečky s % hotovo, šipky vazeb; vždy světlé barvy značky, texty escapované. **SVG** a **PNG** (2× rozlišení, nejvýš 16 000 bodů na stranu) přímo z menu Soubor. **Tisk / PDF** (menu Soubor, Ctrl+P): papír A4 / A3 na šířku (okraje 10 mm), měřítko osy automaticky (nejpodrobnější čitelné) nebo ručně, kritická cesta; stránkování po řádcích s nadpisem a osou na každé stránce, PDF uloží tisk prohlížeče („Uložit jako PDF“). Velmi široký diagram se zmenší na šířku stránky (s upozorněním) – dělení do šířky zatím ne. Bez nové knihovny. | D (fáze 13a) |
+| I-06 | Import ze souborů MS Project (XML) a GanttProject (.gan): **jen plán** – činnosti, fáze, milníky, vazby s prodlevou, % hotovo, poznámky, začátek projektu (zdroje a náklady ne). Náhled a nahrazení činností jako u importu tabulky (I-03), jeden krok Zpět; ověření Zod a limity. | D (fáze 13b) |
 | I-07 | **Celý projekt v jednom sešitu Excelu**: export s listy Projekt, Kalendář, Činnosti, Řádky, Kategorie, Střediska, Profese, Pracovníci (s kalkulací sazby), Nepřítomnosti, Stroje, Materiály a Náběh; **vypočtené sloupce** (termíny, sazby, h/den, hodiny, náklady, plánováno, celý Náběh) šedé s dovětkem „(vypočteno)“ – import je ignoruje a spočítá znovu, takže náklad se mění jen přes vstupy. Fáze 9 přidala list **Skutečnost** (WBS, činnost, datum, částka, poznámka; nepovinný kvůli starším sešitům – bez něj zůstanou skutečné náklady činností beze změny, s ním nahradí skutečné náklady všech činností). Import (jen .xlsx) s náhledem počtů za listy: listy se propojují názvy (jedinečné) a WBS, položky databáze se stejným názvem si ponechají ID, **činnost se stejným WBS, názvem a druhem si ponechá ID i skutečné náklady** (baseline ji tak dál pozná; totéž platí pro import činností I-03); baseline, datum stavu a uložené pohledy zůstávají, chybějící list nebo jakákoli chyba (s listem a řádkem) import zablokuje; **nahradí celý projekt** jedním krokem Zpět; limity 5 MB, 2 000 řádků na list databáze; ověření schématem Zod. Soubor projektu (.json, I-01) zůstává hlavním formátem pro zálohu a přenos. | D (doplněk po fázi 7) |
 
 ### 4.8 Uživatelská přívětivost
@@ -465,3 +465,5 @@ Technicky: build bez chyb, testy plánovacího jádra projdou, aplikace je nasaz
 | 1.20 | 17. 11. 2026 | Fáze 11 – napojení na AI: AI-01 až AI-04 upřesněny podle implementace (okno AI se dvěma kartami a ikonou čtyřcípé hvězdičky, obsah exportu, přednastavené otázky, náhled a vytvoření projektu, prompt na opravu, seznam hlášených chyb); formát „AI plán“ doplněn do kap. 7; prompty ověřeny na ChatGPT a Claude v češtině i angličtině. Datový model projektu beze změny (`schemaVersion` 2) |
 | 1.21 | 17. 11. 2026 | Plán fáze 12 – myšlenková mapa: sedmý pohled „Mapa“ uložený v projektu (`Project.mindMap`, nepovinné), klasická mapa do dvou stran, vlastní SVG místo React Flow (kap. 6), převod na plán s volbou Přidat na konec / Nahradit (činnosti 5 dnů bez vazeb), odsazený text tam i zpět |
 | 1.22 | 17. 11. 2026 | Fáze 12 – myšlenková mapa: MM-01 až MM-03 upřesněny podle implementace (ovládání klávesnicí, myší a tlačítky, tažení uzlů, rozpoznání středního tématu v osnově); `Project.mindMap` doplněno do kap. 7; osnova mapy v exportu pro AI. Mimo fázi: lépe viditelná výplň % hotovo v tmavém vzhledu (činnost, fáze, kritická činnost) |
+| 1.23 | 17. 11. 2026 | Plán fáze 13 – doladění a export, rozdělená na 13a (export SVG / PNG / PDF přes tisk), 13b (import MS Project a GanttProject – jen plán; ochrana proti „nafouknutým“ XLSX), 13c (tablet, nová činnost tažením v grafu, ukládání sbalených fází `Project.collapsedIds` mimo historii Zpět, výkon), 13d (svátky SK, PL, DE, AT – `calendar.holidayCountry`; přístupnost); commit a nasazení po každé části |
+| 1.24 | 17. 11. 2026 | Fáze 13a – export Gantta: I-05 upřesněn podle implementace (SVG, PNG, okno Tisk / PDF s Ctrl+P, A4 / A3, automatické měřítko, stránkování po řádcích; tisk do PDF ověřen uživatelem) |

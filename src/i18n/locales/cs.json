@@ -124,7 +124,13 @@
     "exportWorkbook": "Exportovat celý projekt do Excelu…",
     "exportWorkbookHint": "Uložit celý projekt do jednoho sešitu Excelu (činnosti, rozpočet, zdroje, kalendář, limity) – šedé sloupce jsou vypočtené jen pro kontrolu",
     "importWorkbook": "Importovat celý projekt z Excelu…",
-    "importWorkbookHint": "Načíst celý projekt ze sešitu Excelu vytvořeného exportem celého projektu; po náhledu nahradí současný projekt"
+    "importWorkbookHint": "Načíst celý projekt ze sešitu Excelu vytvořeného exportem celého projektu; po náhledu nahradí současný projekt",
+    "exportGanttSvg": "Exportovat Gantt jako SVG",
+    "exportGanttSvgHint": "Ganttův diagram jako obrázek SVG – ostrý v jakékoli velikosti, jde vložit do Wordu nebo prezentace (tak, jak je vidět: měřítko, sbalené fáze, kritická cesta)",
+    "exportGanttPng": "Exportovat Gantt jako PNG",
+    "exportGanttPngHint": "Ganttův diagram jako obrázek PNG ve dvojnásobném rozlišení (tak, jak je vidět: měřítko, sbalené fáze, kritická cesta)",
+    "print": "Tisk / PDF…",
+    "printHint": "Vytisknout Ganttův diagram po stránkách, nebo ho uložit jako PDF (Ctrl+P)"
   },
   "toolbar": {
     "label": "Hlavní nástroje",
@@ -283,7 +289,8 @@
       "confirm": "Potvrdit úpravu pole",
       "cancel": "Zrušit rozepsanou úpravu pole nebo tažení; mimo pole zrušit hromadný výběr",
       "nextField": "Přejít na další pole (Shift+Tab na předchozí)",
-      "help": "Tento přehled"
+      "help": "Tento přehled",
+      "print": "Tisk / uložení Ganttova diagramu do PDF"
     },
     "mouseItems": {
       "dragBar": "Táhnout úsečku v grafu = posunout činnost (nastaví „začít nejdříve“ 📌).",
@@ -2375,5 +2382,28 @@
         "tooLarge": "Text je příliš dlouhý (víc než 200 000 znaků)."
       }
     }
+  },
+  "ganttExport": {
+    "subtitle": "Začátek {{start}} · Konec {{finish}} · Položek: {{count}} · Vytvořeno {{today}} v aplikaci MiRo project",
+    "svgType": "Obrázek SVG",
+    "pngType": "Obrázek PNG",
+    "empty": "Plán je prázdný – není co exportovat."
+  },
+  "print": {
+    "title": "Tisk / PDF",
+    "intro": "Ganttův diagram se rozdělí na stránky (na každé znovu nadpis a časová osa) a otevře se tisk prohlížeče. Plán se tiskne tak, jak je vidět: bez řádků ve sbalených fázích.",
+    "paper": "Papír (na šířku)",
+    "papers": {
+      "a4": "A4",
+      "a3": "A3"
+    },
+    "zoom": "Měřítko časové osy",
+    "zoomAuto": "Automaticky ({{zoom}})",
+    "critical": "Zvýraznit kritickou cestu",
+    "summary": "Stránek: {{pages}} · řádků na stránku: {{rows}} · zmenšení na {{scale}} %",
+    "smallHint": "Text bude dost malý – zkuste papír A3 nebo hrubší měřítko osy (měsíce, čtvrtletí).",
+    "pdfHint": "V okně tisku zvolte tiskárnu „Uložit jako PDF“ (nebo „Microsoft Print to PDF“) a zkontrolujte, že je nastavený papír {{paper}} na šířku.",
+    "cancel": "Zrušit",
+    "print": "Tisknout…"
   }
 }

@@ -116,7 +116,13 @@
     "exportWorkbook": "Export whole project to Excel…",
     "exportWorkbookHint": "Save the whole project to one Excel workbook (tasks, budget, resources, calendar, limits) – grey columns are computed, for checking only",
     "importWorkbook": "Import whole project from Excel…",
-    "importWorkbookHint": "Load the whole project from an Excel workbook created by the whole-project export; after a preview it replaces the current project"
+    "importWorkbookHint": "Load the whole project from an Excel workbook created by the whole-project export; after a preview it replaces the current project",
+    "exportGanttSvg": "Export Gantt as SVG",
+    "exportGanttSvgHint": "The Gantt chart as an SVG image – sharp at any size, can be inserted into Word or a presentation (as currently shown: scale, collapsed phases, critical path)",
+    "exportGanttPng": "Export Gantt as PNG",
+    "exportGanttPngHint": "The Gantt chart as a PNG image at double resolution (as currently shown: scale, collapsed phases, critical path)",
+    "print": "Print / PDF…",
+    "printHint": "Print the Gantt chart page by page, or save it as a PDF (Ctrl+P)"
   },
   "toolbar": {
     "label": "Main tools",
@@ -265,7 +271,8 @@
       "confirm": "Confirm the edit of a field",
       "cancel": "Cancel the edit of a field or a drag; outside a field, clear a multiple selection",
       "nextField": "Go to the next field (Shift+Tab to the previous one)",
-      "help": "This overview"
+      "help": "This overview",
+      "print": "Print / save the Gantt chart as PDF"
     },
     "mouseItems": {
       "dragBar": "Drag a bar in the chart = move the task (sets “start no earlier than” 📌).",
@@ -2297,5 +2304,28 @@
         "tooLarge": "The text is too long (more than 200,000 characters)."
       }
     }
+  },
+  "ganttExport": {
+    "subtitle": "Start {{start}} · Finish {{finish}} · Items: {{count}} · Created {{today}} in MiRo project",
+    "svgType": "SVG image",
+    "pngType": "PNG image",
+    "empty": "The plan is empty – nothing to export."
+  },
+  "print": {
+    "title": "Print / PDF",
+    "intro": "The Gantt chart is split into pages (each with the title and the timeline again) and the browser print opens. The plan is printed as it is shown: without rows in collapsed phases.",
+    "paper": "Paper (landscape)",
+    "papers": {
+      "a4": "A4",
+      "a3": "A3"
+    },
+    "zoom": "Timeline scale",
+    "zoomAuto": "Automatic ({{zoom}})",
+    "critical": "Highlight the critical path",
+    "summary": "Pages: {{pages}} · rows per page: {{rows}} · scaled to {{scale}} %",
+    "smallHint": "The text will be rather small – try A3 paper or a coarser timeline scale (months, quarters).",
+    "pdfHint": "In the print window, choose the “Save as PDF” printer (or “Microsoft Print to PDF”) and check that {{paper}} landscape paper is set.",
+    "cancel": "Cancel",
+    "print": "Print…"
   }
 }

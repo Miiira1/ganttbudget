@@ -172,3 +172,46 @@ input[type='number'] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+/*
+ * Tisk Ganttova diagramu / uložení do PDF (fáze 13a): stránky z okna Tisk / PDF (PrintDialog).
+ * Na obrazovce jsou skryté; při tisku se skryje aplikace a vytisknou se jen stránky.
+ * Papír na šířku s okraji 10 mm – stejné rozměry počítá gantt/print.ts.
+ */
+.print-root {
+  display: none;
+}
+@page a4 {
+  size: A4 landscape;
+  margin: 10mm;
+}
+@page a3 {
+  size: A3 landscape;
+  margin: 10mm;
+}
+@media print {
+  body.printing {
+    background: #fff;
+  }
+  body.printing #root {
+    display: none;
+  }
+  body.printing .print-root {
+    display: block;
+  }
+  .print-page {
+    break-after: page;
+  }
+  .print-page:last-child {
+    break-after: auto;
+  }
+  .print-a4 {
+    page: a4;
+  }
+  .print-a3 {
+    page: a3;
+  }
+  .print-page img {
+    display: block;
+  }
+}

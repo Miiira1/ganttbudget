@@ -11,10 +11,11 @@ import { exportBudgetCsv, exportBudgetXlsx } from '../io/budgetExportActions'
 import { startBudgetImport } from '../io/budgetImportActions'
 import { exportWorkbook, startWorkbookImport } from '../io/workbookActions'
 import { startImport } from '../io/importActions'
+import { exportGanttPng, exportGanttSvg } from '../io/ganttExportActions'
 import { exportLibrary, startLibraryImport } from '../io/libraryActions'
 
 type Item = {
-  id: 'new' | 'open' | 'save' | 'saveAs' | 'exportWorkbook' | 'importWorkbook' | 'exportXlsx' | 'exportCsv' | 'import' | 'exportBudgetXlsx' | 'exportBudgetCsv' | 'importBudget' | 'exportLibrary' | 'importLibrary'
+  id: 'new' | 'open' | 'save' | 'saveAs' | 'exportWorkbook' | 'importWorkbook' | 'exportXlsx' | 'exportCsv' | 'import' | 'exportBudgetXlsx' | 'exportBudgetCsv' | 'importBudget' | 'exportLibrary' | 'importLibrary' | 'exportGanttSvg' | 'exportGanttPng' | 'print'
   shortcut?: string
   separatorBefore?: boolean
 }
@@ -23,6 +24,9 @@ const ITEMS: Item[] = [
   { id: 'open', shortcut: 'Ctrl+O' },
   { id: 'save', shortcut: 'Ctrl+S' },
   { id: 'saveAs', shortcut: 'Ctrl+Shift+S' },
+  { id: 'print', shortcut: 'Ctrl+P', separatorBefore: true },
+  { id: 'exportGanttSvg' },
+  { id: 'exportGanttPng' },
   { id: 'exportWorkbook', separatorBefore: true },
   { id: 'importWorkbook' },
   { id: 'exportXlsx', separatorBefore: true },
@@ -36,7 +40,7 @@ const ITEMS: Item[] = [
 ]
 
 /** `onNew` otevře okno Nový projekt (prázdný nebo ze šablony, fáze 10). */
-export function FileMenu({ onNew }: { onNew: () => void }) {
+export function FileMenu({ onNew, onPrint }: { onNew: () => void; onPrint: () => void }) {
   const { t, i18n } = useTranslation()
   const [open, setOpen] = useState(false)
   const menuId = useId()
@@ -59,7 +63,10 @@ export function FileMenu({ onNew }: { onNew: () => void }) {
     setOpen(false)
     buttonRef.current?.focus()
     if (id === 'new') onNew()
+    else if (id === 'print') onPrint()
     else if (id === 'open') void openProject(t)
+    else if (id === 'exportGanttSvg') void exportGanttSvg(t, i18n.language)
+    else if (id === 'exportGanttPng') void exportGanttPng(t, i18n.language)
     else if (id === 'exportWorkbook') void exportWorkbook(t, i18n.language)
     else if (id === 'importWorkbook') startWorkbookImport(t)
     else if (id === 'exportXlsx') void exportXlsx(t, i18n.language)

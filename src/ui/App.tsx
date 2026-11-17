@@ -28,6 +28,7 @@ import { PlanCheckDialog } from './check/PlanCheckDialog'
 import { NewProjectDialog } from './NewProjectDialog'
 import { WizardDialog } from './WizardDialog'
 import { AiDialog, type AiTab } from './ai/AiDialog'
+import { PrintDialog } from './PrintDialog'
 import { FileMenu } from './FileMenu'
 import { ImportDialog } from './ImportDialog'
 import { BudgetImportDialog } from './costs/BudgetImportDialog'
@@ -79,6 +80,7 @@ export default function App() {
   const [newOpen, setNewOpen] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
+  const [printOpen, setPrintOpen] = useState(false)
   const [aiTab, setAiTab] = useState<AiTab>('export')
   const issueCount = usePlanIssues().length
   const fileName = useFileState((s) => s.fileName)
@@ -136,6 +138,12 @@ export default function App() {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
         if (event.key.toLowerCase() === 'o') void openProject(i18n.t)
         else void saveProject(i18n.t, event.shiftKey)
+        return
+      }
+      // Ctrl+P = okno Tisk / PDF Ganttova diagramu (místo tisku celé obrazovky aplikace).
+      if (ctrl && !event.shiftKey && event.key.toLowerCase() === 'p') {
+        event.preventDefault()
+        setPrintOpen(true)
         return
       }
       // Zkratky pro řádky plánu platí jen v pohledu Plán (ve Zdrojích by měnily skrytou tabulku).
@@ -321,7 +329,7 @@ export default function App() {
               </button>
             ))}
           </div>
-          <FileMenu onNew={() => setNewOpen(true)} />
+          <FileMenu onNew={() => setNewOpen(true)} onPrint={() => setPrintOpen(true)} />
           <button type="button" className="btn-secondary" onClick={undo} disabled={!canUndo} title={t('toolbar.undoHint')}>
             <span aria-hidden="true">↶</span> {t('toolbar.undo')}
           </button>
@@ -411,6 +419,7 @@ export default function App() {
       <GlossaryDialog open={glossaryOpen} onClose={() => setGlossaryOpen(false)} />
       <NewProjectDialog open={newOpen} onClose={() => setNewOpen(false)} onWizard={() => setWizardOpen(true)} onAi={() => (setAiTab('plan'), setAiOpen(true))} />
       <WizardDialog open={wizardOpen} onClose={() => setWizardOpen(false)} />
+      <PrintDialog open={printOpen} onClose={() => setPrintOpen(false)} />
       <AiDialog open={aiOpen} onClose={() => setAiOpen(false)} initialTab={aiTab} />
       <PlanCheckDialog open={checkOpen} onClose={() => setCheckOpen(false)} onShowView={setView} />
       <ImportDialog />
