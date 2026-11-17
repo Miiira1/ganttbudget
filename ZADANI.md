@@ -1,7 +1,7 @@
 # ZADÁNÍ: Aplikace pro Ganttovy diagramy s navázaným rozpočtem
 
 > Název aplikace: **MiRo project** (pracovní název do v1.10: GanttBudget)
-> Verze zadání: 1.20 · Datum: 17. 11. 2026 (změny viz kap. 14)
+> Verze zadání: 1.22 · Datum: 17. 11. 2026 (změny viz kap. 14)
 > Dokument je zároveň vstupem pro Claude Code (vibe coding) a osnovou výukové case study.
 
 ---
@@ -177,9 +177,9 @@ Státní svátky ČR k zakódování: 1. 1.; Velký pátek; Velikonoční pondě
 
 | ID | Požadavek | Prio |
 |---|---|---|
-| MM-01 | Jednoduchý vestavěný editor: centrální téma, větve, přidávání/mazání/přesouvání uzlů, sbalování. | D (fáze 12) |
-| MM-02 | Tlačítko „Vytvořit plán z mapy": hierarchie uzlů se stane fázemi a činnostmi (hloubka → úroveň, listy → činnosti), uživatel doplní délky a vazby. | D |
-| MM-03 | Import odsazeného textu (outline) jako alternativní vstup. | D |
+| MM-01 | Jednoduchý vestavěný editor jako **sedmý pohled „Mapa“**: centrální téma (výchozí název projektu), větve, přidávání/mazání/přesouvání uzlů, sbalování. Klasická mapa do dvou stran (hlavní větve postupně na nižší stranu, podřízené směrem ven, barvy větví podle značky, sbalená větev ukáže „+N“). Ovládání klávesnicí (Tab = podřízený, Enter = sourozenec, F2 / psaní = přejmenovat, Delete = smazat, šipky = pohyb, mezerník = sbalit, Alt+Shift+↑/↓ = pořadí), myší (tažení uzlu doprostřed jiného = pod něj, k okraji = před / za, Esc zruší; kolečko = přiblížení, tažení pozadí = posun) i tlačítky. Mapa se ukládá do projektu (nepovinné pole, starší soubory beze změny), každá úprava = jeden krok Zpět. Nejvýš 500 uzlů, hloubka kořen + 6 úrovní. Přístupnost: strom pro čtečky obrazovky (role tree). | D (fáze 12) |
+| MM-02 | Tlačítko „Vytvořit plán z mapy": hierarchie uzlů se stane fázemi a činnostmi (hloubka → úroveň, uzel s podřízenými → fáze, listy → činnosti s délkou 5 pracovních dnů, bez vazeb), uživatel doplní délky a vazby. Prázdný plán se vytvoří; jinak volba „Přidat na konec plánu“ / „Nahradit plán“ (s varováním). Vždy náhled a jeden krok Zpět, mapa zůstane beze změny. | D (fáze 12) |
+| MM-03 | Import odsazeného textu (outline) jako alternativní vstup – okno „Vložit text…“: odsazení tabulátory / mezerami, odrážky, číslování a nadpisy „#“ se odstraní; jediný řádek bez odsazení (nebo nadpis nad odrážkami) = střední téma, víc takových se zařadí pod název projektu; přeskočená úroveň se srovná; náhled, chyby s číslem řádku, nahrazení mapy s varováním (jeden krok Zpět). Opačně tlačítko „Zkopírovat jako text“ (osnova s odrážkami). Osnova mapy je i v exportu pro AI (AI-01), pokud mapa má aspoň jednu větev. | D (fáze 12) |
 
 ---
 
@@ -219,7 +219,7 @@ Státní svátky ČR k zakódování: 1. 1.; Velký pátek; Velikonoční pondě
 | CSV / XLSX | **PapaParse**, **ExcelJS** | Osvědčené knihovny pro import i export. **SheetJS (`xlsx`) z npm nepoužívat**: verze na npm je zastaralá a má známé zranitelnosti. |
 | Grafy | **Recharts** (případně ECharts) | Dobrá integrace s Reactem, pokryje sloupcové, čárové, plošné grafy |
 | Pivot | **Vlastní jednoduchá implementace** (agregace + tabulka) | Hotové pivot knihovny bývají neudržované nebo špatně stylovatelné |
-| Myšlenková mapa | **React Flow** nebo vlastní SVG (rozhodnout ve fázi 12) | |
+| Myšlenková mapa | **Vlastní SVG** (rozhodnuto ve fázi 12, v1.21) | Žádná nová knihovna; rozložení mapy je čistá funkce s testy, stejně jako Gantt |
 | Testy | **Vitest** (jednotkové testy jádra), Playwright (pozdější klíčové scénáře) | |
 | Ukládání | Stažení/nahrání souboru JSON, **File System Access API** tam, kde je dostupné; autosave do **IndexedDB** | |
 | Nasazení | **GitHub Pages** přes GitHub Actions | Zdarma, automatické po každém uložení do hlavní větve |
@@ -286,6 +286,9 @@ Baseline     id, name, savedAt, tasks: [{ taskId, parentId, name, kind, start, f
              costStart?, costs[] }]   // snímek plánu: termíny a vlastní náklad po dnech (haléře) od costStart;
              // max. 10 baseline, 3 660 dnů na položku, 500 000 čísel na baseline (fáze 9)
 Project      … activeBaselineId? (baseline ke srovnání), statusDate? (datum stavu; chybí = dnes)
+Project      … mindMap?: { nodes: [{ id, parentId (null = střední téma), order, text, collapsed? }] }
+             // myšlenková mapa (fáze 12): právě jeden kořen, max. 500 uzlů, 6 úrovní pod kořenem, text 1–200 znaků;
+             // nepovinná (schemaVersion zůstává 2), import celého projektu z Excelu ji zachová
 ```
 
 **Formát „AI plán“ (fáze 11)** – odpověď AI, ze které vznikne nový projekt (nové ID, peníze × 100 na haléře):
@@ -460,3 +463,5 @@ Technicky: build bez chyb, testy plánovacího jádra projdou, aplikace je nasaz
 | 1.18 | 17. 11. 2026 | Fáze 10 – učení a přívětivost: U-01 (průvodce v pěti krocích, nabídka měn, volitelná první činnost v každé fázi, úvodní obrazovka prázdného plánu), U-02 (pět šablon v okně Nový projekt, společný popis šablon a testy), U-03 (ⓘ na konkrétních místech, Slovníček s hledáním) a U-04 (tlačítko s počtem varování, výjimky pro chybějící vazby, akce u varování) upřesněny podle implementace. Datový model beze změny (`schemaVersion` 2) |
 | 1.19 | 17. 11. 2026 | Plán fáze 11 – napojení na AI: AI-01 jako Markdown s volbou jmen a sazeb (výchozí bez), AI-02 vrací plán a hrubý rozpočet a vytvoří nový projekt, okno AI (ikona hvězdičky) v liště a karta v okně Nový projekt; AI-03 ověřit na skutečných odpovědích; AI-04 limit 500 kB |
 | 1.20 | 17. 11. 2026 | Fáze 11 – napojení na AI: AI-01 až AI-04 upřesněny podle implementace (okno AI se dvěma kartami a ikonou čtyřcípé hvězdičky, obsah exportu, přednastavené otázky, náhled a vytvoření projektu, prompt na opravu, seznam hlášených chyb); formát „AI plán“ doplněn do kap. 7; prompty ověřeny na ChatGPT a Claude v češtině i angličtině. Datový model projektu beze změny (`schemaVersion` 2) |
+| 1.21 | 17. 11. 2026 | Plán fáze 12 – myšlenková mapa: sedmý pohled „Mapa“ uložený v projektu (`Project.mindMap`, nepovinné), klasická mapa do dvou stran, vlastní SVG místo React Flow (kap. 6), převod na plán s volbou Přidat na konec / Nahradit (činnosti 5 dnů bez vazeb), odsazený text tam i zpět |
+| 1.22 | 17. 11. 2026 | Fáze 12 – myšlenková mapa: MM-01 až MM-03 upřesněny podle implementace (ovládání klávesnicí, myší a tlačítky, tažení uzlů, rozpoznání středního tématu v osnově); `Project.mindMap` doplněno do kap. 7; osnova mapy v exportu pro AI. Mimo fázi: lépe viditelná výplň % hotovo v tmavém vzhledu (činnost, fáze, kritická činnost) |

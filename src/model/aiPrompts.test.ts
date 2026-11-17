@@ -118,6 +118,17 @@ describe('projekt pro AI (Markdown)', () => {
     expect(text.trimEnd().endsWith(question)).toBe(true)
   })
 
+  it('myšlenková mapa je v exportu jako osnova před otázkou; mapa jen se středním tématem ne (fáze 12)', () => {
+    const question = 'Otázka?'
+    const mindMap = { nodes: [{ id: 'r', parentId: null, order: 0, text: 'Střed' }, { id: 'a', parentId: 'r', order: 0, text: 'Větev mapy' }] }
+    const withMap = projectForAi(cs, 'cs', { ...data, project: { ...project, mindMap } }, { question, includeNames: false })
+    expect(withMap).toContain(cs('ai.export.mindMapHeading'))
+    expect(withMap).toContain('  - Větev mapy')
+    expect(withMap.indexOf('Větev mapy')).toBeLessThan(withMap.indexOf(question))
+    const rootOnly = { nodes: [mindMap.nodes[0]!] }
+    expect(projectForAi(cs, 'cs', { ...data, project: { ...project, mindMap: rootOnly } }, { question, includeNames: false })).not.toContain(cs('ai.export.mindMapHeading'))
+  })
+
   it('anglická verze má anglické nadpisy', () => {
     const text = projectForAi(en, 'en', data, { question: en('ai.questions.risks.text'), includeNames: false })
     expect(text).toContain(en('ai.export.planHeading'))

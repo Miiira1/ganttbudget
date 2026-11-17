@@ -28,7 +28,7 @@ import {
 } from '../model/hierarchy'
 import { milestoneAllows, syncLaborLines, uniqueName, type CatalogItem } from '../model/catalogs'
 import { isValidIsoDate } from '../model/dates'
-import { createTask, MAX_ACTUALS, MAX_BASELINES, MAX_VIEWS, type ActualCost, type Baseline, type Calendar, type CatalogKey, type Dependency, type Project, type SavedView, type Task, type TaskKind, type TaskLine } from '../model/schema'
+import { createTask, MAX_ACTUALS, MAX_BASELINES, MAX_VIEWS, type ActualCost, type Baseline, type Calendar, type CatalogKey, type Dependency, type MindMap, type Project, type SavedView, type Task, type TaskKind, type TaskLine } from '../model/schema'
 
 /** Kolik kroků zpět si aplikace pamatuje. */
 export const HISTORY_LIMIT = 100
@@ -127,6 +127,8 @@ export interface ProjectState {
   updateView: (id: string, config: SavedView['config']) => void
   renameView: (id: string, name: string) => void
   deleteView: (id: string) => void
+  /** Uloží novou podobu myšlenkové mapy (fáze 12) – jeden krok Zpět; úpravy počítá model/mindMap.ts. */
+  setMindMap: (mindMap: MindMap) => void
   /** Nahradí celý projekt (např. vzorovým). Lze vrátit přes Zpět. */
   loadProject: (project: Project) => void
   /** Nahradí projekt a smaže historii (obnova ze zálohy po otevření aplikace – není co vracet). */
@@ -467,6 +469,12 @@ export function createProjectStore(initialProject: Project) {
         const { views: _old, ...rest } = project
         void _old
         commit(views.length > 0 ? { ...rest, views } : (rest as Project))
+      },
+
+      setMindMap(mindMap) {
+        const { project } = get()
+        if (project.mindMap === mindMap) return
+        commit({ ...project, mindMap })
       },
 
       saveBaseline(rawName, data) {

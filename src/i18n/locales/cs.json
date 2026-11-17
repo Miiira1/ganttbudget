@@ -301,7 +301,8 @@
       "detailPanel": "Detail činnosti (pod plánem): kliknout na činnost = ukázat její zdroje a náklady; táhnout oddělovač nad panelem (nebo šipky ↑ ↓) = změnit výšku; ▾ = sbalit.",
       "critical": "Tlačítko Kritická cesta žlutě zvýrazní činnosti bez rezervy; sloupec Rezerva ukazuje, o kolik pracovních dnů se činnost smí zpozdit",
       "absence": "Zdroje → Pracovníci → sloupec Nepřítomnost: dovolená, nemoc, školení (ovlivní vytížení, ne termíny)",
-      "load": "Pohled Vytížení: klik na zdroj ukáže histogram a činnosti; klik na činnost ji otevře v plánu"
+      "load": "Pohled Vytížení: klik na zdroj ukáže histogram a činnosti; klik na činnost ji otevře v plánu",
+      "mindMap": "V pohledu Mapa: Tab = nový podřízený uzel, Enter = nový sourozenec, F2 nebo psaní = přejmenovat, Delete = smazat, šipky = pohyb, mezerník = sbalit / rozbalit, Alt+Shift+↑/↓ = pořadí; tažením uzlu ho přesunete pod jiný uzel nebo mezi sourozence (Esc zruší); kolečko myši přiblíží, tažením pozadí se mapa posune."
     }
   },
   "structure": {
@@ -697,7 +698,9 @@
     "analysis": "Analýza",
     "analysisHint": "Kontingenční tabulka: náklady a hodiny podle fází, kategorií, štítků, zdrojů, středisek a období",
     "tracking": "Sledování",
-    "trackingHint": "Plán vs. skutečnost: baseline, % hotovo, skutečné náklady a Earned Value"
+    "trackingHint": "Plán vs. skutečnost: baseline, % hotovo, skutečné náklady a Earned Value",
+    "mindmap": "Mapa",
+    "mindmapHint": "Myšlenková mapa: rozmyslete si projekt bez termínů a pak z ní vytvořte plán"
   },
   "rate": {
     "title": "Hodinová sazba – {{name}}",
@@ -1594,6 +1597,10 @@
       "ev": "Ukazatele Earned Value"
     },
     "terms": {
+      "mindMap": {
+        "name": "Myšlenková mapa",
+        "text": "Obrázek, kde je uprostřed hlavní téma (projekt) a od něj se větví jeho části a podčásti. Pomůže rozmyslet, z čeho projekt sestává, ještě bez termínů. Z mapy jde pak vytvořit plán: větve se stanou fázemi, koncové uzly činnostmi."
+      },
       "phase": {
         "name": "Fáze",
         "text": "Skupina souvisejících činností, např. „Projekt a konstrukce“. Její začátek, konec, délka, náklady i % hotovo se spočítají z položek uvnitř – ručně se nezadávají. Fázi lze sbalit a rozbalit."
@@ -2237,7 +2244,8 @@
         "rate": "Sazba",
         "workers": "Počet pracovníků",
         "machine": "Stroj"
-      }
+      },
+      "mindMapHeading": "Myšlenková mapa"
     }
   },
   "aiDialog": {
@@ -2292,6 +2300,80 @@
       "more": "… a další položky ({{count}})",
       "create": "Vytvořit projekt",
       "days": "{{count}} prac. dní"
+    }
+  },
+  "mindMap": {
+    "label": "Myšlenková mapa",
+    "toolbar": "Úpravy mapy",
+    "newNode": "Nový uzel",
+    "addChild": "Podřízený",
+    "addChildHint": "Přidat podřízený uzel k vybranému (Tab)",
+    "addSibling": "Sourozenec",
+    "addSiblingHint": "Přidat uzel na stejnou úroveň hned za vybraný (Enter)",
+    "rename": "Přejmenovat",
+    "renameHint": "Přejmenovat vybraný uzel (F2 nebo rovnou psát; dvojklik)",
+    "renameLabel": "Text uzlu",
+    "delete": "Smazat",
+    "deleteHint": "Smazat vybraný uzel i s větví pod ním (Delete)",
+    "collapse": "Sbalit",
+    "expand": "Rozbalit",
+    "toggleHint": "Sbalit nebo rozbalit větev vybraného uzlu (mezerník)",
+    "zoomIn": "Přiblížit",
+    "zoomOut": "Oddálit",
+    "fit": "Vycentrovat",
+    "fitHint": "Zobrazit celou mapu",
+    "keysHint": "Klávesy (klikněte do mapy): Tab = podřízený · Enter = sourozenec · F2 / psaní = přejmenovat · Delete = smazat · šipky = pohyb · mezerník = sbalit · Alt+Shift+↑/↓ = pořadí · Ctrl+Z = zpět · Shift+Tab = opustit mapu. Myš: tažením uzlu ho přesunete (doprostřed jiného uzlu = pod něj, k jeho hornímu / dolnímu okraji = před / za něj; Esc zruší).",
+    "confirmDelete": "Smazat uzel „{{name}}“ i s {{count}} podřízenými uzly? Změnu lze vrátit tlačítkem Zpět (Ctrl+Z).",
+    "selected": "Vybráno: {{name}} (úroveň {{level}}, podřízených {{count}})",
+    "errors": {
+      "root": "Střední téma nejde smazat ani přesunout a nemá sourozence.",
+      "tooDeep": "Mapa může mít nejvýš 6 úrovní pod středním tématem (stejně jako plán).",
+      "tooMany": "Mapa může mít nejvýš 500 uzlů.",
+      "cycle": "Uzel nejde přesunout do vlastní větve.",
+      "emptyText": "Text uzlu nesmí být prázdný.",
+      "tooLong": "Text uzlu může mít nejvýš 200 znaků.",
+      "notFound": "Uzel už v mapě není."
+    },
+    "plan": {
+      "button": "Vytvořit plán z mapy",
+      "buttonHint": "Převést větve mapy na fáze a koncové uzly na činnosti plánu",
+      "title": "Vytvořit plán z mapy",
+      "intro": "Větve mapy se stanou fázemi a koncové uzly činnostmi o délce {{days}} pracovních dnů, zatím bez vazeb. Střední téma se nepřevádí. Mapa zůstane beze změny.",
+      "modeLabel": "Plán už obsahuje položky ({{count}}). Co s nimi?",
+      "append": "Přidat na konec plánu",
+      "appendHint": "Stávající položky zůstanou, nové fáze a činnosti se přidají za ně.",
+      "replace": "Nahradit plán",
+      "replaceHint": "Stávající položky se smažou a plán bude jen podle mapy.",
+      "replaceWarning": "Smaže se položek plánu: {{tasks}}, řádků zdrojů a nákladů: {{lines}}, skutečných nákladů: {{actuals}}. Změnu lze vrátit tlačítkem Zpět (Ctrl+Z).",
+      "summary": "Nové položky: fáze {{phases}}, činnosti {{tasks}}",
+      "more": "… a další položky ({{count}})",
+      "afterHint": "V plánu pak doplňte délky a vazby mezi činnostmi – Kontrola plánu vám ukáže, kde chybí.",
+      "emptyMap": "Mapa zatím obsahuje jen střední téma. Přidejte větve (klávesa Tab) a pak z ní vytvořte plán.",
+      "invalid": "Plán z mapy se nepodařilo vytvořit – projekt by překročil povolené limity.",
+      "cancel": "Zrušit",
+      "create": "Vytvořit plán"
+    },
+    "outline": {
+      "button": "Vložit text…",
+      "buttonHint": "Vytvořit mapu z odsazeného textu (osnovy) – např. z Wordu, poznámek nebo od AI",
+      "copy": "Zkopírovat jako text",
+      "copyHint": "Zkopírovat mapu jako odsazený text (osnovu) do schránky",
+      "copied": "Mapa je ve schránce jako odsazený text. Vložte ji do Wordu, poznámek nebo do chatu s AI (Ctrl+V).",
+      "copyFailed": "Prohlížeč nepovolil zápis do schránky. Zkuste to znovu, nebo povolte schránku v nastavení prohlížeče.",
+      "title": "Vložit odsazený text",
+      "intro": "Vložte osnovu – každý bod na samostatný řádek, podřízené body odsazené tabulátorem nebo mezerami. Odrážky (-, •, *) a číslování (1., 1.2, a)) se odstraní. První řádek bez odsazení bude střední téma; když jich je víc, zařadí se pod název projektu.",
+      "label": "Odsazený text",
+      "placeholder": "Zavedení nové linky\n\tPříprava\n\t\tAnalýza kapacit\n\t\tRozpočet\n\tRealizace\n\t\tMontáž\n\tPředání",
+      "preview": "Náhled nové mapy (uzlů: {{count}})",
+      "replaceWarning": "Současná mapa ({{count}} uzlů) se nahradí. Změnu lze vrátit tlačítkem Zpět (Ctrl+Z).",
+      "replace": "Nahradit mapu",
+      "errors": {
+        "empty": "Text neobsahuje žádné body.",
+        "tooLong": "Řádek {{line}}: text je delší než 200 znaků.",
+        "tooDeep": "Řádek {{line}}: odsazení je hlubší než 6 úrovní pod středním tématem.",
+        "tooMany": "Text má víc než 500 bodů (od řádku {{line}}).",
+        "tooLarge": "Text je příliš dlouhý (víc než 200 000 znaků)."
+      }
     }
   }
 }

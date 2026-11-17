@@ -95,3 +95,17 @@ export function AiIcon({ className = '' }: { className?: string }) {
     </svg>
   )
 }
+
+/** Mapa: střední téma a čtyři větve ke dvěma stranám (myšlenková mapa). */
+export function MindMapIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg {...common} className={className}>
+      <path d="M6 8C4 8 4 4 2.2 4M6 8C4 8 4 12 2.2 12M10 8C12 8 12 4 13.8 4M10 8C12 8 12 12 13.8 12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.7" />
+      <rect x="5" y="6.3" width="6" height="3.4" rx="1.7" fill="currentColor" />
+      <circle cx="2" cy="4" r="1.4" fill="currentColor" opacity="0.65" />
+      <circle cx="2" cy="12" r="1.4" fill="currentColor" opacity="0.65" />
+      <circle cx="14" cy="4" r="1.4" fill="currentColor" opacity="0.65" />
+      <circle cx="14" cy="12" r="1.4" fill="currentColor" opacity="0.65" />
+    </svg>
+  )
+}

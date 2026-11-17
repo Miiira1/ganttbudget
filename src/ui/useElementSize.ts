@@ -13,6 +13,9 @@ export function useElementSize<T extends HTMLElement>(): [React.RefObject<T | nu
       setSize((prev) => (Math.abs(prev.width - width) < 1 && Math.abs(prev.height - height) < 1 ? prev : { width, height }))
     })
     observer.observe(element)
+    // Rozměr hned při připojení (pozorovatel se ozve až při dalším vykreslení stránky).
+    const rect = element.getBoundingClientRect()
+    if (rect.width > 0 || rect.height > 0) setSize({ width: rect.width, height: rect.height })
     return () => observer.disconnect()
   }, [])
   return [ref, size]

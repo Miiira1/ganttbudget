@@ -283,7 +283,8 @@
       "detailPanel": "Task detail (below the plan): click a task = show its resources and costs; drag the separator above the panel (or ↑ ↓) = change the height; ▾ = collapse.",
       "critical": "The Critical path button highlights tasks without slack in yellow; the Slack column shows how many working days a task may slip",
       "absence": "Resources → Workers → Absence column: holidays, sick leave, training (affects load, not dates)",
-      "load": "Load view: click a resource for its histogram and tasks; click a task to open it in the plan"
+      "load": "Load view: click a resource for its histogram and tasks; click a task to open it in the plan",
+      "mindMap": "In the Map view: Tab = new child node, Enter = new sibling, F2 or typing = rename, Delete = delete, arrows = move, Space = collapse / expand, Alt+Shift+↑/↓ = order; drag a node to move it under another node or between siblings (Esc cancels); the mouse wheel zooms, dragging the background pans the map."
     }
   },
   "structure": {
@@ -653,7 +654,9 @@
     "analysis": "Analysis",
     "analysisHint": "Pivot table: costs and hours by phase, category, tag, resource, department and period",
     "tracking": "Tracking",
-    "trackingHint": "Plan vs. actual: baseline, % complete, actual costs and Earned Value"
+    "trackingHint": "Plan vs. actual: baseline, % complete, actual costs and Earned Value",
+    "mindmap": "Map",
+    "mindmapHint": "Mind map: think the project through without dates, then create a plan from it"
   },
   "rate": {
     "title": "Hourly rate – {{name}}",
@@ -1516,6 +1519,10 @@
       "ev": "Earned Value indicators"
     },
     "terms": {
+      "mindMap": {
+        "name": "Mind map",
+        "text": "A picture with the main topic (the project) in the middle and its parts and sub-parts branching out from it. It helps you think through what the project consists of, still without dates. You can then create a plan from the map: branches become phases, end nodes become tasks."
+      },
       "phase": {
         "name": "Phase",
         "text": "A group of related tasks, e.g. “Design and engineering”. Its start, finish, duration, costs and % complete are calculated from the items inside – you do not enter them. A phase can be collapsed and expanded."
@@ -2159,7 +2166,8 @@
         "rate": "Rate",
         "workers": "Number of workers",
         "machine": "Machine"
-      }
+      },
+      "mindMapHeading": "Mind map"
     }
   },
   "aiDialog": {
@@ -2214,6 +2222,80 @@
       "more": "… and more items ({{count}})",
       "create": "Create project",
       "days": "{{count}} working days"
+    }
+  },
+  "mindMap": {
+    "label": "Mind map",
+    "toolbar": "Map editing",
+    "newNode": "New node",
+    "addChild": "Child",
+    "addChildHint": "Add a child node to the selected one (Tab)",
+    "addSibling": "Sibling",
+    "addSiblingHint": "Add a node at the same level right after the selected one (Enter)",
+    "rename": "Rename",
+    "renameHint": "Rename the selected node (F2 or just type; double-click)",
+    "renameLabel": "Node text",
+    "delete": "Delete",
+    "deleteHint": "Delete the selected node with the branch below it (Delete)",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "toggleHint": "Collapse or expand the branch of the selected node (Space)",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "fit": "Fit",
+    "fitHint": "Show the whole map",
+    "keysHint": "Keys (click into the map): Tab = child · Enter = sibling · F2 / typing = rename · Delete = delete · arrows = move · Space = collapse · Alt+Shift+↑/↓ = order · Ctrl+Z = undo · Shift+Tab = leave the map. Mouse: drag a node to move it (onto the middle of another node = under it, to its top / bottom edge = before / after it; Esc cancels).",
+    "confirmDelete": "Delete the node “{{name}}” with {{count}} child nodes? You can undo this with Undo (Ctrl+Z).",
+    "selected": "Selected: {{name}} (level {{level}}, children {{count}})",
+    "errors": {
+      "root": "The central topic cannot be deleted or moved and has no siblings.",
+      "tooDeep": "The map can have at most 6 levels below the central topic (same as the plan).",
+      "tooMany": "The map can have at most 500 nodes.",
+      "cycle": "A node cannot be moved into its own branch.",
+      "emptyText": "The node text must not be empty.",
+      "tooLong": "The node text can have at most 200 characters.",
+      "notFound": "The node is no longer in the map."
+    },
+    "plan": {
+      "button": "Create plan from map",
+      "buttonHint": "Turn the map branches into phases and the end nodes into plan tasks",
+      "title": "Create plan from map",
+      "intro": "Map branches become phases and end nodes become tasks with a duration of {{days}} working days, without dependencies for now. The central topic is not converted. The map stays unchanged.",
+      "modeLabel": "The plan already contains items ({{count}}). What should happen to them?",
+      "append": "Add to the end of the plan",
+      "appendHint": "The existing items stay; the new phases and tasks are added after them.",
+      "replace": "Replace the plan",
+      "replaceHint": "The existing items are deleted and the plan follows only the map.",
+      "replaceWarning": "This deletes plan items: {{tasks}}, resource and cost lines: {{lines}}, actual costs: {{actuals}}. You can undo it with Undo (Ctrl+Z).",
+      "summary": "New items: phases {{phases}}, tasks {{tasks}}",
+      "more": "… and more items ({{count}})",
+      "afterHint": "Then fill in durations and dependencies between tasks in the plan – the Plan check shows you where they are missing.",
+      "emptyMap": "The map contains only the central topic so far. Add branches (Tab key), then create a plan from it.",
+      "invalid": "The plan could not be created from the map – the project would exceed the allowed limits.",
+      "cancel": "Cancel",
+      "create": "Create plan"
+    },
+    "outline": {
+      "button": "Paste text…",
+      "buttonHint": "Create the map from indented text (an outline) – e.g. from Word, notes or an AI",
+      "copy": "Copy as text",
+      "copyHint": "Copy the map as indented text (an outline) to the clipboard",
+      "copied": "The map is in the clipboard as indented text. Paste it into Word, notes or an AI chat (Ctrl+V).",
+      "copyFailed": "The browser did not allow writing to the clipboard. Try again, or allow the clipboard in the browser settings.",
+      "title": "Paste indented text",
+      "intro": "Paste an outline – each point on its own line, sub-points indented with a tab or spaces. Bullets (-, •, *) and numbering (1., 1.2, a)) are removed. The first line without indentation becomes the central topic; if there are several, they go under the project name.",
+      "label": "Indented text",
+      "placeholder": "New production line\n\tPreparation\n\t\tCapacity analysis\n\t\tBudget\n\tExecution\n\t\tAssembly\n\tHandover",
+      "preview": "Preview of the new map (nodes: {{count}})",
+      "replaceWarning": "The current map ({{count}} nodes) will be replaced. You can undo it with Undo (Ctrl+Z).",
+      "replace": "Replace map",
+      "errors": {
+        "empty": "The text contains no points.",
+        "tooLong": "Line {{line}}: the text is longer than 200 characters.",
+        "tooDeep": "Line {{line}}: the indentation is deeper than 6 levels below the central topic.",
+        "tooMany": "The text has more than 500 points (from line {{line}}).",
+        "tooLarge": "The text is too long (more than 200,000 characters)."
+      }
     }
   }
 }

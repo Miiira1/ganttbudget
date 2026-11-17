@@ -38,7 +38,8 @@ import { isDirty, openProject, saveProject, useFileState } from '../io/fileActio
 import { startAutosave } from '../io/autosaveRunner'
 import { deleteSelected, duplicateSelected } from './structureCommands'
 import { ResourcesView } from './resources/ResourcesView'
-import { AnalysisIcon, CostsIcon, LoadIcon, PlanIcon, ResourcesIcon, TrackingIcon, AiIcon } from './icons'
+import { AnalysisIcon, CostsIcon, LoadIcon, PlanIcon, ResourcesIcon, TrackingIcon, AiIcon, MindMapIcon } from './icons'
+import { MindMapView } from './mindmap/MindMapView'
 import { LoadView } from './load/LoadView'
 import { CostsView } from './costs/CostsView'
 import { AnalysisView } from './analysis/AnalysisView'
@@ -50,7 +51,7 @@ import { loadPreference, savePreference } from './preferences'
 /** Hlavní pohledy: Plán (tabulka + graf) a Zdroje (databáze, fáze 6a). */
 /** O kolik týdnů dřív začíná vzorový projekt (aby bylo co sledovat). */
 const SAMPLE_WEEKS_AGO = 8
-const VIEWS = ['plan', 'resources', 'load', 'costs', 'analysis', 'tracking'] as const
+const VIEWS = ['plan', 'resources', 'load', 'costs', 'analysis', 'tracking', 'mindmap'] as const
 type View = (typeof VIEWS)[number]
 
 /** Je kurzor v textovém poli? Tam necháme Ctrl+Z prohlížeči (vrací psaní v poli). */
@@ -306,7 +307,7 @@ export default function App() {
                   view === id ? 'bg-miro-graphite text-miro-paper dark:bg-miro-paper dark:text-miro-graphite' : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
                 }`}
               >
-                {id === 'plan' ? <PlanIcon /> : id === 'resources' ? <ResourcesIcon /> : id === 'load' ? <LoadIcon /> : id === 'costs' ? <CostsIcon /> : id === 'analysis' ? <AnalysisIcon /> : <TrackingIcon />}
+                {id === 'plan' ? <PlanIcon /> : id === 'resources' ? <ResourcesIcon /> : id === 'load' ? <LoadIcon /> : id === 'costs' ? <CostsIcon /> : id === 'analysis' ? <AnalysisIcon /> : id === 'tracking' ? <TrackingIcon /> : <MindMapIcon />}
                 {t(`view.${id}`)}
                 {id === 'load' && overloadedCount > 0 && (
                   <span
@@ -436,6 +437,10 @@ export default function App() {
       ) : view === 'tracking' ? (
         <main className="min-h-0 flex-1">
           <TrackingView />
+        </main>
+      ) : view === 'mindmap' ? (
+        <main className="min-h-0 flex-1">
+          <MindMapView onShowPlan={() => setView('plan')} />
         </main>
       ) : project.tasks.length === 0 ? (
         // Prázdný projekt: jen uvítání přes celou šířku, graf by byl prázdný.

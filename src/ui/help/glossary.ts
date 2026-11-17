@@ -5,7 +5,7 @@
  */
 
 export const GLOSSARY_SECTIONS = [
-  { id: 'plan', terms: ['phase', 'milestone', 'wbs', 'duration', 'workingDays', 'dependency', 'linkTypes', 'lag', 'constraint', 'criticalPath', 'slack'] },
+  { id: 'plan', terms: ['mindMap', 'phase', 'milestone', 'wbs', 'duration', 'workingDays', 'dependency', 'linkTypes', 'lag', 'constraint', 'criticalPath', 'slack'] },
   { id: 'resources', terms: ['resource', 'rate', 'load', 'overload'] },
   { id: 'budget', terms: ['costLine', 'costCategory', 'tags', 'costTimeline', 'budgetLimit', 'sCurve', 'cashFlow', 'pivot'] },
   { id: 'tracking', terms: ['percentComplete', 'baseline', 'statusDate', 'actualCost', 'earnedValue'] },

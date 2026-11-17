@@ -118,8 +118,19 @@ function Progress({ bar, percent, critical }: { bar: Bar; percent: number; criti
   const width = Math.max(MIN_WIDTH, bar.xEnd - bar.xStart)
   const filled = (width * Math.min(100, percent)) / 100
   if (bar.kind === 'phase') {
-    return <rect x={bar.xStart} y={bar.centerY - TASK_BAR_HEIGHT / 2 + 1.5} width={filled} height={PHASE_BAR_HEIGHT - 3} className="fill-miro-turquoise" pointerEvents="none" />
+    // Tmavý vzhled: fáze je světle šedá, proto tmavá tyrkysová výplň (kontrast ≥ 3 : 1).
+    return (
+      <rect
+        x={bar.xStart}
+        y={bar.centerY - TASK_BAR_HEIGHT / 2 + 1.5}
+        width={filled}
+        height={PHASE_BAR_HEIGHT - 3}
+        className="fill-miro-turquoise dark:fill-miro-turquoise-dark"
+        pointerEvents="none"
+      />
+    )
   }
+  // Tmavý vzhled: jasná tyrkysová na ztmavené úsečce; u kritické (žlutavé) úsečky tmavý grafit.
   return (
     <rect
       x={bar.xStart + 1}
@@ -127,7 +138,7 @@ function Progress({ bar, percent, critical }: { bar: Bar; percent: number; criti
       width={Math.max(0, filled - 2)}
       height={TASK_BAR_HEIGHT - 6}
       rx={2}
-      className={critical ? 'fill-miro-graphite/70 dark:fill-miro-yellow' : 'fill-miro-turquoise-dark dark:fill-miro-turquoise'}
+      className={critical ? 'fill-miro-graphite/70 dark:fill-miro-graphite/85' : 'fill-miro-turquoise-dark dark:fill-miro-turquoise'}
       pointerEvents="none"
     />
   )
@@ -146,7 +157,8 @@ function Shape({ bar, critical }: { bar: Bar; critical: boolean | null }) {
         return (
           <>
             <rect {...rect} className="fill-white dark:fill-slate-900" />
-            <rect {...rect} className="fill-miro-turquoise/35 stroke-miro-turquoise-dark dark:fill-miro-turquoise/30 dark:stroke-miro-turquoise" strokeWidth={1} />
+            {/* V tmavém vzhledu slabší výplň, aby jasná výplň % hotovo byla dobře odlišená (kontrast ≈ 8 : 1). */}
+            <rect {...rect} className="fill-miro-turquoise/35 stroke-miro-turquoise-dark dark:fill-miro-turquoise/15 dark:stroke-miro-turquoise" strokeWidth={1} />
           </>
         )
       }

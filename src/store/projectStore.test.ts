@@ -774,3 +774,15 @@ describe('baseline, skutečné náklady a datum stavu (fáze 9)', () => {
     expect(ProjectSchema.safeParse(actual({ note: 'x'.repeat(501) })).success).toBe(false)
   })
 })
+
+describe('myšlenková mapa (fáze 12)', () => {
+  it('uložení mapy je jeden krok Zpět a projekt zůstane platný', () => {
+    const store = newStore()
+    const map = { nodes: [{ id: 'r', parentId: null, order: 0, text: 'Test' }] }
+    store.getState().setMindMap(map)
+    expect(store.getState().project.mindMap).toBe(map)
+    expect(ProjectSchema.safeParse(store.getState().project).success).toBe(true)
+    store.getState().undo()
+    expect(store.getState().project.mindMap).toBeUndefined()
+  })
+})

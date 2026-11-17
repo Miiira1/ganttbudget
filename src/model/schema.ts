@@ -403,6 +403,56 @@ export const SavedViewSchema = z.object({
   config: PivotConfigSchema,
 })
 
+/** Nejvíc uzlů myšlenkové mapy (fáze 12, MM-01) – ochrana proti „nafouknutému“ souboru. */
+export const MAX_MIND_MAP_NODES = 500
+/** Nejvíc úrovní pod středním tématem (= limit stromu plánu, MAX_TREE_DEPTH). */
+export const MAX_MIND_MAP_DEPTH = 6
+export const MAX_MIND_MAP_TEXT = 200
+
+export const MindMapNodeSchema = z.object({
+  id: IdSchema,
+  /** null = střední téma (kořen). */
+  parentId: IdSchema.nullable(),
+  /** Pořadí mezi sourozenci (0, 1, 2…). */
+  order: z.number().int().min(0).max(MAX_MIND_MAP_NODES),
+  text: z.string().trim().min(1).max(MAX_MIND_MAP_TEXT),
+  /** Sbalená větev (podřízené uzly se nekreslí). */
+  collapsed: z.boolean().optional(),
+})
+
+/**
+ * Myšlenková mapa (fáze 12, MM-01): plochý seznam uzlů, strom přes parentId + pořadí.
+ * Právě jeden kořen, rodiče existují, žádný kruh, nejvýš MAX_MIND_MAP_DEPTH úrovní pod kořenem.
+ */
+export const MindMapSchema = z
+  .object({ nodes: z.array(MindMapNodeSchema).min(1).max(MAX_MIND_MAP_NODES) })
+  .superRefine((map, ctx) => {
+    const byId = new Map<string, { parentId: string | null }>()
+    map.nodes.forEach((node, index) => {
+      if (byId.has(node.id)) ctx.addIssue({ code: 'custom', message: 'duplicateNodeId', path: ['nodes', index, 'id'] })
+      byId.set(node.id, node)
+    })
+    if (map.nodes.filter((n) => n.parentId === null).length !== 1) ctx.addIssue({ code: 'custom', message: 'rootCount', path: ['nodes'] })
+    map.nodes.forEach((node, index) => {
+      if (node.parentId !== null && !byId.has(node.parentId)) {
+        ctx.addIssue({ code: 'custom', message: 'unknownParent', path: ['nodes', index, 'parentId'] })
+        return
+      }
+      // Cesta ke kořeni: kruh, nebo příliš hluboko.
+      const seen = new Set<string>([node.id])
+      let depth = 0
+      for (let p = node.parentId; p !== null; p = byId.get(p)?.parentId ?? null) {
+        if (seen.has(p) || !byId.has(p)) {
+          ctx.addIssue({ code: 'custom', message: 'parentCycle', path: ['nodes', index, 'parentId'] })
+          return
+        }
+        seen.add(p)
+        depth++
+      }
+      if (depth > MAX_MIND_MAP_DEPTH) ctx.addIssue({ code: 'custom', message: 'tooDeep', path: ['nodes', index, 'parentId'] })
+    })
+  })
+
 /** Limit rozpočtu v haléřích: kladné celé číslo (fáze 7, R-06). */
 const LimitSchema = z.number().int().min(1).max(1_000_000_000_000)
 
@@ -489,6 +539,8 @@ export const ProjectSchema = z
     budget: BudgetSchema.optional(),
     /** Uložené pohledy analýzy (fáze 8) – nepovinné. */
     views: z.array(SavedViewSchema).max(MAX_VIEWS).optional(),
+    /** Myšlenková mapa (fáze 12) – nepovinná, starší soubory ji nemají. */
+    mindMap: MindMapSchema.optional(),
   })
   .superRefine((project, ctx) => {
     checkCatalogs(project, ctx)
@@ -568,6 +620,8 @@ export type Worker = z.infer<typeof WorkerSchema>
 export type Department = z.infer<typeof DepartmentSchema>
 export type Absence = z.infer<typeof AbsenceSchema>
 export type SavedView = z.infer<typeof SavedViewSchema>
+export type MindMap = z.infer<typeof MindMapSchema>
+export type MindMapNode = z.infer<typeof MindMapNodeSchema>
 export type Baseline = z.infer<typeof BaselineSchema>
 export type BaselineTask = z.infer<typeof BaselineTaskSchema>
 export type ActualCost = z.infer<typeof ActualCostSchema>

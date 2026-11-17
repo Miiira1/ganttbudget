@@ -151,6 +151,13 @@ describe('celý projekt z Excelu – uložené pohledy analýzy', () => {
     const result = importWorkbook(toSheets(p), p, makeId)
     expect(result.ok && result.project.views).toEqual(p.views)
   })
+
+  it('import ponechá i myšlenkovou mapu projektu (fáze 12)', () => {
+    const p = sample()
+    p.mindMap = { nodes: [{ id: 'r', parentId: null, order: 0, text: 'Střed' }, { id: 'a', parentId: 'r', order: 0, text: 'Větev' }] }
+    const result = importWorkbook(toSheets(p), p, makeId)
+    expect(result.ok && result.project.mindMap).toEqual(p.mindMap)
+  })
 })
 
 describe('celý projekt z Excelu – baseline a skutečné náklady (fáze 9)', () => {

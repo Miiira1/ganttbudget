@@ -19,6 +19,7 @@ import { wbsNumbers } from './hierarchy'
 import type { LoadResult } from './load'
 import { formatMoney } from './money'
 import type { PlanIssue } from './planCheck'
+import { mindMapToOutline } from './outline'
 import { formatPredecessorsWith, rowNumbers, rowOrder } from './predecessors'
 import { effectiveWorkerRate, professionRate, workingDaysInYear } from './rates'
 import type { Project, Task, TaskLine } from './schema'
@@ -264,6 +265,11 @@ export function projectForAi(t: Translate, language: string, data: AiExportData,
     out.push(`- BAC ${money(x.bac)} · PV ${money(x.pv)} · EV ${money(x.ev)} · AC ${money(x.ac)}`)
     out.push(`- SPI ${index(x.spi)} · CPI ${index(x.cpi)} · EAC ${x.eac === null ? '–' : money(x.eac)} · VAC ${x.vac === null ? '–' : money(x.vac)}`)
     out.push('')
+  }
+
+  // Myšlenková mapa (fáze 12) jako odsazený text – jen když má aspoň jednu větev.
+  if (project.mindMap && project.mindMap.nodes.length > 1) {
+    out.push(`## ${t('ai.export.mindMapHeading')}`, '', '```', mindMapToOutline(project.mindMap).trimEnd(), '```', '')
   }
 
   const question = options.question.trim()
