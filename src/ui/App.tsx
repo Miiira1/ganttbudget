@@ -27,6 +27,7 @@ import { GlossaryDialog } from './help/GlossaryDialog'
 import { PlanCheckDialog } from './check/PlanCheckDialog'
 import { NewProjectDialog } from './NewProjectDialog'
 import { WizardDialog } from './WizardDialog'
+import { AiDialog, type AiTab } from './ai/AiDialog'
 import { FileMenu } from './FileMenu'
 import { ImportDialog } from './ImportDialog'
 import { BudgetImportDialog } from './costs/BudgetImportDialog'
@@ -37,7 +38,7 @@ import { isDirty, openProject, saveProject, useFileState } from '../io/fileActio
 import { startAutosave } from '../io/autosaveRunner'
 import { deleteSelected, duplicateSelected } from './structureCommands'
 import { ResourcesView } from './resources/ResourcesView'
-import { AnalysisIcon, CostsIcon, LoadIcon, PlanIcon, ResourcesIcon, TrackingIcon } from './icons'
+import { AnalysisIcon, CostsIcon, LoadIcon, PlanIcon, ResourcesIcon, TrackingIcon, AiIcon } from './icons'
 import { LoadView } from './load/LoadView'
 import { CostsView } from './costs/CostsView'
 import { AnalysisView } from './analysis/AnalysisView'
@@ -76,6 +77,8 @@ export default function App() {
   const [checkOpen, setCheckOpen] = useState(false)
   const [newOpen, setNewOpen] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
+  const [aiOpen, setAiOpen] = useState(false)
+  const [aiTab, setAiTab] = useState<AiTab>('export')
   const issueCount = usePlanIssues().length
   const fileName = useFileState((s) => s.fileName)
   const dirty = useFileState((s) => s.savedProject) !== project
@@ -346,6 +349,10 @@ export default function App() {
                 </span>
               ))}
           </button>
+          {/* Napojení na AI (fáze 11): export projektu a plán z popisu – nic se neposílá samo. */}
+          <button type="button" className="btn-secondary" onClick={() => (setAiTab('export'), setAiOpen(true))} title={t('toolbar.aiHint')}>
+            <AiIcon /> {t('toolbar.ai')}
+          </button>
           <button type="button" className="btn-secondary" onClick={() => setShortcutsOpen(true)} title={t('toolbar.shortcutsHint')}>
             <span aria-hidden="true">⌨</span> {t('toolbar.shortcuts')}
           </button>
@@ -401,8 +408,9 @@ export default function App() {
       <CalendarDialog open={calendarOpen} onClose={() => setCalendarOpen(false)} />
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <GlossaryDialog open={glossaryOpen} onClose={() => setGlossaryOpen(false)} />
-      <NewProjectDialog open={newOpen} onClose={() => setNewOpen(false)} onWizard={() => setWizardOpen(true)} />
+      <NewProjectDialog open={newOpen} onClose={() => setNewOpen(false)} onWizard={() => setWizardOpen(true)} onAi={() => (setAiTab('plan'), setAiOpen(true))} />
       <WizardDialog open={wizardOpen} onClose={() => setWizardOpen(false)} />
+      <AiDialog open={aiOpen} onClose={() => setAiOpen(false)} initialTab={aiTab} />
       <PlanCheckDialog open={checkOpen} onClose={() => setCheckOpen(false)} onShowView={setView} />
       <ImportDialog />
       <BudgetImportDialog />

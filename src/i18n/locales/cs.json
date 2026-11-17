@@ -149,7 +149,9 @@
     "checkCount_few": "{{count}} varování",
     "checkCount_many": "{{count}} varování",
     "checkCount_other": "{{count}} varování",
-    "checkOk": "bez varování"
+    "checkOk": "bez varování",
+    "ai": "AI",
+    "aiHint": "Zkopírovat projekt pro AI nebo vytvořit plán s pomocí AI (ChatGPT, Claude…)"
   },
   "theme": {
     "system": "Podle systému",
@@ -1770,7 +1772,9 @@
     },
     "wizard": "Průvodce prvním projektem",
     "wizardText": "Krok za krokem: název a měna, začátek, kalendář a první fáze. Doporučeno, pokud plánujete poprvé.",
-    "continue": "Pokračovat"
+    "continue": "Pokračovat",
+    "ai": "Plán s pomocí AI",
+    "aiText": "Popíšete projekt vlastními slovy, aplikace připraví zadání pro ChatGPT nebo Claude a z odpovědi vytvoří plán s hrubým rozpočtem."
   },
   "templates": {
     "productDevelopment": {
@@ -2129,6 +2133,165 @@
       "tooManyShutdowns": "V průvodci jde zadat nejvýš 20 odstávek; další přidáte v okně Kalendář.",
       "tooManyPhases": "V průvodci jde zadat nejvýš 12 fází; další přidáte v plánu.",
       "phaseNameTooLong": "Název fáze může mít nejvýš 200 znaků."
+    }
+  },
+  "ai": {
+    "planPrompt": "Jsi zkušený projektový manažer ve strojírenské a výrobní firmě. Navrhni harmonogram a hrubý rozpočet projektu podle zadání níže. Výsledek načte aplikace MiRo project, proto musí přesně dodržet formát.\n\nZADÁNÍ PROJEKTU\nNázev: {{name}}\nZačátek: {{start}}\nMěna rozpočtu: {{currency}}\nPopis:\n{{description}}\n\nPRAVIDLA\n1. Rozděl projekt do 3–8 fází (kind \"phase\"). Každá činnost (kind \"task\") a milník (kind \"milestone\") patří do fáze: pole \"parent\" = \"id\" fáze. Fáze smí mít i podfáze, nejvýš 6 úrovní.\n2. Celkem 15–60 položek. Názvy krátké, konkrétní a česky.\n3. \"duration\" je počet PRACOVNÍCH dnů (celé číslo). Milník a fáze mají \"duration\": 0 (délka fáze se spočítá sama).\n4. Vazby (\"dependsOn\") jen mezi činnostmi a milníky, nikdy s fází. Typy: \"FS\" = začne až po konci předchůdce (výchozí), \"SS\" = začne nejdřív se začátkem předchůdce, \"FF\" = skončí nejdřív s koncem předchůdce, \"SF\" = skončí nejdřív se začátkem předchůdce. \"lag\" = prodleva v pracovních dnech (záporná = předstih). Vazby nesmějí tvořit kruh.\n5. Každá činnost a milník kromě úplně první má aspoň jednoho předchůdce. Na každou činnost a milník kromě posledního něco navazuje. Projekt končí milníkem (předání).\n6. Náklady (\"costs\") jsou hrubý odhad v měně {{currency}} bez DPH. \"amount\" je číslo bez mezer a bez měny. \"when\": \"start\" / \"end\" = jednorázově na začátku / na konci položky, \"perDay\" / \"perWeek\" / \"perMonth\" = průběžně za každý pracovní den / týden / měsíc trvání položky. \"category\": \"material\", \"labor\", \"services\", \"investment\", \"overhead\" nebo \"reserve\". Práci vlastních lidí odhadni jako průběžný náklad v kategorii \"labor\". Milník smí mít jen náklady \"start\" nebo \"end\". Přidej i rezervu (\"reserve\").\n7. \"id\" je krátké a jedinečné (např. \"F1\", \"T3\", \"M2\").\n\nFORMÁT ODPOVĚDI\nOdpověz POUZE jedním blokem JSON, bez dalšího textu, přesně v tomto tvaru (příklad):\n{{example}}",
+    "fixPrompt": "Tvá předchozí odpověď (plán projektu ve formátu JSON) neprošla kontrolou aplikace MiRo project. Oprav všechny chyby níže a vrať znovu CELÝ plán jako jeden blok JSON, bez dalšího textu. Dodrž stejný formát jako v příkladu.\n\nNALEZENÉ CHYBY\n{{errors}}\n\nPŘÍKLAD FORMÁTU\n{{example}}\n\nTVÁ PŮVODNÍ ODPOVĚĎ\n{{answer}}",
+    "example": {
+      "phase": "Příprava",
+      "task1": "Analýza požadavků",
+      "task2": "Výběr dodavatele",
+      "milestone": "Podpis smlouvy",
+      "cost1": "Práce týmu",
+      "cost2": "Právní služby"
+    },
+    "errors": {
+      "tooLarge": "Vložený text je delší než 500 kB – zkopírujte jen odpověď AI.",
+      "noJson": "V textu není žádný plán ve formátu JSON. Zkopírovali jste celou odpověď AI?",
+      "invalidJson": "Plán v odpovědi není platný JSON – často chybí čárka nebo uvozovka, nebo je odpověď useknutá.",
+      "notPlan": "JSON nemá podobu plánu (chybí seznam položek „tasks“).",
+      "noTasks": "Plán neobsahuje žádné položky.",
+      "tooManyTasks": "Plán má víc než 300 položek.",
+      "missingField": "Položka č. {{item}} ({{id}}): chybí údaj „{{field}}“.",
+      "invalidField": "Položka č. {{item}} ({{id}}): údaj „{{field}}“ má neplatnou hodnotu.",
+      "duplicateId": "Položka č. {{item}}: označení „{{id}}“ už má jiná položka.",
+      "unknownParent": "Položka č. {{item}} ({{id}}): fáze „{{other}}“, do které má patřit, neexistuje.",
+      "parentNotPhase": "Položka č. {{item}} ({{id}}): patří pod „{{other}}“, což není fáze.",
+      "parentCycle": "Položka č. {{item}} ({{id}}): fáze jsou do sebe vnořené v kruhu.",
+      "tooDeep": "Položka č. {{item}} ({{id}}): fáze jsou vnořené hlouběji než 6 úrovní.",
+      "unknownPredecessor": "Položka č. {{item}} ({{id}}): předchůdce „{{other}}“ neexistuje.",
+      "selfDependency": "Položka č. {{item}} ({{id}}): má vazbu sama na sebe.",
+      "phaseDependency": "Položka č. {{item}} ({{id}}): vazba s fází („{{other}}“) – fáze vazby mít nesmějí.",
+      "duplicateDependency": "Položka č. {{item}} ({{id}}): vazba na „{{other}}“ je uvedená dvakrát.",
+      "milestoneRecurring": "Položka č. {{item}} ({{id}}): milník smí mít jen jednorázový náklad (na začátku nebo na konci).",
+      "cycle": "Vazby tvoří kruh – položky čekají jedna na druhou ({{detail}}).",
+      "invalidResult": "Plán se nepodařilo převést na projekt."
+    },
+    "warnings": {
+      "milestoneDuration": "Položka č. {{item}} ({{id}}): milník měl nenulovou délku, nastavila se 0."
+    },
+    "questions": {
+      "risks": {
+        "label": "Najdi rizika plánu",
+        "text": "Zkontroluj plán a najdi největší rizika (termíny, závislosti, zdroje, rozpočet). U každého rizika navrhni konkrétní opatření."
+      },
+      "shorten": {
+        "label": "Navrhni zkrácení termínu",
+        "text": "Navrhni, jak zkrátit termín dokončení projektu (souběh činností, předstihy, více zdrojů). U každého návrhu uveď, o kolik pracovních dnů se konec posune a jaké to má riziko."
+      },
+      "budget": {
+        "label": "Zkontroluj rozpočet",
+        "text": "Zkontroluj rozpočet projektu: chybí nějaké obvyklé náklady, nejsou některé částky nerealistické a je rezerva dostatečná? Odpověz konkrétně po položkách."
+      },
+      "criticalPath": {
+        "label": "Vysvětli kritickou cestu",
+        "text": "Vysvětli studentovi, který plánuje poprvé, co je v tomto projektu kritická cesta, proč vede právě přes tyto činnosti a co by se stalo, kdyby se některá zpozdila."
+      },
+      "status": {
+        "label": "Zhodnoť stav projektu",
+        "text": "Zhodnoť podle ukazatelů Earned Value (SPI, CPI, EAC) a % hotovo, jak projekt stojí, a navrhni, co dělat dál. Vysvětli to srozumitelně i pro laika."
+      }
+    },
+    "export": {
+      "intro": "Projekt z aplikace MiRo project (Ganttův diagram s rozpočtem). Délky jsou v pracovních dnech, částky v {{currency}} bez DPH. Sloupec # je číslo řádku; v předchůdcích se zapisuje číslo řádku a typ vazby (např. 3FS+2).",
+      "overviewHeading": "Přehled",
+      "start": "Začátek",
+      "finish": "Konec",
+      "items": "Položky: fáze {{phases}}, činnosti {{tasks}}, milníky {{milestones}}",
+      "calendar": "Pracovní dny: {{weekdays}}; české státní svátky: {{holidays}}",
+      "shutdown": "Volno / odstávka: {{name}} ({{from}} – {{to}})",
+      "totalCost": "Plánované náklady celkem",
+      "limit": "Limit rozpočtu (čerpání)",
+      "planHeading": "Plán",
+      "budgetHeading": "Rozpočet podle kategorií",
+      "resourcesHeading": "Zdroje",
+      "issuesHeading": "Varování kontroly plánu",
+      "trackingHeading": "Sledování plnění (Earned Value)",
+      "questionHeading": "Otázka",
+      "baseline": "Baseline",
+      "statusDate": "Datum stavu",
+      "machines": "Stroje a zařízení",
+      "worker": "pracovník",
+      "project": "projekt",
+      "day": "den",
+      "overload": "{{name}} – přetížené dny {{days}}, poprvé {{date}}",
+      "yes": "ano",
+      "no": "ne",
+      "col": {
+        "name": "Název",
+        "kind": "Typ",
+        "start": "Začátek",
+        "finish": "Konec",
+        "duration": "Délka",
+        "predecessors": "Předchůdci",
+        "slack": "Rezerva",
+        "critical": "Kritická",
+        "percent": "% hotovo",
+        "cost": "Náklady",
+        "resources": "Zdroje a náklady",
+        "category": "Kategorie",
+        "limit": "Limit",
+        "worker": "Pracovník",
+        "profession": "Profese",
+        "rate": "Sazba",
+        "workers": "Počet pracovníků",
+        "machine": "Stroj"
+      }
+    }
+  },
+  "aiDialog": {
+    "title": "Pracovat s AI",
+    "tabs": {
+      "export": "Zkopírovat projekt pro AI",
+      "plan": "Vytvořit plán s AI"
+    },
+    "close": "Zavřít",
+    "export": {
+      "intro": "Aplikace připraví popis projektu (termíny, rozpočet, varování) a otázku. Text zkopírujte a vložte do chatu s AI, např. ChatGPT nebo Claude. Nic se neposílá samo – data opustí počítač, až je sami vložíte do AI.",
+      "question": "Otázka pro AI",
+      "custom": "Vlastní otázka…",
+      "none": "Bez otázky",
+      "customLabel": "Vaše otázka",
+      "customPlaceholder": "např. Které činnosti by šly dělat souběžně?",
+      "includeNames": "Zahrnout jména pracovníků a sazby",
+      "includeNamesHint": "Ve výchozím stavu se pracovníci uvádějí jen profesí, bez sazeb a mezd. Jména a mzdy jsou osobní údaje – do cizí služby je posílejte jen se souhlasem dotčených lidí.",
+      "preview": "Text pro AI",
+      "size": "{{chars}} znaků",
+      "copy": "Zkopírovat",
+      "copied": "Zkopírováno do schránky. Vložte text do chatu s AI (Ctrl+V).",
+      "copyFailed": "Prohlížeč nepovolil zápis do schránky. Text je označený – zkopírujte ho klávesami Ctrl+C.",
+      "empty": "Projekt je zatím prázdný – není co kopírovat. Plán z popisu vám pomůže vytvořit karta „Vytvořit plán s AI“."
+    },
+    "plan": {
+      "intro": "Popište projekt vlastními slovy. Aplikace z popisu sestaví prompt (zadání pro AI) s přesným popisem formátu. Prompt vložte do chatu s AI (ChatGPT, Claude…), odpověď zkopírujte celou zpět sem a aplikace z ní po kontrole vytvoří nový projekt.",
+      "step1": "1. Popište projekt",
+      "name": "Název projektu",
+      "start": "Začátek",
+      "currency": "Měna",
+      "description": "Popis projektu",
+      "descriptionPlaceholder": "Co se má udělat, v jakém rozsahu a za jakých omezení (termíny, rozpočet, dodavatelé, vlastní lidé)… Čím víc podrobností, tím lepší plán.",
+      "copyPrompt": "Zkopírovat prompt",
+      "showPrompt": "Zobrazit prompt",
+      "missing": "Vyplňte název i popis projektu.",
+      "startInvalid": "Zadejte platné datum začátku.",
+      "copied": "Prompt je ve schránce. Vložte ho do chatu s AI (Ctrl+V) a počkejte na odpověď.",
+      "copyFailed": "Prohlížeč nepovolil zápis do schránky. Prompt je níže označený – zkopírujte ho klávesami Ctrl+C.",
+      "step2": "2. Vložte odpověď AI",
+      "answer": "Odpověď AI",
+      "answerPlaceholder": "Sem vložte celou odpověď AI (Ctrl+V)…",
+      "check": "Zkontrolovat",
+      "errorsTitle": "Odpověď AI neprošla kontrolou – nic se nevytvořilo.",
+      "fixHint": "Zkopírujte prompt na opravu, vložte ho do stejného chatu s AI a novou odpověď vložte sem místo staré.",
+      "copyFix": "Zkopírovat prompt na opravu",
+      "fixCopied": "Prompt na opravu je ve schránce. Vložte ho do chatu s AI.",
+      "okTitle": "Plán je v pořádku. Náhled:",
+      "finish": "Konec projektu: {{date}}",
+      "issues": "Kontrola plánu po vytvoření: {{count}} varování",
+      "issuesNone": "Kontrola plánu po vytvoření: bez varování",
+      "more": "… a další položky ({{count}})",
+      "create": "Vytvořit projekt",
+      "days": "{{count}} prac. dní"
     }
   }
 }

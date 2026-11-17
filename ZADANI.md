@@ -1,7 +1,7 @@
 # ZADÁNÍ: Aplikace pro Ganttovy diagramy s navázaným rozpočtem
 
 > Název aplikace: **MiRo project** (pracovní název do v1.10: GanttBudget)
-> Verze zadání: 1.18 · Datum: 17. 11. 2026 (změny viz kap. 14)
+> Verze zadání: 1.20 · Datum: 17. 11. 2026 (změny viz kap. 14)
 > Dokument je zároveň vstupem pro Claude Code (vibe coding) a osnovou výukové case study.
 
 ---
@@ -168,10 +168,10 @@ Státní svátky ČR k zakódování: 1. 1.; Velký pátek; Velikonoční pondě
 
 | ID | Požadavek | Prio |
 |---|---|---|
-| AI-01 | **Export pro AI**: tlačítko „Zkopírovat projekt pro AI" vyrobí Markdown/JSON (struktura, termíny, rozpočet) vhodný k vložení do ChatGPT/Claude, volitelně s přednastavenou otázkou (např. „Zkontroluj plán a najdi rizika"). | D (fáze 11) |
-| AI-02 | **Generování plánu z textového zadání**: aplikace vytvoří prompt (včetně popisu formátu JSON), student ho vloží do AI a výsledek vloží zpět. Aplikace výsledek zvaliduje, ukáže náhled a po potvrzení importuje. | D |
-| AI-03 | Prompty jsou v češtině i angličtině, přizpůsobené tomu, co AI nejlépe zvládne. | D |
-| AI-04 | Odolnost vůči chybám AI: neplatný JSON, neexistující ID předchůdce apod. se ohlásí srozumitelně, případně se nabídne „oprav pomocí AI" prompt. | D |
+| AI-01 | **Export pro AI**: karta „Zkopírovat projekt pro AI“ v okně tlačítka **AI** (ikona čtyřcípé hvězdičky) vyrobí **Markdown**: přehled (termíny, kalendář, náklady, limit), tabulka plánu (číslo řádku, WBS, typ, termíny, délka, předchůdci, rezerva, kritická, % hotovo, náklady, zdroje), rozpočet podle kategorií, zdroje, varování kontroly plánu, Earned Value (je-li baseline) a na konci otázka. Pět přednastavených otázek (rizika, zkrácení termínu, rozpočet, vysvětlení kritické cesty, stav projektu), vlastní otázka nebo bez otázky; náhled textu a počet znaků. Zaškrtávátko „Zahrnout jména pracovníků a sazby“ je ve výchozím stavu vypnuté (pracovníci jen profesí, bez sazeb a mezd). Tlačítko Zkopírovat; když prohlížeč schránku nepovolí, text se označí k Ctrl+C. Nic se neposílá samo. | D (fáze 11) |
+| AI-02 | **Generování plánu z textového zadání**: karta „Vytvořit plán s AI“ (i jako volba „Plán s pomocí AI“ v okně Nový projekt): název, začátek, měna a popis → prompt s pravidly a přesným příkladem formátu **AI plán** (kap. 7) → uživatel vloží odpověď → kontrola → náhled (počet položek, délka, rozpočet, konec, varování kontroly plánu, první řádky) → **nový projekt** (na neuložené změny se zeptá, jeden krok Zpět). AI vrací plán a hrubý rozpočet (jednorázové a průběžné náklady v kategoriích; bez lidí a sazeb). Rozepsané zadání vydrží zavření okna, po vytvoření se vyprázdní. | D (fáze 11) |
+| AI-03 | Prompty jsou v češtině i angličtině podle jazyka aplikace (role projektového manažera ve strojírenství, 7 pravidel, příklad formátu, „odpověz jen JSON“). Ověřeno na skutečných odpovědích ChatGPT a Claude v obou jazycích; příklad v promptu hlídá test. | D (fáze 11) |
+| AI-04 | Odolnost vůči chybám AI: JSON se najde i v textu okolo nebo v bloku ```json; chyby se hlásí srozumitelně s číslem položky (neplatný JSON, chybějící / neplatný údaj, duplicitní id, neexistující předchůdce nebo fáze, vazba s fází, kruh ve vazbách či ve stromu, víc než 6 úrovní, průběžný náklad u milníku, víc než 300 položek, text nad 500 kB). Tlačítko „Zkopírovat prompt na opravu“ (chyby s technickým detailem, příklad formátu, původní odpověď). Milník s délkou se opraví na 0 s upozorněním. Jen `JSON.parse` + Zod, neplatná data se nikdy nepoužijí částečně. | D (fáze 11) |
 
 ### 4.11 Myšlenková mapa (pozdější fáze)
 
@@ -286,6 +286,16 @@ Baseline     id, name, savedAt, tasks: [{ taskId, parentId, name, kind, start, f
              costStart?, costs[] }]   // snímek plánu: termíny a vlastní náklad po dnech (haléře) od costStart;
              // max. 10 baseline, 3 660 dnů na položku, 500 000 čísel na baseline (fáze 9)
 Project      … activeBaselineId? (baseline ke srovnání), statusDate? (datum stavu; chybí = dnes)
+```
+
+**Formát „AI plán“ (fáze 11)** – odpověď AI, ze které vznikne nový projekt (nové ID, peníze × 100 na haléře):
+
+```
+{ format?: "miro-ai-plan", version?: 1, tasks: [            // 1–300 položek
+  { id, name, kind: phase|task|milestone, parent? (id fáze), duration (pracovní dny),
+    dependsOn?: [{ id, type?: FS|SS|FF|SF (výchozí FS), lag? (výchozí 0) }],     // jen mezi činnostmi a milníky
+    costs?: [{ name, amount (v měně projektu), category: material|labor|services|investment|overhead|reserve,
+               when: start|end (jednorázový) | perDay|perWeek|perMonth (průběžný) }] } ] }
 ```
 
 **Verze souborů.** Projekt `schemaVersion: 2` (fáze 6a); soubor ve formátu 1 (fáze 5) se při otevření
@@ -448,3 +458,5 @@ Technicky: build bez chyb, testy plánovacího jádra projdou, aplikace je nasaz
 | 1.16 | 17. 11. 2026 | Fáze 9 – baseline a sledování: G-08 (% hotovo jako výplň úsečky, % fáze spočítané, milník splněno, přepínač Baseline se stínovou úsečkou a posunem v bublině) a A-05 (pohled **Sledování**: až 10 baseline, datum stavu, Earned Value s vysvětlivkami, graf PV / AC / EV, tabulka a export) upřesněny podle implementace; I-07 doplněn o list Skutečnost a pravidlo, že činnost se stejným WBS, názvem a druhem si při importu (i I-03) ponechá ID a skutečné náklady; datový model: `Task.actuals`, `Baseline` (snímek po dnech s limity), `Project.activeBaselineId`, `Project.statusDate`; vzorový projekt „v běhu“ (kap. 11); otevřená otázka 5 uzavřena |
 | 1.17 | 17. 11. 2026 | Plán fáze 10 – učení a přívětivost: U-01 (průvodce bez požadovaného konce, nabízený oknem Nový projekt a úvodní obrazovkou), U-02 (nové šablony 20–30 položek bez baseline), U-03 (jednotné ⓘ a okno Slovníček), U-04 (definice „vazby do minulosti“, „Jak to opravit“, varování se neskrývají) upřesněny |
 | 1.18 | 17. 11. 2026 | Fáze 10 – učení a přívětivost: U-01 (průvodce v pěti krocích, nabídka měn, volitelná první činnost v každé fázi, úvodní obrazovka prázdného plánu), U-02 (pět šablon v okně Nový projekt, společný popis šablon a testy), U-03 (ⓘ na konkrétních místech, Slovníček s hledáním) a U-04 (tlačítko s počtem varování, výjimky pro chybějící vazby, akce u varování) upřesněny podle implementace. Datový model beze změny (`schemaVersion` 2) |
+| 1.19 | 17. 11. 2026 | Plán fáze 11 – napojení na AI: AI-01 jako Markdown s volbou jmen a sazeb (výchozí bez), AI-02 vrací plán a hrubý rozpočet a vytvoří nový projekt, okno AI (ikona hvězdičky) v liště a karta v okně Nový projekt; AI-03 ověřit na skutečných odpovědích; AI-04 limit 500 kB |
+| 1.20 | 17. 11. 2026 | Fáze 11 – napojení na AI: AI-01 až AI-04 upřesněny podle implementace (okno AI se dvěma kartami a ikonou čtyřcípé hvězdičky, obsah exportu, přednastavené otázky, náhled a vytvoření projektu, prompt na opravu, seznam hlášených chyb); formát „AI plán“ doplněn do kap. 7; prompty ověřeny na ChatGPT a Claude v češtině i angličtině. Datový model projektu beze změny (`schemaVersion` 2) |

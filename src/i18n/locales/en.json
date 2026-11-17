@@ -139,7 +139,9 @@
     "checkHint": "Finds places where the plan is probably missing something or does not add up (warnings only, nothing is blocked)",
     "checkCount_one": "{{count}} warning",
     "checkCount_other": "{{count}} warnings",
-    "checkOk": "no warnings"
+    "checkOk": "no warnings",
+    "ai": "AI",
+    "aiHint": "Copy the project for AI or create a plan with the help of AI (ChatGPT, Claude…)"
   },
   "theme": {
     "system": "System",
@@ -1692,7 +1694,9 @@
     },
     "wizard": "First project wizard",
     "wizardText": "Step by step: name and currency, start date, calendar and first phases. Recommended if you are planning for the first time.",
-    "continue": "Continue"
+    "continue": "Continue",
+    "ai": "Plan with the help of AI",
+    "aiText": "Describe the project in your own words; the app prepares a brief for ChatGPT or Claude and creates a plan with a rough budget from the answer."
   },
   "templates": {
     "productDevelopment": {
@@ -2051,6 +2055,165 @@
       "tooManyShutdowns": "The wizard accepts at most 20 shutdowns; add more in the Calendar window.",
       "tooManyPhases": "The wizard accepts at most 12 phases; add more in the plan.",
       "phaseNameTooLong": "A phase name can have at most 200 characters."
+    }
+  },
+  "ai": {
+    "planPrompt": "You are an experienced project manager in an engineering and manufacturing company. Draft a schedule and a rough budget for the project described below. The result will be loaded by the MiRo project app, so it must follow the format exactly.\n\nPROJECT BRIEF\nName: {{name}}\nStart: {{start}}\nBudget currency: {{currency}}\nDescription:\n{{description}}\n\nRULES\n1. Split the project into 3–8 phases (kind \"phase\"). Every task (kind \"task\") and milestone (kind \"milestone\") belongs to a phase: field \"parent\" = the phase \"id\". Phases may contain sub-phases, at most 6 levels.\n2. 15–60 items in total. Short, specific names in English.\n3. \"duration\" is the number of WORKING days (integer). Milestones and phases have \"duration\": 0 (a phase's duration is calculated).\n4. Dependencies (\"dependsOn\") only between tasks and milestones, never with a phase. Types: \"FS\" = starts after the predecessor finishes (default), \"SS\" = starts no earlier than the predecessor starts, \"FF\" = finishes no earlier than the predecessor finishes, \"SF\" = finishes no earlier than the predecessor starts. \"lag\" = delay in working days (negative = lead). Dependencies must not form a cycle.\n5. Every task and milestone except the very first has at least one predecessor. Something follows every task and milestone except the last. The project ends with a milestone (handover).\n6. Costs (\"costs\") are a rough estimate in {{currency}} excluding VAT. \"amount\" is a number without spaces or currency. \"when\": \"start\" / \"end\" = one-off at the start / end of the item, \"perDay\" / \"perWeek\" / \"perMonth\" = recurring for every working day / week / month of the item's duration. \"category\": \"material\", \"labor\", \"services\", \"investment\", \"overhead\" or \"reserve\". Estimate your own staff's work as a recurring cost in category \"labor\". A milestone may only have \"start\" or \"end\" costs. Include a reserve (\"reserve\").\n7. \"id\" is short and unique (e.g. \"F1\", \"T3\", \"M2\").\n\nRESPONSE FORMAT\nReply ONLY with a single JSON block, no other text, exactly in this shape (example):\n{{example}}",
+    "fixPrompt": "Your previous answer (a project plan in JSON) did not pass the check in the MiRo project app. Fix all the errors below and return the WHOLE plan again as a single JSON block, with no other text. Keep the same format as in the example.\n\nERRORS FOUND\n{{errors}}\n\nFORMAT EXAMPLE\n{{example}}\n\nYOUR ORIGINAL ANSWER\n{{answer}}",
+    "example": {
+      "phase": "Preparation",
+      "task1": "Requirements analysis",
+      "task2": "Supplier selection",
+      "milestone": "Contract signed",
+      "cost1": "Team work",
+      "cost2": "Legal services"
+    },
+    "errors": {
+      "tooLarge": "The pasted text is longer than 500 kB – copy only the AI answer.",
+      "noJson": "The text contains no plan in JSON format. Did you copy the whole AI answer?",
+      "invalidJson": "The plan in the answer is not valid JSON – often a comma or quote is missing, or the answer is cut off.",
+      "notPlan": "The JSON does not look like a plan (the list of items “tasks” is missing).",
+      "noTasks": "The plan contains no items.",
+      "tooManyTasks": "The plan has more than 300 items.",
+      "missingField": "Item no. {{item}} ({{id}}): “{{field}}” is missing.",
+      "invalidField": "Item no. {{item}} ({{id}}): “{{field}}” has an invalid value.",
+      "duplicateId": "Item no. {{item}}: the id “{{id}}” is already used by another item.",
+      "unknownParent": "Item no. {{item}} ({{id}}): the phase “{{other}}” it should belong to does not exist.",
+      "parentNotPhase": "Item no. {{item}} ({{id}}): it belongs under “{{other}}”, which is not a phase.",
+      "parentCycle": "Item no. {{item}} ({{id}}): phases are nested in each other in a cycle.",
+      "tooDeep": "Item no. {{item}} ({{id}}): phases are nested deeper than 6 levels.",
+      "unknownPredecessor": "Item no. {{item}} ({{id}}): the predecessor “{{other}}” does not exist.",
+      "selfDependency": "Item no. {{item}} ({{id}}): it depends on itself.",
+      "phaseDependency": "Item no. {{item}} ({{id}}): dependency with a phase (“{{other}}”) – phases cannot have dependencies.",
+      "duplicateDependency": "Item no. {{item}} ({{id}}): the dependency on “{{other}}” is listed twice.",
+      "milestoneRecurring": "Item no. {{item}} ({{id}}): a milestone may only have a one-off cost (at its start or end).",
+      "cycle": "The dependencies form a cycle – items wait for each other ({{detail}}).",
+      "invalidResult": "The plan could not be converted to a project."
+    },
+    "warnings": {
+      "milestoneDuration": "Item no. {{item}} ({{id}}): the milestone had a non-zero duration; it was set to 0."
+    },
+    "questions": {
+      "risks": {
+        "label": "Find plan risks",
+        "text": "Review the plan and find the biggest risks (dates, dependencies, resources, budget). For each risk, suggest a specific measure."
+      },
+      "shorten": {
+        "label": "Suggest how to finish sooner",
+        "text": "Suggest how to shorten the project completion date (overlapping tasks, leads, more resources). For each suggestion, state how many working days the finish moves and what the risk is."
+      },
+      "budget": {
+        "label": "Review the budget",
+        "text": "Review the project budget: are any usual costs missing, are some amounts unrealistic, and is the reserve sufficient? Answer specifically, item by item."
+      },
+      "criticalPath": {
+        "label": "Explain the critical path",
+        "text": "Explain to a student planning for the first time what the critical path is in this project, why it runs through exactly these tasks and what would happen if one of them were late."
+      },
+      "status": {
+        "label": "Assess project status",
+        "text": "Using the Earned Value indicators (SPI, CPI, EAC) and % complete, assess where the project stands and suggest what to do next. Explain it clearly, even for a layperson."
+      }
+    },
+    "export": {
+      "intro": "A project from the MiRo project app (Gantt chart with a budget). Durations are in working days, amounts in {{currency}} excluding VAT. Column # is the row number; predecessors are written as row number and dependency type (e.g. 3FS+2).",
+      "overviewHeading": "Overview",
+      "start": "Start",
+      "finish": "Finish",
+      "items": "Items: phases {{phases}}, tasks {{tasks}}, milestones {{milestones}}",
+      "calendar": "Working days: {{weekdays}}; Czech public holidays: {{holidays}}",
+      "shutdown": "Time off / shutdown: {{name}} ({{from}} – {{to}})",
+      "totalCost": "Total planned costs",
+      "limit": "Budget limit (spending)",
+      "planHeading": "Plan",
+      "budgetHeading": "Budget by category",
+      "resourcesHeading": "Resources",
+      "issuesHeading": "Plan check warnings",
+      "trackingHeading": "Progress tracking (Earned Value)",
+      "questionHeading": "Question",
+      "baseline": "Baseline",
+      "statusDate": "Status date",
+      "machines": "Machines and equipment",
+      "worker": "worker",
+      "project": "project",
+      "day": "day",
+      "overload": "{{name}} – overloaded days {{days}}, first on {{date}}",
+      "yes": "yes",
+      "no": "no",
+      "col": {
+        "name": "Name",
+        "kind": "Type",
+        "start": "Start",
+        "finish": "Finish",
+        "duration": "Duration",
+        "predecessors": "Predecessors",
+        "slack": "Slack",
+        "critical": "Critical",
+        "percent": "% complete",
+        "cost": "Costs",
+        "resources": "Resources and costs",
+        "category": "Category",
+        "limit": "Limit",
+        "worker": "Worker",
+        "profession": "Profession",
+        "rate": "Rate",
+        "workers": "Number of workers",
+        "machine": "Machine"
+      }
+    }
+  },
+  "aiDialog": {
+    "title": "Work with AI",
+    "tabs": {
+      "export": "Copy project for AI",
+      "plan": "Create plan with AI"
+    },
+    "close": "Close",
+    "export": {
+      "intro": "The app prepares a description of the project (dates, budget, warnings) and a question. Copy the text and paste it into an AI chat such as ChatGPT or Claude. Nothing is sent automatically – the data leave your computer only when you paste them into the AI yourself.",
+      "question": "Question for the AI",
+      "custom": "Custom question…",
+      "none": "No question",
+      "customLabel": "Your question",
+      "customPlaceholder": "e.g. Which tasks could run in parallel?",
+      "includeNames": "Include worker names and rates",
+      "includeNamesHint": "By default, workers are listed only by profession, without rates or wages. Names and wages are personal data – only send them to an external service with the consent of the people concerned.",
+      "preview": "Text for the AI",
+      "size": "{{chars}} characters",
+      "copy": "Copy",
+      "copied": "Copied to the clipboard. Paste the text into the AI chat (Ctrl+V).",
+      "copyFailed": "The browser did not allow writing to the clipboard. The text is selected – copy it with Ctrl+C.",
+      "empty": "The project is empty so far – nothing to copy. The “Create plan with AI” tab helps you create a plan from a description."
+    },
+    "plan": {
+      "intro": "Describe the project in your own words. The app builds a prompt (a brief for the AI) with an exact description of the format. Paste the prompt into an AI chat (ChatGPT, Claude…), copy the whole answer back here, and after a check the app creates a new project from it.",
+      "step1": "1. Describe the project",
+      "name": "Project name",
+      "start": "Start",
+      "currency": "Currency",
+      "description": "Project description",
+      "descriptionPlaceholder": "What should be done, to what extent and under which constraints (dates, budget, suppliers, own staff)… The more detail, the better the plan.",
+      "copyPrompt": "Copy prompt",
+      "showPrompt": "Show prompt",
+      "missing": "Fill in both the project name and description.",
+      "startInvalid": "Enter a valid start date.",
+      "copied": "The prompt is in the clipboard. Paste it into the AI chat (Ctrl+V) and wait for the answer.",
+      "copyFailed": "The browser did not allow writing to the clipboard. The prompt is selected below – copy it with Ctrl+C.",
+      "step2": "2. Paste the AI answer",
+      "answer": "AI answer",
+      "answerPlaceholder": "Paste the whole AI answer here (Ctrl+V)…",
+      "check": "Check",
+      "errorsTitle": "The AI answer did not pass the check – nothing was created.",
+      "fixHint": "Copy the fix prompt, paste it into the same AI chat and paste the new answer here instead of the old one.",
+      "copyFix": "Copy fix prompt",
+      "fixCopied": "The fix prompt is in the clipboard. Paste it into the AI chat.",
+      "okTitle": "The plan is fine. Preview:",
+      "finish": "Project finish: {{date}}",
+      "issues": "Plan check after creating: {{count}} warnings",
+      "issuesNone": "Plan check after creating: no warnings",
+      "more": "… and more items ({{count}})",
+      "create": "Create project",
+      "days": "{{count}} working days"
     }
   }
 }

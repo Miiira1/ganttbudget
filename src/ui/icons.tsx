@@ -85,3 +85,13 @@ export function TrackingIcon({ className = '' }: { className?: string }) {
     </svg>
   )
 }
+
+/** AI: velká čtyřcípá hvězdička (jiskra) a vpravo nahoře menší – obvyklý symbol umělé inteligence. */
+export function AiIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg {...common} className={className}>
+      <path d="M6.5 3.5Q7 9 12.5 9.5Q7 10 6.5 15.5Q6 10 0.5 9.5Q6 9 6.5 3.5Z" fill="currentColor" />
+      <path d="M12.5 0.8Q12.8 3.2 15.2 3.5Q12.8 3.8 12.5 6.2Q12.2 3.8 9.8 3.5Q12.2 3.2 12.5 0.8Z" fill="currentColor" opacity="0.65" />
+    </svg>
+  )
+}

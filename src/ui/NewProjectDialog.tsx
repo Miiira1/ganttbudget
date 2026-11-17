@@ -7,14 +7,15 @@
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { newProject } from '../io/fileActions'
+import { AiIcon } from './icons'
 import { isValidIsoDate, nextMonday, todayIso } from '../model/dates'
 import { formatMoneyCompact } from '../model/money'
 import { createFromTemplate, summarizeProject, templateName, TEMPLATES, type TemplateId } from '../samples/templates'
 
-type Choice = 'blank' | 'wizard' | TemplateId
+type Choice = 'blank' | 'wizard' | 'ai' | TemplateId
 
-/** `onWizard` zavře toto okno a otevře průvodce. */
-export function NewProjectDialog({ open, onClose, onWizard }: { open: boolean; onClose: () => void; onWizard: () => void }) {
+/** `onWizard` / `onAi` – po zavření tohoto okna otevřít průvodce / okno AI na kartě „Vytvořit plán s AI“. */
+export function NewProjectDialog({ open, onClose, onWizard, onAi }: { open: boolean; onClose: () => void; onWizard: () => void; onAi: () => void }) {
   const { t, i18n } = useTranslation()
   const lang = i18n.language
   const dialogRef = useRef<HTMLDialogElement>(null)
@@ -48,9 +49,10 @@ export function NewProjectDialog({ open, onClose, onWizard }: { open: boolean; o
 
   function submit(event: FormEvent) {
     event.preventDefault()
-    if (choice === 'wizard') {
+    if (choice === 'wizard' || choice === 'ai') {
       onClose()
-      onWizard()
+      if (choice === 'wizard') onWizard()
+      else onAi()
       return
     }
     if (choice !== 'blank' && !dateOk) return
@@ -94,6 +96,17 @@ export function NewProjectDialog({ open, onClose, onWizard }: { open: boolean; o
             </span>
           </label>
 
+          <label className={card(choice === 'ai')}>
+            <input type="radio" name="newProject" checked={choice === 'ai'} onChange={() => setChoice('ai')} className="mt-0.5 h-4 w-4 accent-miro-turquoise-dark" />
+            <span>
+              <span className="flex items-center gap-1.5 font-semibold">
+                <AiIcon />
+                {t('newProject.ai')}
+              </span>
+              <span className="mt-0.5 block text-slate-600 dark:text-slate-400">{t('newProject.aiText')}</span>
+            </span>
+          </label>
+
           <p className="pt-2 text-sm font-semibold">{t('newProject.templatesHeading')}</p>
           {TEMPLATES.map(({ id }) => {
             const summary = summaries.get(id)
@@ -114,7 +127,7 @@ export function NewProjectDialog({ open, onClose, onWizard }: { open: boolean; o
           })}
         </fieldset>
 
-        {choice !== 'blank' && choice !== 'wizard' && (
+        {choice !== 'blank' && choice !== 'wizard' && choice !== 'ai' && (
           <div className="mt-4">
             <label htmlFor={dateId} className="block text-sm font-medium">
               {t('newProject.startDate')}
@@ -139,8 +152,8 @@ export function NewProjectDialog({ open, onClose, onWizard }: { open: boolean; o
           <button type="button" className="btn-secondary" onClick={onClose}>
             {t('newProject.cancel')}
           </button>
-          <button type="submit" className="btn-primary" disabled={choice !== 'blank' && choice !== 'wizard' && !dateOk}>
-            {choice === 'wizard' ? t('newProject.continue') : t('newProject.create')}
+          <button type="submit" className="btn-primary" disabled={choice !== 'blank' && choice !== 'wizard' && choice !== 'ai' && !dateOk}>
+            {choice === 'wizard' || choice === 'ai' ? t('newProject.continue') : t('newProject.create')}
           </button>
         </div>
       </form>
