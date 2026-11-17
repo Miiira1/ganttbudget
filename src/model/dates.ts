@@ -19,3 +19,12 @@ export function todayIso(now: Date = new Date()): string {
   const d = String(now.getDate()).padStart(2, '0')
   return `${y}-${m}-${d}`
 }
+
+/** Nejbližší pondělí po daném dni (výchozí začátek projektu ze šablony; z pondělí na další pondělí). */
+export function nextMonday(isoDate: string): string {
+  const [y, m, d] = isoDate.split('-').map(Number) as [number, number, number]
+  const date = new Date(Date.UTC(y, m - 1, d))
+  const weekday = date.getUTCDay() // 0 = neděle, 1 = pondělí
+  date.setUTCDate(date.getUTCDate() + (((8 - weekday) % 7) || 7))
+  return date.toISOString().slice(0, 10)
+}

@@ -5,7 +5,7 @@
  */
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { newProject, openProject, saveProject } from '../io/fileActions'
+import { openProject, saveProject } from '../io/fileActions'
 import { exportCsv, exportXlsx } from '../io/exportActions'
 import { exportBudgetCsv, exportBudgetXlsx } from '../io/budgetExportActions'
 import { startBudgetImport } from '../io/budgetImportActions'
@@ -35,7 +35,8 @@ const ITEMS: Item[] = [
   { id: 'importLibrary' },
 ]
 
-export function FileMenu() {
+/** `onNew` otevře okno Nový projekt (prázdný nebo ze šablony, fáze 10). */
+export function FileMenu({ onNew }: { onNew: () => void }) {
   const { t, i18n } = useTranslation()
   const [open, setOpen] = useState(false)
   const menuId = useId()
@@ -57,7 +58,7 @@ export function FileMenu() {
   function run(id: Item['id']) {
     setOpen(false)
     buttonRef.current?.focus()
-    if (id === 'new') newProject(t, i18n.language)
+    if (id === 'new') onNew()
     else if (id === 'open') void openProject(t)
     else if (id === 'exportWorkbook') void exportWorkbook(t, i18n.language)
     else if (id === 'importWorkbook') startWorkbookImport(t)

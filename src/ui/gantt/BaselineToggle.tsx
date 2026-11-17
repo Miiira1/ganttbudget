@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { activeBaseline } from '../../model/baseline'
 import { useProject } from '../../store/useProject'
 import { useDisplayOptions } from '../displayOptions'
+import { HelpTip } from '../help/HelpTip'
 
 export function BaselineToggle() {
   const { t } = useTranslation()
@@ -11,6 +12,7 @@ export function BaselineToggle() {
   const toggle = useDisplayOptions((s) => s.toggleBaseline)
   const on = showBaseline && baseline !== null
   return (
+    <span className="inline-flex items-center gap-0.5">
     <button
       type="button"
       aria-pressed={on}
@@ -30,5 +32,7 @@ export function BaselineToggle() {
       </svg>
       {t('gantt.baseline')}
     </button>
+    <HelpTip term="baseline" />
+    </span>
   )
 }

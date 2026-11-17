@@ -11,6 +11,7 @@ import { budgetStatus, computeCostTimeline, type BudgetStatus, type CostTimeline
 import { buildFacts, type Facts } from '../model/facts'
 import { activeBaseline, baselineBac } from '../model/baseline'
 import { earnedValue, rollupPercent, type EarnedValueResult } from '../model/earnedValue'
+import { checkPlan, type PlanIssue } from '../model/planCheck'
 import { isoToDay } from '../engine/calendar'
 import { todayIso } from '../model/dates'
 import { createEmptyProject, type Project } from '../model/schema'
@@ -160,4 +161,20 @@ export function getEarnedValue(project: Project): EarnedValueResult | null {
 
 export function useEarnedValue(): EarnedValueResult | null {
   return getEarnedValue(useProject((s) => s.project))
+}
+
+// Kontrola kvality plánu (fáze 10, U-04) – závisí i na dnešku (kontrola „mělo začít“).
+const issuesCache = new WeakMap<Project, { today: string; result: PlanIssue[] }>()
+
+export function getPlanIssues(project: Project): PlanIssue[] {
+  const today = todayIso()
+  const cached = issuesCache.get(project)
+  if (cached && cached.today === today) return cached.result
+  const result = checkPlan({ project, scheduled: getSchedule(project), load: getLoad(project), budget: getBudgetStatus(project), today })
+  issuesCache.set(project, { today, result })
+  return result
+}
+
+export function usePlanIssues(): PlanIssue[] {
+  return getPlanIssues(useProject((s) => s.project))
 }

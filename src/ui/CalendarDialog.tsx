@@ -14,7 +14,7 @@ import { projectStore, useProject, useSchedule } from '../store/useProject'
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7]
 
 /** Název dne v týdnu podle jazyka (1 = pondělí). 1. 1. 2024 bylo pondělí. */
-function weekdayName(isoWeekday: number, language: string): string {
+export function weekdayName(isoWeekday: number, language: string): string {
   const date = new Date(Date.UTC(2024, 0, isoWeekday))
   return new Intl.DateTimeFormat(localeFor(language), { weekday: 'long', timeZone: 'UTC' }).format(date)
 }

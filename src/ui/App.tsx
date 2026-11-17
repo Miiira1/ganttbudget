@@ -8,7 +8,7 @@ import { formatIsoDate } from '../i18n/format'
 import { addSampleTracking, createSampleProject } from '../samples/automatizace'
 import { dayToIso, isoToDay } from '../engine/calendar'
 import { todayIso } from '../model/dates'
-import { projectStore, useBudgetStatus, useCosts, useLoad, useProject, useSchedule } from '../store/useProject'
+import { projectStore, useBudgetStatus, useCosts, useLoad, usePlanIssues, useProject, useSchedule } from '../store/useProject'
 import { formatMoney } from '../model/money'
 import { applyTheme, loadThemePreference, saveThemePreference, THEME_PREFERENCES, watchSystemTheme, type ThemePreference } from './theme'
 import { CalendarDialog } from './CalendarDialog'
@@ -23,6 +23,10 @@ import { StructureToolbar } from './StructureToolbar'
 import { runStructureCommand, STRUCTURE_COMMANDS, STRUCTURE_SHORTCUTS } from './structureCommands'
 import { useSelectedId, useViewState } from './viewState'
 import { ShortcutsDialog } from './ShortcutsDialog'
+import { GlossaryDialog } from './help/GlossaryDialog'
+import { PlanCheckDialog } from './check/PlanCheckDialog'
+import { NewProjectDialog } from './NewProjectDialog'
+import { WizardDialog } from './WizardDialog'
 import { FileMenu } from './FileMenu'
 import { ImportDialog } from './ImportDialog'
 import { BudgetImportDialog } from './costs/BudgetImportDialog'
@@ -68,6 +72,11 @@ export default function App() {
   const isInfo = useNotice((s) => s.kind === 'info') && notice !== null
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [glossaryOpen, setGlossaryOpen] = useState(false)
+  const [checkOpen, setCheckOpen] = useState(false)
+  const [newOpen, setNewOpen] = useState(false)
+  const [wizardOpen, setWizardOpen] = useState(false)
+  const issueCount = usePlanIssues().length
   const fileName = useFileState((s) => s.fileName)
   const dirty = useFileState((s) => s.savedProject) !== project
   const selectedId = useSelectedId(project)
@@ -308,7 +317,7 @@ export default function App() {
               </button>
             ))}
           </div>
-          <FileMenu />
+          <FileMenu onNew={() => setNewOpen(true)} />
           <button type="button" className="btn-secondary" onClick={undo} disabled={!canUndo} title={t('toolbar.undoHint')}>
             <span aria-hidden="true">↶</span> {t('toolbar.undo')}
           </button>
@@ -321,8 +330,27 @@ export default function App() {
           <button type="button" className="btn-secondary" onClick={() => setCalendarOpen(true)} title={t('toolbar.calendarHint')}>
             <span aria-hidden="true">📅</span> {t('toolbar.calendar')}
           </button>
+          {/* Kontrola kvality plánu (U-04): počet varování žlutě, bez varování ✓. */}
+          <button type="button" className="btn-secondary" onClick={() => setCheckOpen(true)} title={t('toolbar.checkHint')}>
+            <span aria-hidden="true">🔍</span> {t('toolbar.check')}
+            {project.tasks.length > 0 &&
+              (issueCount > 0 ? (
+                <span className="ml-0.5 rounded-full bg-miro-yellow px-1.5 text-xs font-semibold leading-5 text-miro-graphite">
+                  <span aria-hidden="true">{issueCount}</span>
+                  <span className="sr-only">{t('toolbar.checkCount', { count: issueCount })}</span>
+                </span>
+              ) : (
+                <span className="ml-0.5 text-miro-turquoise-dark dark:text-miro-turquoise">
+                  <span aria-hidden="true">✓</span>
+                  <span className="sr-only">{t('toolbar.checkOk')}</span>
+                </span>
+              ))}
+          </button>
           <button type="button" className="btn-secondary" onClick={() => setShortcutsOpen(true)} title={t('toolbar.shortcutsHint')}>
             <span aria-hidden="true">⌨</span> {t('toolbar.shortcuts')}
+          </button>
+          <button type="button" className="btn-secondary" onClick={() => setGlossaryOpen(true)} title={t('toolbar.glossaryHint')}>
+            <span aria-hidden="true">📖</span> {t('toolbar.glossary')}
           </button>
           {/* Druhá řada pohledu Plán: přidání činnosti a úpravy struktury, vpravo kritická cesta a měřítko. */}
           {view === 'plan' && (
@@ -372,6 +400,10 @@ export default function App() {
       </div>
       <CalendarDialog open={calendarOpen} onClose={() => setCalendarOpen(false)} />
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <GlossaryDialog open={glossaryOpen} onClose={() => setGlossaryOpen(false)} />
+      <NewProjectDialog open={newOpen} onClose={() => setNewOpen(false)} onWizard={() => setWizardOpen(true)} />
+      <WizardDialog open={wizardOpen} onClose={() => setWizardOpen(false)} />
+      <PlanCheckDialog open={checkOpen} onClose={() => setCheckOpen(false)} onShowView={setView} />
       <ImportDialog />
       <BudgetImportDialog />
       <WorkbookImportDialog />
@@ -400,12 +432,12 @@ export default function App() {
       ) : project.tasks.length === 0 ? (
         // Prázdný projekt: jen uvítání přes celou šířku, graf by byl prázdný.
         <main className="flex-1 overflow-auto">
-          <TaskTable onAddTask={handleAddTask} onLoadSample={handleLoadSample} />
+          <TaskTable onAddTask={handleAddTask} onLoadSample={handleLoadSample} onWizard={() => setWizardOpen(true)} onNewProject={() => setNewOpen(true)} />
         </main>
       ) : (
         <main className="min-h-0 flex-1">
           <DetailDock
-            plan={<SplitView left={<TaskTable onAddTask={handleAddTask} onLoadSample={handleLoadSample} />} right={<GanttChart />} />}
+            plan={<SplitView left={<TaskTable onAddTask={handleAddTask} onLoadSample={handleLoadSample} onWizard={() => setWizardOpen(true)} onNewProject={() => setNewOpen(true)} />} right={<GanttChart />} />}
             header={<TaskDetailHeader />}
           >
             <TaskDetailBody />

@@ -1,12 +1,14 @@
 /** Přepínač „Kritická cesta“ v liště plánu (fáze 6c, F-09). */
 import { useTranslation } from 'react-i18next'
 import { useDisplayOptions } from '../displayOptions'
+import { HelpTip } from '../help/HelpTip'
 
 export function CriticalToggle() {
   const { t } = useTranslation()
   const showCritical = useDisplayOptions((s) => s.showCritical)
   const toggle = useDisplayOptions((s) => s.toggleCritical)
   return (
+    <span className="inline-flex items-center gap-0.5">
     <button
       type="button"
       aria-pressed={showCritical}
@@ -27,5 +29,7 @@ export function CriticalToggle() {
       </svg>
       {t('gantt.critical')}
     </button>
+    <HelpTip term="criticalPath" />
+    </span>
   )
 }

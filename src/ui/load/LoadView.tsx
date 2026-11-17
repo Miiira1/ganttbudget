@@ -14,6 +14,8 @@ import { loadPreference, savePreference } from '../preferences'
 import { MultiSelect, NOTHING } from '../costs/MultiSelect'
 import { Kpi } from '../Kpi'
 import { Segmented } from '../Segmented'
+import { HelpTip } from '../help/HelpTip'
+import { glossaryHelp } from '../help/glossary'
 import { Histogram, LoadDetail } from './LoadDetail'
 import { CELL_CLASS, cellLevel, cellText, cellTitle, periodLabel } from './loadCells'
 
@@ -78,7 +80,9 @@ export function LoadView({ onShowPlan }: { onShowPlan: () => void }) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-slate-200 px-4 py-2 dark:border-slate-700">
-        <p className="min-w-60 flex-1 text-sm text-slate-600 dark:text-slate-400">{t('load.intro')}</p>
+        <p className="min-w-60 flex-1 text-sm text-slate-600 dark:text-slate-400">
+          {t('load.intro')} <HelpTip term="load" className="align-middle" />
+        </p>
         <Legend />
         <UnitSwitch unit={unit} onChange={setUnit} />
       </div>
@@ -116,9 +120,9 @@ export function LoadView({ onShowPlan }: { onShowPlan: () => void }) {
 
       {/* Ukazatele (A-04) za celý rozsah plánu a přepínač spodního panelu. */}
       <div className="flex flex-wrap items-stretch gap-2 border-b border-slate-200 px-4 py-2 dark:border-slate-700">
-        <Kpi label={t('load.kpi.overloaded')} value={`${kpis.overloadedResources} / ${kpis.resources}`} hint={t('load.kpi.overloadedHint')} alert={kpis.overloadedResources > 0} />
+        <Kpi label={t('load.kpi.overloaded')} value={`${kpis.overloadedResources} / ${kpis.resources}`} hint={t('load.kpi.overloadedHint')} alert={kpis.overloadedResources > 0} help={glossaryHelp(t, 'overload')} />
         <Kpi label={t('load.kpi.overloadedDays')} value={String(kpis.overloadedDays)} hint={t('load.kpi.overloadedDaysHint')} />
-        <Kpi label={t('load.kpi.peak')} value={pct(kpis.peakPct)} hint={t('load.kpi.peakHint')} />
+        <Kpi label={t('load.kpi.peak')} value={pct(kpis.peakPct)} hint={t('load.kpi.peakHint')} help={glossaryHelp(t, 'load')} />
         <Kpi label={t('load.kpi.average')} value={pct(kpis.averagePct)} hint={t('load.kpi.averageHint')} />
         <div className="ml-auto self-end">
           <Segmented label={t('load.panel.label')} options={PANELS} value={panel} onChange={setPanel} text={(x) => t(`load.panel.${x}`)} />

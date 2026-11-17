@@ -8,7 +8,7 @@ import { formatIsoDate } from '../../i18n/format'
 import { wbsNumbers } from '../../model/hierarchy'
 import type { LoadRange, PeriodLoad, ResourceLoad } from '../../model/load'
 import { useProject, useSchedule } from '../../store/useProject'
-import { useViewState } from '../viewState'
+import { revealTask } from '../revealTask'
 import { cellLevel, formatHours } from './loadCells'
 
 interface Label {
@@ -48,24 +48,7 @@ export function LoadDetail({
         : project.workers.filter((w) => w.professionId === resource.id).reduce((sum, w) => sum + w.capacityPerDay, 0)
 
   /** Rozbalí sbalené nadřazené fáze, vybere činnost a přepne na plán. */
-  function showTask(id: string) {
-    const view = useViewState.getState()
-    let parent = tasks.get(id)?.parentId ?? null
-    for (let guard = 0; parent !== null && guard < 100; guard++) {
-      if (view.collapsed.has(parent)) view.toggleCollapsed(parent)
-      parent = tasks.get(parent)?.parentId ?? null
-    }
-    view.select(id)
-    onShowPlan()
-    // Po vykreslení plánu najet na řádek činnosti a v grafu na její úsečku.
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        const selector = `[data-task-id="${CSS.escape(id)}"]`
-        document.querySelector(`tr${selector}`)?.scrollIntoView({ block: 'center' })
-        document.querySelector(`g${selector}`)?.scrollIntoView({ block: 'nearest', inline: 'center' })
-      }),
-    )
-  }
+  const showTask = (id: string) => revealTask(id, onShowPlan)
 
   const rows = [...resource.contributions].sort((a, b) => a.startDay - b.startDay || (wbs.get(a.taskId) ?? '').localeCompare(wbs.get(b.taskId) ?? ''))
 

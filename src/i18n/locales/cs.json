@@ -80,8 +80,8 @@
   },
   "file": {
     "menu": "Soubor",
-    "new": "Nový projekt",
-    "newHint": "Začít s prázdným projektem (neuložené změny se nejdřív zeptá)",
+    "new": "Nový projekt…",
+    "newHint": "Začít s prázdným projektem nebo ze šablony (neuložené změny se nejdřív zeptá)",
     "open": "Otevřít…",
     "openHint": "Otevřít projekt ze souboru .json",
     "save": "Uložit",
@@ -140,7 +140,16 @@
     "shortcuts": "Zkratky",
     "shortcutsHint": "Přehled klávesových zkratek a ovládání myší (F1)",
     "language": "Jazyk",
-    "theme": "Vzhled"
+    "theme": "Vzhled",
+    "glossary": "Slovníček",
+    "glossaryHint": "Vysvětlení pojmů projektového řízení použitých v aplikaci",
+    "check": "Kontrola plánu",
+    "checkHint": "Najde místa, kde plánu nejspíš něco chybí nebo nesedí (jen varování, nic neblokuje)",
+    "checkCount_one": "{{count}} varování",
+    "checkCount_few": "{{count}} varování",
+    "checkCount_many": "{{count}} varování",
+    "checkCount_other": "{{count}} varování",
+    "checkOk": "bez varování"
   },
   "theme": {
     "system": "Podle systému",
@@ -209,7 +218,7 @@
     "dragHint": "Přetáhněte řádek jinam. Nad fází: horní část = před ni, prostředek = do ní, spodní část = za ni. Esc tažení zruší.",
     "kindLockedHint": "Fáze obsahuje činnosti, proto musí zůstat fází. Chcete-li ji změnit, nejdřív z ní činnosti přesuňte.",
     "emptyTitle": "Projekt je zatím prázdný",
-    "emptyText": "Začněte přidáním první činnosti, nebo si prohlédněte vzorový projekt.",
+    "emptyText": "Nevíte, jak začít? Průvodce vás provede názvem, začátkem, kalendářem a prvními fázemi. Nebo začněte ze šablony, rovnou první činností, či si prohlédněte vzorový projekt.",
     "fieldLabel": "{{field}}, řádek {{number}}",
     "invalidName": "Název nesmí být prázdný – vrátila se původní hodnota.",
     "confirmDeleteMany_one": "Opravdu smazat {{count}} položku (vybrané řádky včetně položek ve vybraných fázích)? Změnu lze vrátit tlačítkem Zpět (Ctrl+Z).",
@@ -234,7 +243,9 @@
     "slackCell": "Celková rezerva {{total}} prac. dní (konec projektu se neposune); volná rezerva {{free}} prac. dní (neposune ani žádného následníka).",
     "percentComputed": "U fáze se % hotovo počítá z jejích činností – vážené plánovaným nákladem z baseline, bez něj délkou. Zadává se u činností.",
     "milestoneDone": "splněno",
-    "milestoneDoneHint": "Milník je buď splněný (100 %), nebo ne (0 %)"
+    "milestoneDoneHint": "Milník je buď splněný (100 %), nebo ne (0 %)",
+    "startWizard": "Spustit průvodce",
+    "fromTemplate": "Ze šablony…"
   },
   "kind": {
     "task": "Činnost",
@@ -1438,7 +1449,6 @@
     "today": "Dnes",
     "todayHint": "Počítat vždy k dnešku",
     "summary": "Stav k {{date}} proti baseline „{{name}}“ uložené {{saved}}.",
-    "explain": "Co je {{term}}?",
     "hint": {
       "bac": "celý plán podle baseline",
       "pv": "mělo být hotovo k {{date}}",
@@ -1562,6 +1572,563 @@
         "cv": "CV ({{currency}})",
         "sv": "SV ({{currency}})"
       }
+    }
+  },
+  "help": {
+    "explain": "Co je {{term}}?"
+  },
+  "glossary": {
+    "title": "Slovníček pojmů",
+    "intro": "Krátká vysvětlení pojmů, se kterými aplikace pracuje. Stejná vysvětlení najdete u tlačítek ⓘ přímo v aplikaci.",
+    "search": "Hledat pojem",
+    "searchPlaceholder": "např. rezerva",
+    "noMatch": "Žádný pojem neodpovídá hledání „{{query}}“.",
+    "close": "Zavřít",
+    "sections": {
+      "plan": "Plán a termíny",
+      "resources": "Zdroje a vytížení",
+      "budget": "Náklady a rozpočet",
+      "tracking": "Sledování plnění",
+      "ev": "Ukazatele Earned Value"
+    },
+    "terms": {
+      "phase": {
+        "name": "Fáze",
+        "text": "Skupina souvisejících činností, např. „Projekt a konstrukce“. Její začátek, konec, délka, náklady i % hotovo se spočítají z položek uvnitř – ručně se nezadávají. Fázi lze sbalit a rozbalit."
+      },
+      "milestone": {
+        "name": "Milník",
+        "text": "Důležitý okamžik projektu s nulovou délkou, např. podpis smlouvy nebo předání. V grafu je to kosočtverec. Smí mít jen jednorázový náklad nebo materiál."
+      },
+      "wbs": {
+        "name": "WBS (číslo ve struktuře)",
+        "text": "Work Breakdown Structure – rozpad projektu na menší části. Číslo jako 2.3.1 říká, kde položka ve stromu leží (první položka ve třetí položce druhé fáze). Aplikace ho čísluje sama. Předchůdci se zapisují čísly ze sloupce Č., ne WBS."
+      },
+      "duration": {
+        "name": "Délka",
+        "text": "Počet pracovních dnů, které činnost trvá. Víkendy, svátky a odstávky se nepočítají, takže 5 dní může v kalendáři zabrat i víc než týden. Milník má délku 0."
+      },
+      "workingDays": {
+        "name": "Pracovní den a kalendář",
+        "text": "Den, kdy se na projektu pracuje: výchozí pondělí až pátek bez českých státních svátků a bez vlastních výjimek (odstávka, celozávodní dovolená). Nastavuje se v okně Kalendář."
+      },
+      "dependency": {
+        "name": "Vazba (předchůdce a následník)",
+        "text": "Říká, že jedna činnost závisí na jiné. Předchůdce je ta, na kterou se čeká, následník ta, která čeká. Když se předchůdce posune, aplikace následníky přepočítá sama. Ve sloupci Předchůdci se píše číslo řádku ze sloupce Č., např. 3 nebo 3FS+2."
+      },
+      "linkTypes": {
+        "name": "Typy vazeb FS, SS, FF, SF",
+        "text": "FS (konec–začátek, výchozí): následník začne po konci předchůdce. SS (začátek–začátek): začne nejdřív se začátkem předchůdce. FF (konec–konec): skončí nejdřív s koncem předchůdce. SF (začátek–konec): skončí nejdřív den před začátkem předchůdce. Česky lze psát i KZ, ZZ, KK, ZK."
+      },
+      "lag": {
+        "name": "Prodleva a předstih",
+        "text": "Pracovní dny navíc mezi předchůdcem a následníkem. Kladné číslo je čekání (3FS+2 = dva dny po konci řádku 3), záporné je předstih – následník se s předchůdcem překrývá (3FS-2)."
+      },
+      "constraint": {
+        "name": "Omezení „začít nejdříve“ (📌)",
+        "text": "Datum, před kterým činnost nezačne. Vznikne tažením úsečky nebo zadáním začátku v tabulce. Skutečný začátek je nejpozdější z: začátek projektu, vazby, omezení. Kliknutím na 📌 se omezení zruší."
+      },
+      "criticalPath": {
+        "name": "Kritická cesta",
+        "text": "Řetěz činností, na kterých přímo závisí konec projektu – nemají žádnou rezervu. Když se kterákoli z nich zpozdí o den, posune se o den i konec projektu. Přepínač Kritická cesta je zvýrazní žlutě."
+      },
+      "slack": {
+        "name": "Rezerva (celková a volná)",
+        "text": "O kolik pracovních dnů se položka smí zpozdit. Celková rezerva: bez posunu konce projektu. Volná rezerva: bez posunu kteréhokoli následníka. Položka s rezervou 0 je kritická."
+      },
+      "resource": {
+        "name": "Zdroj",
+        "text": "Co projekt spotřebovává: lidé (profese a pracovníci), stroje a materiál. Zdroje se zakládají na obrazovce Zdroje a k činnostem se přidávají jako řádky v panelu Detail činnosti."
+      },
+      "rate": {
+        "name": "Hodinová sazba",
+        "text": "Kolik stojí hodina práce člověka nebo stroje. U lidí ji aplikace spočítá z mzdy, odvodů, režie a produktivních hodin (tlačítko Kalkulace); ruční sazba výpočet přepíše."
+      },
+      "load": {
+        "name": "Vytížení",
+        "text": "Kolik hodin denně je zdroj naplánován v poměru ke své kapacitě (h/den), v procentech. 100 % znamená plně vytížený."
+      },
+      "overload": {
+        "name": "Přetížení",
+        "text": "Den, kdy je zdroj naplánován na víc hodin, než má kapacitu (vytížení nad 100 %). Nepřítomný pracovník má kapacitu 0. Termíny se kvůli tomu samy nemění – je potřeba činnosti posunout nebo přidat lidi."
+      },
+      "costLine": {
+        "name": "Řádek nákladu",
+        "text": "Jeden zdroj nebo položka u činnosti: člověk, stroj, materiál, jednorázový nebo průběžný náklad. Náklad činnosti je součet jejích řádků, náklad fáze součet všeho uvnitř."
+      },
+      "costCategory": {
+        "name": "Kategorie nákladů",
+        "text": "Druh výdaje, např. mzdy, materiál, služby, investice. Podle kategorií se třídí přehledy a lze k nim nastavit limity."
+      },
+      "tags": {
+        "name": "Štítky",
+        "text": "Volná slova u řádků nákladu, např. „dotace“ nebo „externí“. Slouží k filtrování a třídění v pohledech Náklady a Analýza."
+      },
+      "costTimeline": {
+        "name": "Náběh nákladů",
+        "text": "Rozložení nákladů do jednotlivých dnů podle termínů činností: práce rovnoměrně do pracovních dnů, materiál v den začátku, jednorázový náklad ke zvolenému dni. Ukazuje, kdy budou peníze potřeba."
+      },
+      "budgetLimit": {
+        "name": "Limit rozpočtu",
+        "text": "Nejvyšší částka, kterou smí stát projekt nebo kategorie. Aplikace ukáže čerpání v % a den, od kterého by sečtené náklady limit přesáhly."
+      },
+      "sCurve": {
+        "name": "S-křivka",
+        "text": "Graf sečtených (kumulativních) nákladů v čase. Na začátku a na konci projektu roste pomalu, uprostřed rychle – odtud tvar písmene S. Ukazuje, kolik bude utraceno k danému dni."
+      },
+      "cashFlow": {
+        "name": "Cash flow (peněžní tok)",
+        "text": "Kolik peněz odejde v jednotlivých obdobích (týden, měsíc, čtvrtletí). Pomůže najít období s největšími výdaji. Zatím jen výdaje, bez příjmů."
+      },
+      "pivot": {
+        "name": "Kontingenční tabulka",
+        "text": "Tabulka, která sečte čísla podle zvolených hledisek v řádcích a sloupcích, např. náklady podle fází a měsíců. Hlediska se přepínají bez psaní vzorců."
+      },
+      "percentComplete": {
+        "name": "% hotovo",
+        "text": "Kolik práce na položce je hotovo. U činnosti se zadává ručně, u fáze se spočítá (váženo plánovanými náklady), milník je buď splněný (100 %), nebo ne (0 %). V grafu je to tmavší výplň úsečky zleva."
+      },
+      "baseline": {
+        "name": "Baseline (výchozí plán)",
+        "text": "Uložený snímek plánu – termínů a nákladů – obvykle v den schválení. Pozdější plán i skutečnost se s ním srovnávají. Přepínač Baseline ukáže pod úsečkami šedý stín původních termínů."
+      },
+      "statusDate": {
+        "name": "Datum stavu",
+        "text": "Den, ke kterému se hodnotí, jak projekt stojí (bez zadání dnešek). Do skutečných nákladů se počítají jen položky do tohoto dne včetně."
+      },
+      "actualCost": {
+        "name": "Skutečné náklady",
+        "text": "Kolik se za činnost opravdu zaplatilo, zadané jako položky k datu v panelu Detail činnosti. V pohledu Sledování se srovnávají s plánem."
+      },
+      "earnedValue": {
+        "name": "Earned Value (hodnota hotové práce)",
+        "text": "Metoda, která srovná tři čísla: kolik práce mělo být hotovo (PV), kolik je jí opravdu hotovo (EV) a kolik to stálo (AC). Z nich je vidět zpoždění i předražení. Jednotlivé ukazatele jsou vysvětlené níže a u dlaždic v pohledu Sledování."
+      }
+    }
+  },
+  "check": {
+    "title": "Kontrola plánu",
+    "intro": "Aplikace prošla plán a našla místa, kde nejspíš něco chybí nebo nesedí. Jsou to jen varování – nic neblokují a nic samy nemění. U každého najdete radu „Jak to opravit“.",
+    "none": "V plánu jsme nenašli nic podezřelého. 👍",
+    "empty": "Plán je zatím prázdný – není co kontrolovat.",
+    "close": "Zavřít",
+    "howToFix": "Jak to opravit",
+    "showInPlan": "Ukázat v plánu",
+    "openLoad": "Otevřít Vytížení",
+    "openCosts": "Otevřít Náklady",
+    "kinds": {
+      "budgetOver": "Překročený rozpočet",
+      "overload": "Přetížené zdroje",
+      "leadBeforePredecessor": "Vazba do minulosti: předstih delší než předchůdce",
+      "notStarted": "Vazba do minulosti: mělo začít, a nezačalo",
+      "zeroDuration": "Činnost bez délky",
+      "emptyPhase": "Fáze bez činností",
+      "noPredecessor": "Bez předchůdce",
+      "noSuccessor": "Bez následníka"
+    },
+    "items": {
+      "budgetOverProject": "Plánované náklady projektu překračují limit o {{amount}}.",
+      "budgetOverCategory": "Kategorie „{{category}}“ překračuje limit o {{amount}}.",
+      "exceedFrom": "Limit se překročí {{date}}.",
+      "overload": "„{{name}}“ ({{kind}}): přetížené dny {{count}}, poprvé {{date}}.",
+      "leadBeforePredecessor": "„{{task}}“ by podle vazby {{link}} na „{{predecessor}}“ začala dřív než sám předchůdce.",
+      "notStarted": "„{{task}}“ měla začít {{date}}, ale má 0 % hotovo.",
+      "notStartedMilestone": "Milník „{{task}}“ měl nastat {{date}}, ale není splněný.",
+      "zeroDuration": "„{{task}}“ má délku 0 pracovních dnů.",
+      "emptyPhase": "Fáze „{{task}}“ neobsahuje žádné položky.",
+      "noPredecessor": "„{{task}}“ nemá předchůdce, takže začne hned se začátkem projektu.",
+      "noSuccessor": "Na „{{task}}“ nic nenavazuje."
+    },
+    "fix": {
+      "budgetOver": "Snižte náklady (méně hodin, levnější zdroj, menší množství materiálu), nebo po dohodě zvyšte limit v pohledu Náklady tlačítkem Limity rozpočtu. Graf S-křivka ukáže, od kterého dne se limit překročí.",
+      "overload": "V pohledu Vytížení najděte přetížené dny a činnosti, které je způsobují. Pak činnost posuňte (tažením úsečky nebo vazbou), snižte % zapojení, přiřaďte jiného pracovníka, nebo činnost prodlužte. Aplikace termíny kvůli přetížení sama nemění.",
+      "leadBeforePredecessor": "Předstih (záporná prodleva) je delší, než trvá předchůdce, takže vazba ztrácí smysl. Ve sloupci Předchůdci předstih zkraťte (např. 3FS-4 → 3FS-2), nebo zvolte jiný typ vazby, třeba SS (začátek–začátek).",
+      "notStarted": "Pokud práce už začala, zadejte % hotovo (u milníku zaškrtněte splněno). Pokud nezačala, posuňte začátek na skutečné datum – tažením úsečky nebo ve sloupci Začátek. Následníci se posunou s ní.",
+      "zeroDuration": "Ve sloupci Délka zadejte počet pracovních dnů. Pokud jde o okamžik bez trvání (podpis, předání), změňte typ na Milník.",
+      "emptyPhase": "Přidejte do fáze činnosti (vyberte fázi a klikněte na Přidat činnost, nebo činnost pod ni odsaďte), nebo fázi smažte, pokud ji nepotřebujete.",
+      "noPredecessor": "Ve sloupci Předchůdci zadejte číslo řádku (sloupec Č.) činnosti, na kterou musí počkat. Pokud má opravdu začít se začátkem projektu, varování můžete ignorovat – nebo jí dejte pevný začátek 📌 tažením úsečky.",
+      "noSuccessor": "Když na činnost nic nečeká, plán neukáže, co způsobí její zpoždění. Zadejte ji jako předchůdce další činnosti nebo závěrečného milníku (např. Předání). Pokud na ni opravdu nic nečeká, varování můžete ignorovat."
+    }
+  },
+  "newProject": {
+    "title": "Nový projekt",
+    "intro": "Začněte s prázdným plánem, nebo si vyberte šablonu ze strojírenství a výroby. Šablona obsahuje fáze, činnosti, vazby, zdroje i rozpočet – stačí ji upravit podle sebe.",
+    "blank": "Prázdný projekt",
+    "blankText": "Čistý plán bez činností a bez databáze zdrojů. Výchozí kalendář: pondělí až pátek a české svátky.",
+    "templatesHeading": "Šablony",
+    "startDate": "Začátek projektu",
+    "startDateHint": "Šablona se naplánuje od tohoto dne. Výchozí je nejbližší pondělí.",
+    "summary": "{{items}} položek · ≈ {{months}} měs. · {{cost}}",
+    "create": "Vytvořit",
+    "cancel": "Zrušit",
+    "templates": {
+      "automation": "Robotické pracoviště od studie proveditelnosti přes výběrové řízení, výrobu a instalaci až po zkušební provoz a předání.",
+      "productDevelopment": "Nový strojní výrobek (např. čerpadlo nebo převodovka) od analýzy trhu přes konstrukci, prototyp a zkoušky až po přípravu sériové výroby.",
+      "productionLine": "Nová montážní nebo obráběcí linka: od investičního záměru přes výběr dodavatele, přípravu haly, instalaci a přejímky FAT a SAT až po náběh sériové výroby.",
+      "investment": "Výstavba skladové haly: od investičního záměru a financování přes projektovou dokumentaci, stavební povolení a výběr zhotovitele až po výstavbu, kolaudaci a zahájení provozu.",
+      "shutdown": "Odstávka výroby kvůli generální opravě lisu, výměně dílů a revizím: plánování, objednání dílů a výroba do zásoby, souběžné práce během odstávky a bezpečný náběh výroby."
+    },
+    "wizard": "Průvodce prvním projektem",
+    "wizardText": "Krok za krokem: název a měna, začátek, kalendář a první fáze. Doporučeno, pokud plánujete poprvé.",
+    "continue": "Pokračovat"
+  },
+  "templates": {
+    "productDevelopment": {
+      "projectName": "Vývoj nového výrobku",
+      "tasks": {
+        "p1": "Zadání a koncept",
+        "t1a": "Analýza trhu a požadavků zákazníků",
+        "t1b": "Technické zadání (specifikace)",
+        "t1c": "Koncepční návrh a výběr varianty",
+        "m1": "Schválení konceptu",
+        "p2": "Konstrukce",
+        "t2a": "3D model a výkresová dokumentace",
+        "t2b": "Pevnostní výpočty (MKP)",
+        "t2c": "Analýza rizik konstrukce (FMEA)",
+        "m2": "Uvolnění dokumentace pro prototyp",
+        "p3": "Prototyp",
+        "t3a": "Nákup materiálu a dílů",
+        "t3b": "Výroba dílů prototypu",
+        "t3c": "Montáž prototypu",
+        "m3": "Prototyp sestaven",
+        "p4": "Zkoušky a ověření",
+        "t4a": "Funkční zkoušky",
+        "t4b": "Životnostní zkouška v externí zkušebně",
+        "t4c": "Úpravy konstrukce podle zkoušek",
+        "t4d": "Certifikace a dokumentace CE",
+        "m4": "Zmrazení konstrukce (design freeze)",
+        "p5": "Příprava sériové výroby",
+        "t5a": "Výrobní dokumentace a technologické postupy",
+        "t5b": "Výroba přípravků a nástrojů",
+        "t5c": "Ověřovací série (nulová série)",
+        "m5": "Zahájení sériové výroby"
+      },
+      "resources": {
+        "departments": {
+          "dev": "Vývoj a konstrukce",
+          "test": "Zkušebna",
+          "prod": "Výroba"
+        },
+        "professions": {
+          "pm": "Projektový manažer",
+          "designer": "Konstruktér",
+          "analyst": "Výpočtář",
+          "technologist": "Technolog",
+          "tester": "Zkušební technik",
+          "machinist": "Obráběč – operátor CNC"
+        },
+        "machines": {
+          "cnc": "CNC obráběcí centrum",
+          "testbench": "Zkušební stand",
+          "printer": "3D tiskárna"
+        },
+        "materials": {
+          "steel": "Konstrukční ocel (tyče a plechy)",
+          "aluminium": "Hliníková slitina",
+          "bearing": "Kuličkové ložisko",
+          "seal": "Sada těsnění",
+          "electronics": "Řídicí elektronika",
+          "fasteners": "Spojovací materiál"
+        },
+        "units": {
+          "kg": "kg",
+          "pcs": "ks",
+          "set": "sada"
+        }
+      },
+      "lines": {
+        "marketStudy": "Průzkum trhu (agentura)",
+        "software": "Licence výpočtového softwaru",
+        "externalTest": "Externí životnostní zkouška",
+        "certification": "Certifikace a posouzení shody",
+        "reserve": "Rezerva na změny konstrukce",
+        "tooling": "Nákup nástrojů a měřidel",
+        "launch": "Uvedení na trh (katalog, veletrh)"
+      }
+    },
+    "productionLine": {
+      "projectName": "Zavedení nové výrobní linky",
+      "tasks": {
+        "p1": "Příprava a investiční rozhodnutí",
+        "t1a": "Analýza kapacit a návrh layoutu",
+        "t1b": "Investiční záměr a výpočet návratnosti",
+        "m1": "Schválení investice",
+        "p2": "Výběr dodavatele linky",
+        "t2a": "Technické zadání a poptávka",
+        "t2b": "Hodnocení nabídek a jednání",
+        "m2": "Podpis smlouvy s dodavatelem",
+        "p3": "Výroba linky u dodavatele",
+        "t3a": "Výroba a montáž linky u dodavatele",
+        "t3b": "Přejímka u dodavatele (FAT)",
+        "m3": "FAT úspěšně dokončen",
+        "p4": "Příprava haly",
+        "t4a": "Vyklizení a demontáž původního zařízení",
+        "t4b": "Stavební úpravy a základy",
+        "t4c": "Rozvody elektřiny a stlačeného vzduchu",
+        "m4": "Hala připravena",
+        "p5": "Instalace a uvedení do provozu",
+        "t5a": "Doprava a ustavení linky",
+        "t5b": "Mechanická a elektrická instalace",
+        "t5c": "Oživení a seřízení linky",
+        "t5d": "Přejímka na místě (SAT)",
+        "m5": "SAT úspěšně dokončen",
+        "p6": "Náběh výroby",
+        "t6a": "Školení obsluhy a údržby",
+        "t6b": "Zkušební provoz a ladění",
+        "t6c": "Validace kvality a schválení dílů (PPAP)",
+        "m6": "Předání linky do sériové výroby"
+      },
+      "resources": {
+        "departments": {
+          "tech": "Technický úsek",
+          "quality": "Kvalita",
+          "maint": "Údržba",
+          "prod": "Výroba"
+        },
+        "professions": {
+          "pm": "Projektový manažer",
+          "processEng": "Technolog výroby",
+          "quality": "Inženýr kvality",
+          "maintTech": "Technik údržby",
+          "electrician": "Elektrikář",
+          "operator": "Operátor linky"
+        },
+        "machines": {
+          "forklift": "Vysokozdvižný vozík",
+          "crane": "Mobilní jeřáb",
+          "scissorLift": "Nůžková plošina"
+        },
+        "materials": {
+          "concrete": "Beton",
+          "anchor": "Kotevní sada",
+          "cable": "Silový kabel",
+          "pipe": "Potrubí stlačeného vzduchu",
+          "guard": "Ochranné oplocení linky",
+          "testMaterial": "Materiál pro zkušební výrobu"
+        },
+        "units": {
+          "m3": "m³",
+          "set": "sada",
+          "m": "m",
+          "kg": "kg"
+        }
+      },
+      "lines": {
+        "deposit": "Záloha dodavateli linky (30 %)",
+        "travelFat": "Cesta na přejímku FAT",
+        "fatPayment": "Platba po FAT (60 %)",
+        "disposal": "Odvoz a likvidace starého zařízení",
+        "construction": "Stavební firma – úpravy podlahy a základů",
+        "reserve": "Rezerva na nepředvídané práce",
+        "training": "Školení od dodavatele",
+        "supplierSupport": "Technická podpora dodavatele",
+        "finalPayment": "Doplatek dodavateli (10 %)"
+      }
+    },
+    "investment": {
+      "projectName": "Investiční akce – výstavba skladové haly",
+      "tasks": {
+        "p1": "Investiční záměr",
+        "t1a": "Studie a odhad nákladů",
+        "t1b": "Zajištění financování (úvěr, dotace)",
+        "m1": "Schválení investice",
+        "p2": "Projektová příprava a povolení",
+        "t2a": "Dokumentace pro povolení stavby",
+        "t2b": "Inženýrská činnost a stanoviska úřadů",
+        "t2c": "Řízení o povolení stavby",
+        "m2": "Stavební povolení nabylo právní moci",
+        "t2d": "Dokumentace pro provádění stavby",
+        "p3": "Výběr zhotovitele",
+        "t3a": "Výběrové řízení na zhotovitele stavby",
+        "m3": "Podpis smlouvy o dílo",
+        "p4": "Výstavba",
+        "t4a": "Zařízení staveniště",
+        "t4b": "Zemní práce a základy",
+        "t4c": "Ocelová konstrukce a opláštění",
+        "t4d": "Průmyslové podlahy",
+        "t4e": "Technika budovy (elektro, vytápění, vzduchotechnika)",
+        "m4": "Dokončení stavby",
+        "p5": "Kolaudace a zahájení provozu",
+        "t5a": "Přejímka díla a odstranění vad",
+        "t5b": "Kolaudační řízení",
+        "m5": "Kolaudační souhlas",
+        "t5c": "Vybavení skladu a stěhování",
+        "m6": "Zahájení provozu haly"
+      },
+      "resources": {
+        "departments": {
+          "inv": "Investiční oddělení",
+          "maint": "Správa budov a údržba",
+          "log": "Logistika"
+        },
+        "professions": {
+          "pm": "Projektový manažer investic",
+          "engineer": "Stavební technik",
+          "tdi": "Technický dozor investora (TDI)",
+          "logistics": "Logistik",
+          "warehouse": "Skladník"
+        },
+        "machines": {
+          "forklift": "Vysokozdvižný vozík",
+          "truck": "Nákladní automobil"
+        },
+        "materials": {
+          "shelving": "Paletový regál",
+          "pallet": "Paleta EUR",
+          "signage": "Bezpečnostní značení",
+          "fireExtinguisher": "Hasicí přístroj"
+        },
+        "units": {
+          "bay": "sekce",
+          "pcs": "ks",
+          "set": "sada"
+        }
+      },
+      "lines": {
+        "study": "Architektonická studie",
+        "loanFee": "Poplatky za zpracování úvěru",
+        "designPermit": "Projekt pro povolení stavby",
+        "fees": "Správní poplatky a stanoviska",
+        "designExecution": "Projekt pro provádění stavby",
+        "tenderAdmin": "Administrace výběrového řízení",
+        "advance": "Záloha zhotoviteli",
+        "reserve": "Rezerva na vícepráce",
+        "progressInvoices": "Průběžná fakturace stavby",
+        "approvalFees": "Revize a kolaudační poplatky",
+        "retention": "Uvolnění pozastávky zhotoviteli"
+      }
+    },
+    "shutdown": {
+      "projectName": "Plánovaná odstávka a údržba",
+      "tasks": {
+        "p1": "Plánování odstávky",
+        "t1a": "Sběr požadavků na opravy a revize",
+        "t1b": "Rozpis prací a harmonogram odstávky",
+        "t1c": "Objednávka náhradních dílů",
+        "m1": "Schválení plánu odstávky",
+        "p2": "Příprava",
+        "t2a": "Dodávka náhradních dílů",
+        "t2b": "Výběr a smlouvy s externími firmami",
+        "t2c": "Výroba do zásoby pro zákazníky",
+        "t2d": "Bezpečnostní plán a povolení k práci",
+        "m2": "Zahájení odstávky",
+        "p3": "Odstávka",
+        "t3a": "Odstavení a zajištění zařízení",
+        "t3b": "Generální oprava lisu",
+        "t3c": "Výměna ložisek a převodovky dopravníku",
+        "t3d": "Revize elektro a tlakových zařízení",
+        "t3e": "Čištění a nátěry",
+        "t3f": "Zkoušky a znovuuvedení do provozu",
+        "m3": "Konec odstávky",
+        "p4": "Náběh a vyhodnocení",
+        "t4a": "Náběh výroby a kontrola kvality",
+        "t4b": "Vyhodnocení odstávky a poučení pro příště",
+        "m4": "Uzavření projektu"
+      },
+      "resources": {
+        "departments": {
+          "ehs": "BOZP a životní prostředí",
+          "maint": "Údržba",
+          "prod": "Výroba"
+        },
+        "professions": {
+          "maintManager": "Vedoucí údržby",
+          "mechanic": "Mechanik",
+          "electrician": "Elektrikář – revizní technik",
+          "planner": "Plánovač výroby",
+          "operator": "Operátor výroby",
+          "safety": "Technik BOZP"
+        },
+        "machines": {
+          "mobileCrane": "Mobilní jeřáb (pronájem)",
+          "cleaner": "Průmyslový čisticí stroj",
+          "scaffolding": "Lešení (pronájem)"
+        },
+        "materials": {
+          "bearings": "Sada ložisek",
+          "gearbox": "Převodovka dopravníku",
+          "seals": "Těsnění a hydraulické hadice",
+          "oil": "Hydraulický olej",
+          "filter": "Filtr",
+          "paint": "Průmyslová barva"
+        },
+        "units": {
+          "set": "sada",
+          "pcs": "ks",
+          "l": "l"
+        }
+      },
+      "lines": {
+        "overtime": "Přesčasy na výrobu do zásoby",
+        "reserve": "Rezerva na nalezené závady",
+        "pressService": "Externí servis lisu",
+        "pressureInspection": "Revize tlakových nádob (externí)"
+      }
+    }
+  },
+  "wizard": {
+    "title": "Průvodce prvním projektem",
+    "stepOf": "Krok {{step}} z {{total}}",
+    "steps": {
+      "name": "Název a měna",
+      "start": "Začátek",
+      "calendar": "Kalendář",
+      "phases": "První fáze",
+      "summary": "Shrnutí"
+    },
+    "intro": {
+      "name": "Jak se bude projekt jmenovat? Název jde později kdykoli změnit kliknutím v záhlaví.",
+      "start": "Kdy projekt začne? Od tohoto dne se naplánují první činnosti. Konec projektu nezadáváte – spočítá se sám z délek a vazeb činností.",
+      "calendar": "Ve které dny se na projektu pracuje? Délky činností se počítají v pracovních dnech, víkendy, svátky a odstávky se přeskočí. Kalendář jde později upravit tlačítkem Kalendář.",
+      "phases": "Rozdělte projekt na hlavní fáze (etapy), např. Příprava, Realizace, Předání. Činnosti do nich doplníte v plánu. Fáze jde přidat i později.",
+      "summary": "Zkontrolujte, co průvodce vytvoří. Tlačítkem Zpět se můžete k libovolnému kroku vrátit."
+    },
+    "name": "Název projektu",
+    "namePlaceholder": "např. Modernizace lakovny",
+    "currency": "Měna rozpočtu",
+    "currencyHint": "Všechny částky v projektu budou v této měně. Později ji změnit nejde.",
+    "startDate": "Začátek projektu",
+    "startHint": "Výchozí je nejbližší pondělí.",
+    "phase": "Fáze {{n}}",
+    "addPhase": "Přidat fázi",
+    "removePhase": "Odebrat fázi {{n}}",
+    "defaultPhases": {
+      "p1": "Příprava",
+      "p2": "Realizace",
+      "p3": "Předání"
+    },
+    "addFirstTasks": "Do každé fáze přidat první činnost (5 pracovních dnů) a propojit je za sebou",
+    "addFirstTasksHint": "Plán pak hned ukáže úsečky a vazby; názvy a délky činností upravíte v tabulce.",
+    "firstTaskName": "První činnost",
+    "noPhases": "Bez fází – začnete s prázdným plánem.",
+    "summaryLabels": {
+      "name": "Název",
+      "currency": "Měna",
+      "start": "Začátek",
+      "workingDays": "Pracovní dny",
+      "holidays": "České svátky",
+      "shutdowns": "Odstávky",
+      "phases": "Fáze"
+    },
+    "yes": "počítají se",
+    "no": "nepočítají se",
+    "none": "žádné",
+    "withFirstTasks": "{{phases}} (v každé první činnost)",
+    "replaceNote": "Vytvořením se nahradí současný plán; na neuložené změny se aplikace nejdřív zeptá. Vytvoření jde vrátit tlačítkem Zpět v liště (Ctrl+Z).",
+    "back": "Zpět",
+    "next": "Další",
+    "create": "Vytvořit projekt",
+    "cancel": "Zrušit",
+    "errors": {
+      "nameMissing": "Vyplňte název projektu.",
+      "nameTooLong": "Název může mít nejvýš 200 znaků.",
+      "startInvalid": "Zadejte platné datum začátku.",
+      "noWorkingDay": "Aspoň jeden den v týdnu musí být pracovní.",
+      "shutdownMissingDates": "U každé odstávky vyplňte datum od i do.",
+      "shutdownEndBeforeStart": "U odstávky nesmí být datum „do“ před datem „od“.",
+      "tooManyShutdowns": "V průvodci jde zadat nejvýš 20 odstávek; další přidáte v okně Kalendář.",
+      "tooManyPhases": "V průvodci jde zadat nejvýš 12 fází; další přidáte v plánu.",
+      "phaseNameTooLong": "Název fáze může mít nejvýš 200 znaků."
     }
   }
 }

@@ -25,6 +25,8 @@ import { seriesColor } from './palette'
 import { periodLabel } from '../load/loadCells'
 import { Kpi } from '../Kpi'
 import { Segmented } from '../Segmented'
+import { HelpTip } from '../help/HelpTip'
+import { glossaryHelp } from '../help/glossary'
 import { loadPreference, savePreference } from '../preferences'
 
 const GROUPS: readonly CostGroupBy[] = ['category', 'phase', 'kind']
@@ -129,7 +131,9 @@ export function CostsView() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-slate-200 px-4 py-2 dark:border-slate-700">
-        <p className="min-w-60 flex-1 text-sm text-slate-600 dark:text-slate-400">{t('costs.intro', { currency: project.currency })}</p>
+        <p className="min-w-60 flex-1 text-sm text-slate-600 dark:text-slate-400">
+          {t('costs.intro', { currency: project.currency })} <HelpTip term="costTimeline" className="align-middle" />
+        </p>
         <Segmented label={t('costs.groupBy')} options={GROUPS} value={groupBy} onChange={setGroupBy} text={(g) => t(`costs.groups.${g}`)} />
         <Segmented label={t('costs.unit')} options={UNITS} value={unit} onChange={setUnit} text={(u) => t(`costs.units.${u}`)} />
         <Segmented label={t('costs.mode')} options={MODES} value={mode} onChange={setMode} text={(m) => t(`costs.modes.${m}`)} />
@@ -249,9 +253,12 @@ export function CostsView() {
               value={status.project ? `${Math.round((status.project.spent / status.project.limit) * 100)} %` : '–'}
               hint={status.project ? t('costs.kpi.limitOf', { limit: money(status.project.limit) }) : t('costs.kpi.limitNone')}
               alert={(status.project?.over ?? 0) > 0}
+              help={glossaryHelp(t, 'budgetLimit')}
             />
-            <div className="ml-auto self-end">
+            <div className="ml-auto flex items-center gap-1 self-end">
               <Segmented label={t('costs.chart.label')} options={CHART_MODES} value={chartMode} onChange={setChartMode} text={(m) => t(`costs.chart.modes.${m}`)} />
+              {/* Vysvětlení právě zvoleného grafu. */}
+              <HelpTip key={chartMode} term={chartMode === 'scurve' ? 'sCurve' : 'cashFlow'} />
             </div>
           </div>
           <CostsChart

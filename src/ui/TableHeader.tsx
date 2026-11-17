@@ -11,23 +11,25 @@ import { useRef, type KeyboardEvent, type PointerEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { HEADER_HEIGHT } from '../gantt/geometry'
 import { COLUMNS, MAX_WIDTH, useColumnWidths, type ColumnId } from './columnWidths'
+import { HelpTip } from './help/HelpTip'
+import type { GlossaryTerm } from './help/glossary'
 
 const th =
   'sticky top-0 z-10 overflow-hidden text-ellipsis whitespace-nowrap border-b border-slate-300 bg-slate-100 px-2 py-0 text-left text-xs font-semibold uppercase tracking-wide text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
 
-/** Texty hlavičky: klíč názvu, bublina, zarovnání. */
-const HEADERS: Record<ColumnId, { label: string; hint?: string; align?: 'right' | 'center'; srOnly?: boolean }> = {
+/** Texty hlavičky: klíč názvu, bublina, zarovnání, pojem ze slovníčku pro tlačítko ⓘ (U-03). */
+const HEADERS: Record<ColumnId, { label: string; hint?: string; align?: 'right' | 'center'; srOnly?: boolean; term?: GlossaryTerm }> = {
   number: { label: 'table.rowNumber', align: 'right' },
-  wbs: { label: 'table.wbs', hint: 'table.wbsHint' },
+  wbs: { label: 'table.wbs', hint: 'table.wbsHint', term: 'wbs' },
   name: { label: 'table.name' },
   kind: { label: 'table.kind' },
-  start: { label: 'table.start', hint: 'table.startHint' },
+  start: { label: 'table.start', hint: 'table.startHint', term: 'constraint' },
   finish: { label: 'table.finish', hint: 'table.finishHint' },
-  duration: { label: 'table.duration', hint: 'table.durationHint', align: 'right' },
-  slack: { label: 'table.slack', hint: 'table.slackHint', align: 'right' },
-  predecessors: { label: 'table.predecessors', hint: 'table.predecessorsHint' },
-  percent: { label: 'table.percentComplete', align: 'right' },
-  cost: { label: 'table.cost', hint: 'table.costHint', align: 'right' },
+  duration: { label: 'table.duration', hint: 'table.durationHint', align: 'right', term: 'duration' },
+  slack: { label: 'table.slack', hint: 'table.slackHint', align: 'right', term: 'slack' },
+  predecessors: { label: 'table.predecessors', hint: 'table.predecessorsHint', term: 'dependency' },
+  percent: { label: 'table.percentComplete', align: 'right', term: 'percentComplete' },
+  cost: { label: 'table.cost', hint: 'table.costHint', align: 'right', term: 'costLine' },
   notes: { label: 'table.notes' },
   actions: { label: 'table.actions', align: 'center', srOnly: true },
 }
@@ -118,7 +120,17 @@ export function TableHeader() {
           const align = header.align === 'right' ? 'text-right' : header.align === 'center' ? 'text-center' : ''
           return (
             <th key={column.id} scope="col" className={`${th} ${align}`} title={header.hint ? t(header.hint) : undefined}>
-              {header.srOnly ? <span className="sr-only">{label}</span> : label}
+              {header.srOnly ? (
+                <span className="sr-only">{label}</span>
+              ) : header.term ? (
+                // Název se při úzkém sloupci zkrátí, tlačítko ⓘ zůstane vidět.
+                <span className={`flex items-center gap-0.5 ${header.align === 'right' ? 'justify-end' : ''}`}>
+                  <span className="truncate">{label}</span>
+                  <HelpTip term={header.term} />
+                </span>
+              ) : (
+                label
+              )}
               {column.resizable && <ResizeHandle id={column.id} label={label} />}
             </th>
           )

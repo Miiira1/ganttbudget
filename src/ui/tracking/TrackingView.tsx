@@ -43,7 +43,6 @@ export function TrackingView() {
   const ev = useEarnedValue()
   const baseline = activeBaseline(project)
   const [naming, setNaming] = useState<{ mode: 'save' | 'rename'; name: string } | null>(null)
-  const [explain, setExplain] = useState<Term | null>(null)
   const store = projectStore.getState()
   const today = todayIso()
   const statusIso = project.statusDate ?? today
@@ -120,7 +119,7 @@ export function TrackingView() {
     totals.spi === null ? t('tracking.hint.spiNone') : totals.spi < INDEX_ALERT ? t('tracking.hint.spiLate') : totals.spi < 1 ? t('tracking.hint.spiSlightly') : t('tracking.hint.spiOk')
   const cpiHint =
     totals.cpi === null ? t('tracking.hint.cpiNone') : totals.cpi < INDEX_ALERT ? t('tracking.hint.cpiOver') : totals.cpi < 1 ? t('tracking.hint.cpiSlightly') : t('tracking.hint.cpiOk')
-  const info = (term: Term) => ({ label: t('tracking.explain', { term: t(`tracking.terms.${term}.short`) }), pressed: explain === term, onClick: () => setExplain(explain === term ? null : term) })
+  const info = (term: Term) => ({ title: t(`tracking.terms.${term}.name`), text: t(`tracking.terms.${term}.text`), extra: t(`tracking.terms.${term}.formula`) })
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -187,34 +186,27 @@ export function TrackingView() {
 
         {/* Ukazatele Earned Value */}
         <div className="mt-2 flex flex-wrap items-stretch gap-2">
-          <Kpi label={t('tracking.terms.bac.short')} value={money(totals.bac)} hint={t('tracking.hint.bac')} info={info('bac')} />
-          <Kpi label={t('tracking.terms.pv.short')} value={money(totals.pv)} hint={t('tracking.hint.pv', { date: date(statusIso) })} info={info('pv')} />
-          <Kpi label={t('tracking.terms.ev.short')} value={money(totals.ev)} hint={t('tracking.hint.ev', { pct: evPct })} info={info('ev')} />
-          <Kpi label={t('tracking.terms.ac.short')} value={money(totals.ac)} hint={t('tracking.hint.ac', { date: date(statusIso) })} info={info('ac')} />
-          <Kpi label={t('tracking.terms.spi.short')} value={totals.spi === null ? '–' : index(totals.spi)} hint={spiHint} alert={totals.spi !== null && totals.spi < INDEX_ALERT} info={info('spi')} />
-          <Kpi label={t('tracking.terms.cpi.short')} value={totals.cpi === null ? '–' : index(totals.cpi)} hint={cpiHint} alert={totals.cpi !== null && totals.cpi < INDEX_ALERT} info={info('cpi')} />
+          <Kpi label={t('tracking.terms.bac.short')} value={money(totals.bac)} hint={t('tracking.hint.bac')} help={info('bac')} />
+          <Kpi label={t('tracking.terms.pv.short')} value={money(totals.pv)} hint={t('tracking.hint.pv', { date: date(statusIso) })} help={info('pv')} />
+          <Kpi label={t('tracking.terms.ev.short')} value={money(totals.ev)} hint={t('tracking.hint.ev', { pct: evPct })} help={info('ev')} />
+          <Kpi label={t('tracking.terms.ac.short')} value={money(totals.ac)} hint={t('tracking.hint.ac', { date: date(statusIso) })} help={info('ac')} />
+          <Kpi label={t('tracking.terms.spi.short')} value={totals.spi === null ? '–' : index(totals.spi)} hint={spiHint} alert={totals.spi !== null && totals.spi < INDEX_ALERT} help={info('spi')} />
+          <Kpi label={t('tracking.terms.cpi.short')} value={totals.cpi === null ? '–' : index(totals.cpi)} hint={cpiHint} alert={totals.cpi !== null && totals.cpi < INDEX_ALERT} help={info('cpi')} />
           <Kpi
             label={t('tracking.terms.eac.short')}
             value={totals.eac === null ? '–' : money(totals.eac)}
             hint={totals.eac === null ? t('tracking.hint.eacNone') : t('tracking.hint.eac', { etc: money(totals.etc!) })}
-            info={info('eac')}
+            help={info('eac')}
           />
           <Kpi
             label={t('tracking.terms.vac.short')}
             value={totals.vac === null ? '–' : money(totals.vac)}
             hint={totals.vac === null ? t('tracking.hint.eacNone') : totals.vac < 0 ? t('tracking.hint.vacOver') : t('tracking.hint.vacOk')}
             alert={totals.vac !== null && totals.vac < 0}
-            info={info('vac')}
+            help={info('vac')}
           />
         </div>
 
-        {explain && (
-          <div role="note" className="mt-3 max-w-3xl rounded-md border-l-4 border-miro-turquoise-dark bg-miro-turquoise-light/40 px-3 py-2 text-sm dark:border-miro-turquoise dark:bg-slate-800">
-            <p className="font-semibold">{t(`tracking.terms.${explain}.name`)}</p>
-            <p className="mt-0.5">{t(`tracking.terms.${explain}.text`)}</p>
-            <p className="mt-1 text-slate-600 dark:text-slate-400">{t(`tracking.terms.${explain}.formula`)}</p>
-          </div>
-        )}
 
         {samples && periods.length > 0 && (
           <section aria-label={t('tracking.chart.label')} className="mt-4">

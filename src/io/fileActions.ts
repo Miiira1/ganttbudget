@@ -77,12 +77,16 @@ export function fileErrorText(error: ProjectFileError, t: TFunction): string {
   }
 }
 
-/** Nový prázdný projekt (po potvrzení, pokud jsou neuložené změny). Jde vrátit Ctrl+Z. */
-export function newProject(t: TFunction, language: string): void {
-  if (!confirmDiscard(t)) return
-  const project = createEmptyProject({ name: t('project.defaultName'), language })
-  projectStore.getState().loadProject(project)
-  useFileState.setState({ savedProject: project, fileName: null, handle: null })
+/**
+ * Nový projekt (po potvrzení, pokud jsou neuložené změny). Jde vrátit Ctrl+Z.
+ * Bez `project` prázdný; s ním projekt připravený jinde (šablona, fáze 10). Vrátí false, když uživatel zrušil.
+ */
+export function newProject(t: TFunction, language: string, project?: Project): boolean {
+  if (!confirmDiscard(t)) return false
+  const next = project ?? createEmptyProject({ name: t('project.defaultName'), language })
+  projectStore.getState().loadProject(next)
+  useFileState.setState({ savedProject: next, fileName: null, handle: null })
+  return true
 }
 
 /**

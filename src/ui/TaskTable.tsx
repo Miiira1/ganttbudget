@@ -529,7 +529,18 @@ function createDragHandlers(
   }
 }
 
-export function TaskTable({ onAddTask, onLoadSample }: { onAddTask: () => void; onLoadSample: () => void }) {
+export function TaskTable({
+  onAddTask,
+  onLoadSample,
+  onWizard,
+  onNewProject,
+}: {
+  onAddTask: () => void
+  onLoadSample: () => void
+  /** Úvodní obrazovka prázdného plánu (fáze 10): průvodce a okno Nový projekt (šablony). */
+  onWizard: () => void
+  onNewProject: () => void
+}) {
   const { t } = useTranslation()
   const project = useProject((s) => s.project)
   const result = useSchedule()
@@ -549,11 +560,17 @@ export function TaskTable({ onAddTask, onLoadSample }: { onAddTask: () => void; 
 
   if (rows.length === 0) {
     return (
-      <div className="mx-auto mt-16 max-w-md rounded-lg border border-dashed border-slate-300 p-8 text-center dark:border-slate-600">
+      <div className="mx-auto mt-16 max-w-lg rounded-lg border border-dashed border-slate-300 p-8 text-center dark:border-slate-600">
         <h2 className="text-lg font-semibold">{t('table.emptyTitle')}</h2>
         <p className="mt-2 text-slate-600 dark:text-slate-400">{t('table.emptyText')}</p>
-        <div className="mt-6 flex justify-center gap-3">
-          <button type="button" onClick={onAddTask} className="btn-primary">
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <button type="button" onClick={onWizard} className="btn-primary">
+            {t('table.startWizard')}
+          </button>
+          <button type="button" onClick={onNewProject} className="btn-secondary">
+            {t('table.fromTemplate')}
+          </button>
+          <button type="button" onClick={onAddTask} className="btn-secondary">
             {t('toolbar.addTask')}
           </button>
           <button type="button" onClick={onLoadSample} className="btn-secondary">

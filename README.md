@@ -6,7 +6,7 @@ Je určená studentům a praktikům bez zkušenosti s projektovým řízením. B
 
 **▶ Vyzkoušet aplikaci: https://miiira1.github.io/ganttbudget/** (nic se neinstaluje, stačí prohlížeč)
 
-> Stav: **fáze 9 – baseline a sledování.** Termíny se počítají z délek, vazeb FS, SS, FF, SF
+> Stav: **fáze 10 – učení a přívětivost.** Termíny se počítají z délek, vazeb FS, SS, FF, SF
 > (s prodlevou), omezení „začít nejdříve“ a kalendáře (víkendy, české svátky, odstávky) a zobrazují
 > se v tabulce i v Ganttově diagramu. Vazby se zapisují textem (`3SS+2`) nebo kreslí tažením v grafu.
 > Činnosti se seskupují do fází (WBS, sbalení, sumarizace), úsečky se v grafu táhnou s přichycením
@@ -30,7 +30,10 @@ Je určená studentům a praktikům bez zkušenosti s projektovým řízením. B
 > Vytížení filtry, ukazatele a souhrnný histogram skupiny. Fáze 9 přidala **baseline** (uložený schválený plán,
 > stínová úsečka v grafu), **% hotovo** (výplň úsečky, u fází spočítané), **skutečné náklady** k datu u činností
 > a pohled **Sledování** s Earned Value (BAC, PV, EV, AC, SPI, CPI, EAC s vysvětlením pojmů), grafem a tabulkou;
-> vzorový projekt je „v běhu“ (viz [ZADANI.md](ZADANI.md), kap. 8).
+> vzorový projekt je „v běhu“. Fáze 10 přidala **průvodce prvním projektem** (název a měna, začátek, kalendář,
+> první fáze), okno **Nový projekt** s pěti **šablonami** ze strojírenství a výroby, tlačítka **ⓘ** s vysvětlením
+> pojmů a **Slovníček**, a **Kontrolu plánu** (chybějící vazby, prázdné fáze, zpoždění, přetížení, překročený
+> rozpočet – s radou „Jak to opravit“) (viz [ZADANI.md](ZADANI.md), kap. 8).
 
 ## Soubory: co kdy použít
 
@@ -106,11 +109,11 @@ requesty. Nic se nesloučí samo: u každého počkejte, až projdou testy, a sl
 | `src/engine/` | plánovací jádro: kalendář (svátky, pracovní dny), výpočet termínů, rezervy a kritická cesta – čisté funkce s testy |
 | `src/gantt/` | výpočty pro graf: časová osa, poloha úseček, trasy šipek, tažení, kreslení vazeb – čisté funkce s testy |
 | `src/io/` | soubor projektu, automatická záloha (IndexedDB), export a import CSV/XLSX (činnosti, rozpočet, celý projekt – `workbookExport.ts`, `workbookImport.ts`; export analýzy – `analysisExport.ts`, sledování – `trackingExport.ts`), knihovna zdrojů – kontrola dat s testy |
-| `src/model/` | formát projektu (schéma Zod), strom fází a přesuny (`hierarchy.ts`), práce s daty a zápis předchůdců, peníze v haléřích (`money.ts`), kalkulace sazby (`rates.ts`), náklady činností (`costs.ts`), vytížení zdrojů (`load.ts`), časový náběh nákladů, limity a ukazatele (`costTimeline.ts`), období (`periods.ts`), štítky (`tags.ts`), data pro analýzu (`facts.ts`), kontingenční tabulka (`pivot.ts`) a její grafy (`pivotChart.ts`), snímek baseline (`baseline.ts`) a Earned Value (`earnedValue.ts`) |
+| `src/model/` | formát projektu (schéma Zod), strom fází a přesuny (`hierarchy.ts`), práce s daty a zápis předchůdců, peníze v haléřích (`money.ts`), kalkulace sazby (`rates.ts`), náklady činností (`costs.ts`), vytížení zdrojů (`load.ts`), časový náběh nákladů, limity a ukazatele (`costTimeline.ts`), období (`periods.ts`), štítky (`tags.ts`), data pro analýzu (`facts.ts`), kontingenční tabulka (`pivot.ts`) a její grafy (`pivotChart.ts`), snímek baseline (`baseline.ts`) a Earned Value (`earnedValue.ts`), kontrola kvality plánu (`planCheck.ts`) a průvodce prvním projektem (`wizard.ts`) |
 | `src/store/` | stav aplikace s historií změn (Zpět / Znovu) |
-| `src/ui/` | obrazovky a komponenty (React); `src/ui/gantt/` kreslí Ganttův graf (SVG), `src/ui/resources/` obrazovku Zdroje, `src/ui/detail/` panel Detail činnosti, `src/ui/load/` pohled Vytížení, `src/ui/costs/` pohled Náklady, `src/ui/analysis/` pohled Analýza, `src/ui/tracking/` pohled Sledování |
+| `src/ui/` | obrazovky a komponenty (React); `src/ui/gantt/` kreslí Ganttův graf (SVG), `src/ui/resources/` obrazovku Zdroje, `src/ui/detail/` panel Detail činnosti, `src/ui/load/` pohled Vytížení, `src/ui/costs/` pohled Náklady, `src/ui/analysis/` pohled Analýza, `src/ui/tracking/` pohled Sledování, `src/ui/help/` nápověda ⓘ a Slovníček, `src/ui/check/` okno Kontrola plánu |
 | `src/i18n/` | překlady (`locales/cs.json`, `locales/en.json`) a formát data a čísel |
-| `src/samples/` | vzorový projekt „Zavedení automatizace do výroby“ |
+| `src/samples/` | šablony projektů (`templates.ts` – seznam, `template.ts` – společný stavitel) a jejich data: vzorový projekt „Zavedení automatizace do výroby“ (`automatizace.ts`), vývoj výrobku, výrobní linka, investiční akce, odstávka |
 | `pruvodce/` | výuková case study – jedna kapitola na fázi vývoje |
 
 ## Přidání jazyka

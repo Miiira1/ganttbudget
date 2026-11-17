@@ -74,8 +74,8 @@
   },
   "file": {
     "menu": "File",
-    "new": "New project",
-    "newHint": "Start with an empty project (asks first if there are unsaved changes)",
+    "new": "New project…",
+    "newHint": "Start with an empty project or from a template (asks first if there are unsaved changes)",
     "open": "Open…",
     "openHint": "Open a project from a .json file",
     "save": "Save",
@@ -132,7 +132,14 @@
     "shortcuts": "Shortcuts",
     "shortcutsHint": "Overview of keyboard shortcuts and mouse controls (F1)",
     "language": "Language",
-    "theme": "Appearance"
+    "theme": "Appearance",
+    "glossary": "Glossary",
+    "glossaryHint": "Explanations of the project management terms used in the app",
+    "check": "Plan check",
+    "checkHint": "Finds places where the plan is probably missing something or does not add up (warnings only, nothing is blocked)",
+    "checkCount_one": "{{count}} warning",
+    "checkCount_other": "{{count}} warnings",
+    "checkOk": "no warnings"
   },
   "theme": {
     "system": "System",
@@ -197,7 +204,7 @@
     "deleteRow": "Delete row {{number}}: {{name}}",
     "confirmDelete": "Really delete “{{name}}”? You can undo this with Undo (Ctrl+Z).",
     "emptyTitle": "The project is empty",
-    "emptyText": "Start by adding your first task, or have a look at the sample project.",
+    "emptyText": "Not sure how to start? The wizard guides you through the name, start date, calendar and first phases. Or start from a template, with your first task right away, or have a look at the sample project.",
     "fieldLabel": "{{field}}, row {{number}}",
     "invalidName": "The name cannot be empty – the original value was restored.",
     "confirmDeleteMany_one": "Really delete {{count}} item (the selected rows including items in selected phases)? You can undo this with Undo (Ctrl+Z).",
@@ -218,7 +225,9 @@
     "slackCell": "Total slack {{total}} working days (project finish does not move); free slack {{free}} working days (no successor moves either).",
     "percentComputed": "A phase's % complete is calculated from its tasks – weighted by planned cost from the baseline, otherwise by duration. Enter it on the tasks.",
     "milestoneDone": "achieved",
-    "milestoneDoneHint": "A milestone is either achieved (100 %) or not (0 %)"
+    "milestoneDoneHint": "A milestone is either achieved (100 %) or not (0 %)",
+    "startWizard": "Start the wizard",
+    "fromTemplate": "From a template…"
   },
   "kind": {
     "task": "Task",
@@ -1362,7 +1371,6 @@
     "today": "Today",
     "todayHint": "Always calculate as of today",
     "summary": "Status at {{date}} against baseline \"{{name}}\" saved {{saved}}.",
-    "explain": "What is {{term}}?",
     "hint": {
       "bac": "whole plan per baseline",
       "pv": "should be done by {{date}}",
@@ -1486,6 +1494,563 @@
         "cv": "CV ({{currency}})",
         "sv": "SV ({{currency}})"
       }
+    }
+  },
+  "help": {
+    "explain": "What is {{term}}?"
+  },
+  "glossary": {
+    "title": "Glossary",
+    "intro": "Short explanations of the terms the app works with. You will find the same explanations behind the ⓘ buttons throughout the app.",
+    "search": "Search for a term",
+    "searchPlaceholder": "e.g. slack",
+    "noMatch": "No term matches “{{query}}”.",
+    "close": "Close",
+    "sections": {
+      "plan": "Plan and dates",
+      "resources": "Resources and load",
+      "budget": "Costs and budget",
+      "tracking": "Progress tracking",
+      "ev": "Earned Value indicators"
+    },
+    "terms": {
+      "phase": {
+        "name": "Phase",
+        "text": "A group of related tasks, e.g. “Design and engineering”. Its start, finish, duration, costs and % complete are calculated from the items inside – you do not enter them. A phase can be collapsed and expanded."
+      },
+      "milestone": {
+        "name": "Milestone",
+        "text": "An important moment in the project with zero duration, e.g. signing a contract or handover. It is shown as a diamond in the chart. It may only have a one-off cost or material."
+      },
+      "wbs": {
+        "name": "WBS (structure number)",
+        "text": "Work Breakdown Structure – splitting the project into smaller parts. A number such as 2.3.1 tells where the item sits in the tree (first item in the third item of the second phase). The app numbers it automatically. Predecessors are written using the No. column, not WBS."
+      },
+      "duration": {
+        "name": "Duration",
+        "text": "The number of working days a task takes. Weekends, holidays and shutdowns are not counted, so 5 days may span more than a week in the calendar. A milestone has duration 0."
+      },
+      "workingDays": {
+        "name": "Working day and calendar",
+        "text": "A day when work is done on the project: by default Monday to Friday, without Czech public holidays and your own exceptions (shutdown, company holiday). Set it in the Calendar window."
+      },
+      "dependency": {
+        "name": "Dependency (predecessor and successor)",
+        "text": "Says that one task depends on another. The predecessor is the one being waited for, the successor is the one waiting. When the predecessor moves, the app recalculates the successors. In the Predecessors column, write the row number from the No. column, e.g. 3 or 3FS+2."
+      },
+      "linkTypes": {
+        "name": "Dependency types FS, SS, FF, SF",
+        "text": "FS (finish-to-start, default): the successor starts after the predecessor finishes. SS (start-to-start): starts no earlier than the predecessor starts. FF (finish-to-finish): finishes no earlier than the predecessor finishes. SF (start-to-finish): finishes no earlier than the working day before the predecessor starts."
+      },
+      "lag": {
+        "name": "Lag and lead",
+        "text": "Extra working days between the predecessor and the successor. A positive number is a wait (3FS+2 = two days after row 3 finishes), a negative one is a lead – the successor overlaps the predecessor (3FS-2)."
+      },
+      "constraint": {
+        "name": "“Start no earlier than” constraint (📌)",
+        "text": "A date before which the task will not start. It is created by dragging the bar or entering the start in the table. The actual start is the latest of: project start, dependencies, constraint. Click 📌 to remove the constraint."
+      },
+      "criticalPath": {
+        "name": "Critical path",
+        "text": "The chain of tasks the project finish directly depends on – they have no slack. If any of them is one day late, the project finishes one day later. The Critical path toggle highlights them in yellow."
+      },
+      "slack": {
+        "name": "Slack (total and free)",
+        "text": "How many working days an item may be delayed. Total slack: without moving the project finish. Free slack: without moving any successor. An item with zero slack is critical."
+      },
+      "resource": {
+        "name": "Resource",
+        "text": "What the project consumes: people (professions and workers), machines and material. Resources are created on the Resources screen and added to tasks as lines in the Task detail panel."
+      },
+      "rate": {
+        "name": "Hourly rate",
+        "text": "How much one hour of a person’s or machine’s work costs. For people, the app calculates it from wage, contributions, overhead and productive hours (Calculation button); a manual rate overrides the calculation."
+      },
+      "load": {
+        "name": "Load",
+        "text": "How many hours per day a resource is planned compared to its capacity (h/day), in per cent. 100 % means fully loaded."
+      },
+      "overload": {
+        "name": "Overload",
+        "text": "A day when a resource is planned for more hours than its capacity (load above 100 %). An absent worker has capacity 0. Dates do not change by themselves – move tasks or add people."
+      },
+      "costLine": {
+        "name": "Cost line",
+        "text": "One resource or item on a task: person, machine, material, one-off or recurring cost. A task’s cost is the sum of its lines, a phase’s cost the sum of everything inside."
+      },
+      "costCategory": {
+        "name": "Cost category",
+        "text": "A type of expense, e.g. wages, material, services, investment. Overviews are grouped by category and limits can be set for them."
+      },
+      "tags": {
+        "name": "Tags",
+        "text": "Free words on cost lines, e.g. “grant” or “external”. Used for filtering and grouping in the Costs and Analysis views."
+      },
+      "costTimeline": {
+        "name": "Cost timeline",
+        "text": "Costs spread over individual days according to task dates: work evenly over working days, material on the start day, a one-off cost on the chosen day. Shows when money will be needed."
+      },
+      "budgetLimit": {
+        "name": "Budget limit",
+        "text": "The maximum amount the project or a category may cost. The app shows the spending in % and the day from which the cumulative costs would exceed the limit."
+      },
+      "sCurve": {
+        "name": "S-curve",
+        "text": "A chart of cumulative costs over time. It rises slowly at the beginning and end of the project and quickly in the middle – hence the S shape. Shows how much will be spent by a given day."
+      },
+      "cashFlow": {
+        "name": "Cash flow",
+        "text": "How much money goes out in each period (week, month, quarter). Helps find the periods with the highest spending. Expenses only for now, no income."
+      },
+      "pivot": {
+        "name": "Pivot table",
+        "text": "A table that adds up numbers by the criteria you choose for rows and columns, e.g. costs by phase and month. Criteria are switched without writing formulas."
+      },
+      "percentComplete": {
+        "name": "% complete",
+        "text": "How much work on an item is done. Entered manually for a task, calculated for a phase (weighted by planned cost); a milestone is either done (100 %) or not (0 %). In the chart it is the darker fill of the bar from the left."
+      },
+      "baseline": {
+        "name": "Baseline",
+        "text": "A saved snapshot of the plan – dates and costs – usually on the day it is approved. The later plan and the actuals are compared to it. The Baseline toggle shows a grey shadow of the original dates under the bars."
+      },
+      "statusDate": {
+        "name": "Status date",
+        "text": "The day for which the project status is evaluated (today if empty). Only actual cost entries up to and including this day are counted."
+      },
+      "actualCost": {
+        "name": "Actual costs",
+        "text": "What was really paid for a task, entered as dated entries in the Task detail panel. The Tracking view compares them with the plan."
+      },
+      "earnedValue": {
+        "name": "Earned Value",
+        "text": "A method comparing three numbers: how much work should be done (PV), how much really is done (EV) and what it cost (AC). They reveal both delays and overspending. The individual indicators are explained below and on the tiles in the Tracking view."
+      }
+    }
+  },
+  "check": {
+    "title": "Plan check",
+    "intro": "The app went through the plan and found places where something is probably missing or does not add up. These are only warnings – they block nothing and change nothing. Each has a “How to fix” tip.",
+    "none": "We found nothing suspicious in the plan. 👍",
+    "empty": "The plan is empty so far – nothing to check.",
+    "close": "Close",
+    "howToFix": "How to fix",
+    "showInPlan": "Show in plan",
+    "openLoad": "Open Load",
+    "openCosts": "Open Costs",
+    "kinds": {
+      "budgetOver": "Budget exceeded",
+      "overload": "Overloaded resources",
+      "leadBeforePredecessor": "Dependency into the past: lead longer than the predecessor",
+      "notStarted": "Dependency into the past: should have started but has not",
+      "zeroDuration": "Task without duration",
+      "emptyPhase": "Phase without tasks",
+      "noPredecessor": "No predecessor",
+      "noSuccessor": "No successor"
+    },
+    "items": {
+      "budgetOverProject": "The planned project costs exceed the limit by {{amount}}.",
+      "budgetOverCategory": "Category “{{category}}” exceeds its limit by {{amount}}.",
+      "exceedFrom": "The limit is exceeded on {{date}}.",
+      "overload": "“{{name}}” ({{kind}}): overloaded days {{count}}, first on {{date}}.",
+      "leadBeforePredecessor": "“{{task}}” would start, according to the {{link}} dependency on “{{predecessor}}”, before the predecessor itself.",
+      "notStarted": "“{{task}}” should have started on {{date}} but is 0 % complete.",
+      "notStartedMilestone": "Milestone “{{task}}” was due on {{date}} but is not done.",
+      "zeroDuration": "“{{task}}” has a duration of 0 working days.",
+      "emptyPhase": "Phase “{{task}}” contains no items.",
+      "noPredecessor": "“{{task}}” has no predecessor, so it starts right at the project start.",
+      "noSuccessor": "Nothing follows “{{task}}”."
+    },
+    "fix": {
+      "budgetOver": "Reduce costs (fewer hours, a cheaper resource, less material), or, if agreed, raise the limit in the Costs view with the Budget limits button. The S-curve chart shows the day the limit is exceeded.",
+      "overload": "In the Load view, find the overloaded days and the tasks causing them. Then move a task (by dragging its bar or with a dependency), lower the % share, assign a different worker, or make the task longer. The app does not change dates because of overload by itself.",
+      "leadBeforePredecessor": "The lead (negative lag) is longer than the predecessor lasts, so the dependency makes no sense. Shorten the lead in the Predecessors column (e.g. 3FS-4 → 3FS-2), or choose another dependency type, such as SS (start-to-start).",
+      "notStarted": "If the work has started, enter the % complete (tick done for a milestone). If it has not, move the start to the real date – by dragging the bar or in the Start column. The successors move with it.",
+      "zeroDuration": "Enter the number of working days in the Duration column. If it is a moment without duration (signing, handover), change the type to Milestone.",
+      "emptyPhase": "Add tasks to the phase (select the phase and click Add task, or indent a task under it), or delete the phase if you do not need it.",
+      "noPredecessor": "In the Predecessors column, enter the row number (No. column) of the task it has to wait for. If it really should start at the project start, you can ignore the warning – or give it a fixed start 📌 by dragging its bar.",
+      "noSuccessor": "When nothing waits for a task, the plan cannot show what its delay would cause. Make it the predecessor of another task or of a final milestone (e.g. Handover). If nothing really waits for it, you can ignore the warning."
+    }
+  },
+  "newProject": {
+    "title": "New project",
+    "intro": "Start with an empty plan, or pick a template from engineering and manufacturing. A template contains phases, tasks, dependencies, resources and a budget – just adapt it to your needs.",
+    "blank": "Empty project",
+    "blankText": "A clean plan without tasks and without a resource database. Default calendar: Monday to Friday and Czech holidays.",
+    "templatesHeading": "Templates",
+    "startDate": "Project start",
+    "startDateHint": "The template is scheduled from this day. The default is the next Monday.",
+    "summary": "{{items}} items · ≈ {{months}} mo. · {{cost}}",
+    "create": "Create",
+    "cancel": "Cancel",
+    "templates": {
+      "automation": "A robotic workcell from the feasibility study through tendering, manufacturing and installation to trial operation and handover.",
+      "productDevelopment": "A new engineered product (e.g. a pump or a gearbox) from market analysis through design, prototype and testing to preparing series production.",
+      "productionLine": "A new assembly or machining line: from the investment proposal through supplier selection, shop floor preparation, installation and FAT and SAT acceptance to the ramp-up of series production.",
+      "investment": "Construction of a warehouse hall: from the investment proposal and financing through design documentation, the building permit and contractor selection to construction, final approval and start of operation.",
+      "shutdown": "A production shutdown for a press overhaul, part replacement and inspections: planning, ordering parts and building up stock, parallel work during the shutdown and a safe production restart."
+    },
+    "wizard": "First project wizard",
+    "wizardText": "Step by step: name and currency, start date, calendar and first phases. Recommended if you are planning for the first time.",
+    "continue": "Continue"
+  },
+  "templates": {
+    "productDevelopment": {
+      "projectName": "New product development",
+      "tasks": {
+        "p1": "Brief and concept",
+        "t1a": "Market and customer requirements analysis",
+        "t1b": "Technical specification",
+        "t1c": "Concept design and choice of variant",
+        "m1": "Concept approved",
+        "p2": "Design",
+        "t2a": "3D model and drawings",
+        "t2b": "Strength calculations (FEA)",
+        "t2c": "Design risk analysis (FMEA)",
+        "m2": "Documentation released for prototype",
+        "p3": "Prototype",
+        "t3a": "Purchase of material and parts",
+        "t3b": "Manufacturing of prototype parts",
+        "t3c": "Prototype assembly",
+        "m3": "Prototype assembled",
+        "p4": "Testing and validation",
+        "t4a": "Functional tests",
+        "t4b": "Endurance test in an external lab",
+        "t4c": "Design changes based on tests",
+        "t4d": "Certification and CE documentation",
+        "m4": "Design freeze",
+        "p5": "Series production preparation",
+        "t5a": "Production documentation and process sheets",
+        "t5b": "Manufacturing of jigs and tools",
+        "t5c": "Pilot series",
+        "m5": "Start of series production"
+      },
+      "resources": {
+        "departments": {
+          "dev": "Engineering",
+          "test": "Test lab",
+          "prod": "Production"
+        },
+        "professions": {
+          "pm": "Project manager",
+          "designer": "Design engineer",
+          "analyst": "Calculation engineer",
+          "technologist": "Process engineer",
+          "tester": "Test technician",
+          "machinist": "Machinist – CNC operator"
+        },
+        "machines": {
+          "cnc": "CNC machining centre",
+          "testbench": "Test bench",
+          "printer": "3D printer"
+        },
+        "materials": {
+          "steel": "Structural steel (bars and sheets)",
+          "aluminium": "Aluminium alloy",
+          "bearing": "Ball bearing",
+          "seal": "Seal kit",
+          "electronics": "Control electronics",
+          "fasteners": "Fasteners"
+        },
+        "units": {
+          "kg": "kg",
+          "pcs": "pcs",
+          "set": "set"
+        }
+      },
+      "lines": {
+        "marketStudy": "Market research (agency)",
+        "software": "Calculation software licence",
+        "externalTest": "External endurance test",
+        "certification": "Certification and conformity assessment",
+        "reserve": "Reserve for design changes",
+        "tooling": "Purchase of tools and gauges",
+        "launch": "Market launch (catalogue, trade fair)"
+      }
+    },
+    "productionLine": {
+      "projectName": "New production line",
+      "tasks": {
+        "p1": "Preparation and investment decision",
+        "t1a": "Capacity analysis and layout design",
+        "t1b": "Investment proposal and payback calculation",
+        "m1": "Investment approved",
+        "p2": "Line supplier selection",
+        "t2a": "Technical specification and request for quotation",
+        "t2b": "Bid evaluation and negotiation",
+        "m2": "Contract signed with the supplier",
+        "p3": "Line manufacturing at the supplier",
+        "t3a": "Line manufacturing and assembly at the supplier",
+        "t3b": "Factory acceptance test (FAT)",
+        "m3": "FAT passed",
+        "p4": "Shop floor preparation",
+        "t4a": "Clearing and removal of the old equipment",
+        "t4b": "Building works and foundations",
+        "t4c": "Power and compressed air distribution",
+        "m4": "Shop floor ready",
+        "p5": "Installation and commissioning",
+        "t5a": "Transport and positioning of the line",
+        "t5b": "Mechanical and electrical installation",
+        "t5c": "Commissioning and adjustment",
+        "t5d": "Site acceptance test (SAT)",
+        "m5": "SAT passed",
+        "p6": "Production ramp-up",
+        "t6a": "Operator and maintenance training",
+        "t6b": "Trial operation and fine-tuning",
+        "t6c": "Quality validation and part approval (PPAP)",
+        "m6": "Line handed over to series production"
+      },
+      "resources": {
+        "departments": {
+          "tech": "Engineering",
+          "quality": "Quality",
+          "maint": "Maintenance",
+          "prod": "Production"
+        },
+        "professions": {
+          "pm": "Project manager",
+          "processEng": "Process engineer",
+          "quality": "Quality engineer",
+          "maintTech": "Maintenance technician",
+          "electrician": "Electrician",
+          "operator": "Line operator"
+        },
+        "machines": {
+          "forklift": "Forklift",
+          "crane": "Mobile crane",
+          "scissorLift": "Scissor lift"
+        },
+        "materials": {
+          "concrete": "Concrete",
+          "anchor": "Anchor kit",
+          "cable": "Power cable",
+          "pipe": "Compressed air piping",
+          "guard": "Line safety fencing",
+          "testMaterial": "Material for trial production"
+        },
+        "units": {
+          "m3": "m³",
+          "set": "set",
+          "m": "m",
+          "kg": "kg"
+        }
+      },
+      "lines": {
+        "deposit": "Down payment to the line supplier (30 %)",
+        "travelFat": "Travel to the FAT",
+        "fatPayment": "Payment after FAT (60 %)",
+        "disposal": "Removal and disposal of the old equipment",
+        "construction": "Building contractor – floor and foundations",
+        "reserve": "Reserve for unforeseen work",
+        "training": "Training by the supplier",
+        "supplierSupport": "Supplier technical support",
+        "finalPayment": "Final payment to the supplier (10 %)"
+      }
+    },
+    "investment": {
+      "projectName": "Capital project – warehouse hall construction",
+      "tasks": {
+        "p1": "Investment proposal",
+        "t1a": "Study and cost estimate",
+        "t1b": "Securing financing (loan, grant)",
+        "m1": "Investment approved",
+        "p2": "Design and permitting",
+        "t2a": "Documentation for the building permit",
+        "t2b": "Engineering services and authority opinions",
+        "t2c": "Building permit procedure",
+        "m2": "Building permit in force",
+        "t2d": "Construction documentation",
+        "p3": "Contractor selection",
+        "t3a": "Tender for the building contractor",
+        "m3": "Construction contract signed",
+        "p4": "Construction",
+        "t4a": "Site setup",
+        "t4b": "Earthworks and foundations",
+        "t4c": "Steel structure and cladding",
+        "t4d": "Industrial floors",
+        "t4e": "Building services (electrical, heating, ventilation)",
+        "m4": "Construction completed",
+        "p5": "Final approval and start of operation",
+        "t5a": "Acceptance of works and defect removal",
+        "t5b": "Occupancy approval procedure",
+        "m5": "Occupancy permit granted",
+        "t5c": "Warehouse fit-out and moving",
+        "m6": "Hall in operation"
+      },
+      "resources": {
+        "departments": {
+          "inv": "Capital projects",
+          "maint": "Facility management",
+          "log": "Logistics"
+        },
+        "professions": {
+          "pm": "Capital project manager",
+          "engineer": "Construction technician",
+          "tdi": "Owner’s site supervisor",
+          "logistics": "Logistics specialist",
+          "warehouse": "Warehouse worker"
+        },
+        "machines": {
+          "forklift": "Forklift",
+          "truck": "Truck"
+        },
+        "materials": {
+          "shelving": "Pallet racking",
+          "pallet": "EUR pallet",
+          "signage": "Safety signage",
+          "fireExtinguisher": "Fire extinguisher"
+        },
+        "units": {
+          "bay": "bay",
+          "pcs": "pcs",
+          "set": "set"
+        }
+      },
+      "lines": {
+        "study": "Architectural study",
+        "loanFee": "Loan processing fees",
+        "designPermit": "Design for the building permit",
+        "fees": "Administrative fees and opinions",
+        "designExecution": "Construction design",
+        "tenderAdmin": "Tender administration",
+        "advance": "Advance payment to the contractor",
+        "reserve": "Reserve for extra work",
+        "progressInvoices": "Progress invoicing of construction",
+        "approvalFees": "Inspections and approval fees",
+        "retention": "Release of retention to the contractor"
+      }
+    },
+    "shutdown": {
+      "projectName": "Planned shutdown and maintenance",
+      "tasks": {
+        "p1": "Shutdown planning",
+        "t1a": "Collecting repair and inspection requests",
+        "t1b": "Work breakdown and shutdown schedule",
+        "t1c": "Ordering spare parts",
+        "m1": "Shutdown plan approved",
+        "p2": "Preparation",
+        "t2a": "Delivery of spare parts",
+        "t2b": "Selecting and contracting external companies",
+        "t2c": "Building up stock for customers",
+        "t2d": "Safety plan and work permits",
+        "m2": "Shutdown starts",
+        "p3": "Shutdown",
+        "t3a": "Shutting down and securing equipment",
+        "t3b": "Press overhaul",
+        "t3c": "Replacing conveyor bearings and gearbox",
+        "t3d": "Electrical and pressure equipment inspections",
+        "t3e": "Cleaning and painting",
+        "t3f": "Tests and restart",
+        "m3": "Shutdown ends",
+        "p4": "Ramp-up and review",
+        "t4a": "Production ramp-up and quality check",
+        "t4b": "Shutdown review and lessons learned",
+        "m4": "Project closed"
+      },
+      "resources": {
+        "departments": {
+          "ehs": "Health, safety and environment",
+          "maint": "Maintenance",
+          "prod": "Production"
+        },
+        "professions": {
+          "maintManager": "Maintenance manager",
+          "mechanic": "Mechanic",
+          "electrician": "Electrician – inspection technician",
+          "planner": "Production planner",
+          "operator": "Production operator",
+          "safety": "Safety technician"
+        },
+        "machines": {
+          "mobileCrane": "Mobile crane (rental)",
+          "cleaner": "Industrial cleaning machine",
+          "scaffolding": "Scaffolding (rental)"
+        },
+        "materials": {
+          "bearings": "Bearing set",
+          "gearbox": "Conveyor gearbox",
+          "seals": "Seals and hydraulic hoses",
+          "oil": "Hydraulic oil",
+          "filter": "Filter",
+          "paint": "Industrial paint"
+        },
+        "units": {
+          "set": "set",
+          "pcs": "pcs",
+          "l": "l"
+        }
+      },
+      "lines": {
+        "overtime": "Overtime for building up stock",
+        "reserve": "Reserve for defects found",
+        "pressService": "External press service",
+        "pressureInspection": "Pressure vessel inspection (external)"
+      }
+    }
+  },
+  "wizard": {
+    "title": "First project wizard",
+    "stepOf": "Step {{step}} of {{total}}",
+    "steps": {
+      "name": "Name and currency",
+      "start": "Start",
+      "calendar": "Calendar",
+      "phases": "First phases",
+      "summary": "Summary"
+    },
+    "intro": {
+      "name": "What will the project be called? You can change the name any time by clicking it in the header.",
+      "start": "When does the project start? The first tasks are scheduled from this day. You do not enter the finish – it is calculated from task durations and dependencies.",
+      "calendar": "On which days is the project worked on? Task durations are counted in working days; weekends, holidays and shutdowns are skipped. You can change the calendar later with the Calendar button.",
+      "phases": "Split the project into main phases (stages), e.g. Preparation, Execution, Handover. You will add tasks to them in the plan. Phases can also be added later.",
+      "summary": "Check what the wizard will create. Use Back to return to any step."
+    },
+    "name": "Project name",
+    "namePlaceholder": "e.g. Paint shop modernisation",
+    "currency": "Budget currency",
+    "currencyHint": "All amounts in the project will be in this currency. It cannot be changed later.",
+    "startDate": "Project start",
+    "startHint": "The default is the next Monday.",
+    "phase": "Phase {{n}}",
+    "addPhase": "Add phase",
+    "removePhase": "Remove phase {{n}}",
+    "defaultPhases": {
+      "p1": "Preparation",
+      "p2": "Execution",
+      "p3": "Handover"
+    },
+    "addFirstTasks": "Add a first task (5 working days) to each phase and link them in sequence",
+    "addFirstTasksHint": "The plan then shows bars and dependencies right away; you edit task names and durations in the table.",
+    "firstTaskName": "First task",
+    "noPhases": "No phases – you will start with an empty plan.",
+    "summaryLabels": {
+      "name": "Name",
+      "currency": "Currency",
+      "start": "Start",
+      "workingDays": "Working days",
+      "holidays": "Czech holidays",
+      "shutdowns": "Shutdowns",
+      "phases": "Phases"
+    },
+    "yes": "counted",
+    "no": "not counted",
+    "none": "none",
+    "withFirstTasks": "{{phases}} (a first task in each)",
+    "replaceNote": "Creating replaces the current plan; the app asks first about unsaved changes. You can undo it with Undo in the toolbar (Ctrl+Z).",
+    "back": "Back",
+    "next": "Next",
+    "create": "Create project",
+    "cancel": "Cancel",
+    "errors": {
+      "nameMissing": "Enter the project name.",
+      "nameTooLong": "The name can have at most 200 characters.",
+      "startInvalid": "Enter a valid start date.",
+      "noWorkingDay": "At least one day of the week must be a working day.",
+      "shutdownMissingDates": "Fill in both the from and to dates for each shutdown.",
+      "shutdownEndBeforeStart": "A shutdown’s “to” date must not be before its “from” date.",
+      "tooManyShutdowns": "The wizard accepts at most 20 shutdowns; add more in the Calendar window.",
+      "tooManyPhases": "The wizard accepts at most 12 phases; add more in the plan.",
+      "phaseNameTooLong": "A phase name can have at most 200 characters."
     }
   }
 }
