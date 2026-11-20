@@ -38,6 +38,8 @@ type ActionId =
   | 'importMsProject'
   | 'importGanttProject'
 
+import { shortcutLabel } from './shortcutLabel'
+
 type SubmenuId = 'export' | 'import'
 
 interface Action {
@@ -101,12 +103,22 @@ export function FileMenu({ onNew, onPrint }: { onNew: () => void; onPrint: () =>
       setSubmenu(null)
       return
     }
+    const outside = (target: EventTarget | null) =>
+      target instanceof Node && !menuRef.current?.contains(target) && !buttonRef.current?.contains(target)
     const onPointerDown = (event: PointerEvent) => {
-      if (!menuRef.current?.contains(event.target as Node) && !buttonRef.current?.contains(event.target as Node)) setOpen(false)
+      if (outside(event.target)) setOpen(false)
+    }
+    // Fokus odešel z menu (např. klávesou Tab) → menu se zavře (audit U21).
+    const onFocusIn = (event: FocusEvent) => {
+      if (outside(event.target)) setOpen(false)
     }
     document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('focusin', onFocusIn)
     itemsOf(menuRef.current)[0]?.focus()
-    return () => document.removeEventListener('pointerdown', onPointerDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('focusin', onFocusIn)
+    }
   }, [open])
 
   function close() {
@@ -179,7 +191,7 @@ export function FileMenu({ onNew, onPrint }: { onNew: () => void; onPrint: () =>
     <li key={item.id} role="none" className={item.separatorBefore ? separatorClass : ''}>
       <button type="button" role="menuitem" onClick={() => run(item.id)} title={t(`file.${item.id}Hint`)} className={itemClass}>
         <span>{t(`file.short.${item.id}`)}</span>
-        {item.shortcut && <kbd className="font-mono text-xs text-slate-500 dark:text-slate-400">{item.shortcut}</kbd>}
+        {item.shortcut && <kbd className="font-mono text-xs text-slate-500 dark:text-slate-400">{shortcutLabel(item.shortcut)}</kbd>}
       </button>
     </li>
   )

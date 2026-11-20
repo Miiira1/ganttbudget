@@ -371,6 +371,12 @@ export function MindMapView({ onShowPlan }: { onShowPlan: () => void }) {
         </div>
       </div>
       {!readOnly && <p className="border-b border-slate-200 px-4 py-1 text-xs text-slate-600 dark:border-slate-700 dark:text-slate-400">{t('mindMap.keysHint')}</p>}
+      {/* Prázdná mapa u projektu s plánem: vysvětlit, že mapa je samostatný náčrt (audit U12). */}
+      {map.nodes.length <= 1 && project.tasks.length > 0 && (
+        <p className="border-b border-slate-200 bg-miro-turquoise-light/40 px-4 py-1.5 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+          {t('mindMap.separateHint')}
+        </p>
+      )}
 
       <div
         ref={containerRef}

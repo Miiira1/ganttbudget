@@ -137,6 +137,8 @@ export default function App() {
   }
   const viewRef = useRef(view)
   viewRef.current = view
+  const mobileRef = useRef(layout.mobile)
+  mobileRef.current = layout.mobile
 
   // --- Vzhled (světlý / tmavý) ---
   const [theme, setTheme] = useState<ThemePreference>(loadThemePreference)
@@ -157,6 +159,8 @@ export default function App() {
     function onKeyDown(event: KeyboardEvent) {
       // F1 = přehled zkratek (místo nápovědy prohlížeče).
       if (event.key === 'F1') {
+        // Mobilní verze přehled zkratek ani tisk nemá – klávesu necháme prohlížeči (audit U25).
+        if (mobileRef.current) return
         event.preventDefault()
         setShortcutsOpen(true)
         return
@@ -177,7 +181,7 @@ export default function App() {
         return
       }
       // Ctrl+P = okno Tisk / PDF Ganttova diagramu (místo tisku celé obrazovky aplikace).
-      if (ctrl && !event.shiftKey && event.key.toLowerCase() === 'p') {
+      if (ctrl && !event.shiftKey && event.key.toLowerCase() === 'p' && !mobileRef.current) {
         event.preventDefault()
         setPrintOpen(true)
         return
@@ -268,9 +272,10 @@ export default function App() {
     loadSampleProject(sample)
   }
 
-  // Upozornění (chybný zápis, nespočitatelné termíny) – čtečka obrazovky ho přečte hned.
+  // Upozornění (chybný zápis, nespočitatelné termíny) – čtečka obrazovky ho přečte hned;
+  // informační hlášky („obnoveno ze zálohy“) až domluví a nepřeruší uživatele (audit U26).
   const noticeBar = (
-    <div aria-live="assertive">
+    <div aria-live={isInfo ? 'polite' : 'assertive'}>
       {(notice ?? (scheduleError ? t(`schedule.${scheduleError}`) : null)) && (
         <div
           className={`flex items-start justify-between gap-3 border-b border-b-slate-300 px-4 py-2 text-sm dark:border-b-slate-700 ${

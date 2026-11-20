@@ -28,7 +28,8 @@ export function Kpi({
         {value}
       </p>
       {hint && (
-        <p className="max-w-48 truncate text-xs text-slate-500 dark:text-slate-400" title={hint}>
+        // Poznámka se zalomí (nejvýš 2 řádky) místo oříznutí – např. „ještě zbývá utratit …“ (audit U10).
+        <p className="line-clamp-2 max-w-56 text-xs text-slate-500 dark:text-slate-400" title={hint}>
           {hint}
         </p>
       )}

@@ -19,12 +19,21 @@ export function useDropdown() {
   const panelRef = useRef<HTMLDivElement & HTMLUListElement>(null)
   useEffect(() => {
     if (!open) return
+    const outside = (target: EventTarget | null) =>
+      target instanceof Node && !panelRef.current?.contains(target) && !buttonRef.current?.contains(target)
     const onPointerDown = (event: PointerEvent) => {
-      const target = event.target as Node
-      if (!panelRef.current?.contains(target) && !buttonRef.current?.contains(target)) setOpen(false)
+      if (outside(event.target)) setOpen(false)
+    }
+    // Fokus odešel z menu (např. klávesou Tab) → menu se zavře (audit U21).
+    const onFocusIn = (event: FocusEvent) => {
+      if (outside(event.target)) setOpen(false)
     }
     document.addEventListener('pointerdown', onPointerDown)
-    return () => document.removeEventListener('pointerdown', onPointerDown)
+    document.addEventListener('focusin', onFocusIn)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('focusin', onFocusIn)
+    }
   }, [open])
   const close = () => {
     setOpen(false)

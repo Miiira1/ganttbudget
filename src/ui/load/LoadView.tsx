@@ -268,7 +268,7 @@ function GroupPanel({ resources, range, periods, labels }: { resources: Resource
     return group ? { kind, count: members.length, group, summaries: periods.map((p) => summarizePeriod(group, range, p)) } : null
   }).filter((g) => g !== null)
   return (
-    <section aria-label={t('load.panel.group')} className="max-h-[45%] shrink-0 overflow-auto border-t-2 border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
+    <section aria-label={t('load.panel.group')} className="max-h-[45%] max-lg:max-h-[35%] shrink-0 overflow-auto border-t-2 border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
       <p className="text-sm text-slate-600 dark:text-slate-400">{t('load.group.intro')}</p>
       {groups.length === 0 && <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{t('load.filter.empty')}</p>}
       <div className="mt-2 flex flex-wrap gap-x-8 gap-y-4">

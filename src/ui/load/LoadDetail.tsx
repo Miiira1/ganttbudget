@@ -55,7 +55,8 @@ export function LoadDetail({
   return (
     <section
       aria-label={t('load.detail.label', { name: resource.name })}
-      className="max-h-[45%] shrink-0 overflow-auto border-t-2 border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900"
+      // Tablet na výšku: detail menší, ať tabulka zdrojů ukáže víc než 2 řádky (audit U9).
+      className="max-h-[45%] max-lg:max-h-[35%] shrink-0 overflow-auto border-t-2 border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900"
     >
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <h2 className="text-base font-semibold">{resource.name}</h2>

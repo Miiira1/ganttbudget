@@ -4,6 +4,7 @@
  */
 import { useEffect, useId, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import { IS_MAC } from './shortcutLabel'
 
 /** [klávesy, klíč popisu] – klávesy jsou stejné ve všech jazycích. */
 const KEYBOARD: [keys: string[], description: string][] = [
@@ -20,6 +21,8 @@ const KEYBOARD: [keys: string[], description: string][] = [
   [['Alt', 'Shift', '↓'], 'moveDown'],
   [['Ctrl', 'Z'], 'undo'],
   [['Ctrl', 'Y'], 'redo'],
+  [['Ctrl', 'Shift', 'Z'], 'redoAlt'],
+  [['←', '→'], 'resize'],
   [['Enter'], 'confirm'],
   [['Esc'], 'cancel'],
   [['Tab'], 'nextField'],
@@ -67,7 +70,8 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
                   {keys.map((key, i) => (
                     <span key={key}>
                       {i > 0 && <span className="px-0.5 text-slate-500 dark:text-slate-400">+</span>}
-                      <kbd className={kbd}>{key}</kbd>
+                      {/* Na Macu ⌘ / ⇧ místo Ctrl / Shift (audit U23). */}
+                      <kbd className={kbd}>{IS_MAC ? (key === 'Ctrl' ? '⌘' : key === 'Shift' ? '⇧' : key) : key}</kbd>
                     </span>
                   ))}
                 </th>

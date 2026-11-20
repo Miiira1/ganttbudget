@@ -48,7 +48,8 @@ export function MobilePlanList() {
       {rows.map((row) => {
         const { task } = row
         const percent = Math.round(percents.get(task.id) ?? task.percentComplete)
-        const critical = !!scheduled.tasks.get(task.id)?.critical
+        // Hotová činnost (100 %) už termín neohrozí – štítek „Kritická“ by jen mátl (audit U13).
+        const critical = !!scheduled.tasks.get(task.id)?.critical && percent < 100
         const cost = costs.byTask.get(task.id)?.total.total ?? 0
         const indent = { marginLeft: Math.min(row.depth, 4) * 12 }
 

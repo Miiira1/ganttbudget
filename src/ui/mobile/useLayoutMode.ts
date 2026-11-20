@@ -4,9 +4,10 @@
  */
 import { useState, useSyncExternalStore } from 'react'
 import { loadPreference, savePreference } from '../preferences'
-import { effectiveLayout, type LayoutPreference } from './layout'
+import { effectiveLayout, MOBILE_SCREEN_QUERY, type LayoutPreference } from './layout'
 
-const NARROW_QUERY = '(max-width: 767px)'
+// Úzký displej, nebo telefon na šířku (audit U6) – viz layout.ts.
+const NARROW_QUERY = MOBILE_SCREEN_QUERY
 
 function subscribe(onChange: () => void): () => void {
   if (typeof window === 'undefined' || !window.matchMedia) return () => {}
