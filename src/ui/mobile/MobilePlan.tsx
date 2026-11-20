@@ -11,6 +11,7 @@ import type { Zoom } from '../../gantt/timeline'
 import { currentGanttSvg } from '../../io/ganttExportActions'
 import { useProject } from '../../store/useProject'
 import { useDisplayOptions } from '../displayOptions'
+import { useDarkTheme } from '../useDarkTheme'
 import { loadPreference, savePreference } from '../preferences'
 import { useViewState } from '../viewState'
 import { MobilePlanList } from './MobilePlanList'
@@ -32,6 +33,8 @@ export function MobilePlan() {
   }
   const [zoom, setZoom] = useState<Zoom>('month')
   const hasTasks = useProject((s) => s.project.tasks.length > 0)
+  const showCritical = useDisplayOptions((s) => s.showCritical)
+  const toggleCritical = useDisplayOptions((s) => s.toggleCritical)
 
   return (
     <div className="flex h-full flex-col">
@@ -54,6 +57,17 @@ export function MobilePlan() {
               ))}
             </div>
           )}
+          {/* Kritická cesta i v mobilu (audit U24) – stejná volba jako na počítači. */}
+          {mode === 'gantt' && (
+            <button
+              type="button"
+              aria-pressed={showCritical}
+              onClick={toggleCritical}
+              className={`overflow-hidden rounded-md border border-slate-300 dark:border-slate-600 ${segment(showCritical)}`}
+            >
+              {t('gantt.critical')}
+            </button>
+          )}
         </div>
       )}
       <div className="min-h-0 flex-1 overflow-auto">{mode === 'gantt' && hasTasks ? <MobileGantt zoom={zoom} /> : <MobilePlanList />}</div>
@@ -67,10 +81,12 @@ function MobileGantt({ zoom }: { zoom: Zoom }) {
   const project = useProject((s) => s.project)
   const collapsed = useViewState((s) => s.collapsed)
   const critical = useDisplayOptions((s) => s.showCritical)
+  // V tmavém vzhledu tmavý obrázek – dřív svítil bílou plochou (audit U24).
+  const theme = useDarkTheme() ? 'dark' : 'light'
   const image = useMemo(() => {
-    const { svg, width, height } = currentGanttSvg(t, i18n.language, { zoom, compact: true, labelFields: ['name', 'percent'], critical })
+    const { svg, width, height } = currentGanttSvg(t, i18n.language, { zoom, compact: true, labelFields: ['name', 'percent'], critical, theme })
     return { src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`, width, height }
     // project a collapsed jsou závislosti záměrně – currentGanttSvg je čte ze stavu aplikace.
-  }, [t, i18n.language, zoom, critical, project, collapsed])
+  }, [t, i18n.language, zoom, critical, theme, project, collapsed])
   return <img src={image.src} width={image.width} height={image.height} alt={t('mobile.ganttAlt', { name: project.name })} className="block max-w-none" />
 }

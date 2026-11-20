@@ -44,6 +44,8 @@ export interface GanttSvgInput {
   barLabels?: ReadonlyMap<string, string>
   /** Úsporná varianta pro telefon: bez tabulky vlevo a bez nadpisu (názvy jsou v popiscích). */
   compact?: boolean
+  /** Barvy: světlé (výchozí – export, tisk, PNG), nebo tmavé (obrázek v mobilu v tmavém vzhledu). */
+  theme?: 'light' | 'dark'
 }
 
 export interface GanttSvg {
@@ -52,8 +54,9 @@ export interface GanttSvg {
   height: number
 }
 
-/** Barvy značky (světlý vzhled) – tokeny z src/index.css. */
-const C = {
+/** Barvy značky (světlý vzhled) – tokeny z src/index.css. Výchozí pro export, tisk i PNG. */
+const LIGHT = {
+  background: '#ffffff',
   ink: '#262626',
   muted: '#5c5c58',
   grid: '#e3e2dc',
@@ -71,6 +74,33 @@ const C = {
   arrow: '#6b6b66',
   criticalArrow: '#b38600',
 }
+
+/**
+ * Tmavý vzhled – jen pro obrázek Gantta v mobilní verzi (audit U24); exporty zůstávají světlé.
+ * Barvy jako v aplikaci v tmavém vzhledu; kontrast hlídá exportSvg.test.ts.
+ */
+const DARK: typeof LIGHT = {
+  background: '#262626',
+  ink: '#f6f5f0',
+  muted: '#b2b1ab',
+  grid: '#3d3d3a',
+  headerBg: '#2f2f2c',
+  nonWorking: '#2c2c2a',
+  holiday: '#35342f',
+  task: 'rgba(59,218,255,0.30)',
+  taskStroke: '#3bdaff',
+  progress: '#3bdaff',
+  phase: '#f6f5f0',
+  phaseProgress: '#0e7490',
+  critical: '#ffc000',
+  criticalStroke: '#d9a400',
+  criticalProgress: 'rgba(38,38,38,0.7)',
+  arrow: '#9a9a95',
+  criticalArrow: '#d9a400',
+}
+
+/** Palety pro světlý a tmavý vzhled (pro testy kontrastu). */
+export const GANTT_SVG_COLORS = { light: LIGHT, dark: DARK } as const
 
 /** Výška pásu s názvem a podtitulem nad hlavičkou (potřebuje ji i stránkování tisku). */
 export const TITLE_HEIGHT = 44
@@ -103,6 +133,7 @@ const r1 = (n: number) => Math.round(n * 10) / 10
 
 export function renderGanttSvg(input: GanttSvgInput): GanttSvg {
   const { project, scheduled, wbs, percents, labels } = input
+  const C = input.theme === 'dark' ? DARK : LIGHT
   const from = input.rowRange?.from ?? 0
   const to = Math.min(input.rows.length, input.rowRange?.to ?? input.rows.length)
   const rows = input.rows.slice(from, to)
@@ -122,7 +153,7 @@ export function renderGanttSvg(input: GanttSvgInput): GanttSvg {
   out.push(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" font-family="${escapeXml(FONT)}" font-size="11">`,
   )
-  out.push(`<rect width="${width}" height="${height}" fill="#ffffff"/>`)
+  out.push(`<rect width="${width}" height="${height}" fill="${C.background}"/>`)
   out.push(
     `<defs><marker id="a" viewBox="0 0 6 6" refX="6" refY="3" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L6 3L0 6z" fill="${C.arrow}"/></marker>` +
       `<marker id="ac" viewBox="0 0 6 6" refX="6" refY="3" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L6 3L0 6z" fill="${C.criticalArrow}"/></marker></defs>`,

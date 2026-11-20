@@ -39,6 +39,8 @@ export interface GanttSvgOptions {
   compact?: boolean
   /** Údaje v popiscích vedle úseček; chybí = podle volby „Popisky“. */
   labelFields?: BarLabelField[]
+  /** Barvy obrázku; chybí = světlé (export, tisk). Tmavé jen pro mobil v tmavém vzhledu. */
+  theme?: 'light' | 'dark'
 }
 
 /** Počet řádků, které se do obrázku kreslí (viditelné – bez řádků ve sbalených fázích). */
@@ -72,6 +74,7 @@ export function currentGanttSvg(t: TFunction, language: string, options: GanttSv
     percents,
     barLabels,
     compact: options.compact,
+    theme: options.theme,
     calendar: createWorkCalendar(project.calendar),
     zoom: options.zoom ?? useZoom.getState().zoom,
     critical: options.critical ?? useDisplayOptions.getState().showCritical,

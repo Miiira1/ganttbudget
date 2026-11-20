@@ -5,7 +5,8 @@ import { wbsNumbers, treeOrder } from '../model/hierarchy'
 import { createEmptyProject, createTask, type Project, type Task } from '../model/schema'
 import { createSampleProject } from '../samples/automatizace'
 import { translateCs } from '../samples/translateForTests'
-import { escapeXml, renderGanttSvg, type GanttSvgInput } from './exportSvg'
+import { escapeXml, GANTT_SVG_COLORS, renderGanttSvg, type GanttSvgInput } from './exportSvg'
+import { contrastRatio } from '../ui/contrast'
 import { HEADER_HEIGHT, ROW_HEIGHT } from './geometry'
 
 const LABELS: GanttSvgInput['labels'] = {
@@ -105,6 +106,26 @@ describe('export Gantta do SVG', () => {
   it('stejný vstup dá stejný výstup', () => {
     const p = sample()
     expect(renderGanttSvg(input(p)).svg).toBe(renderGanttSvg(input(p)).svg)
+  })
+})
+
+describe('tmavý obrázek pro mobil (audit U24)', () => {
+  const hex = (color: string) => (color.startsWith('#') ? color : null)
+
+  it('výchozí (export, tisk) zůstává světlý; tmavý jen na požádání', () => {
+    const p = sample()
+    expect(renderGanttSvg(input(p)).svg).toContain('fill="#ffffff"')
+    const dark = renderGanttSvg({ ...input(p), theme: 'dark' }).svg
+    expect(dark).toContain('fill="#262626"')
+    expect(dark).not.toContain('fill="#ffffff"')
+  })
+
+  it.each(['light', 'dark'] as const)('kontrast palety %s: text ≥ 4,5 : 1, čáry a obrysy ≥ 3 : 1', (theme) => {
+    const c = GANTT_SVG_COLORS[theme]
+    for (const text of [c.ink, c.muted]) expect(contrastRatio(text, c.background)).toBeGreaterThanOrEqual(4.5)
+    for (const line of [c.taskStroke, c.arrow, c.criticalArrow, c.phase, c.criticalStroke].map(hex).filter((x) => x !== null)) {
+      expect(contrastRatio(line, c.background)).toBeGreaterThanOrEqual(3)
+    }
   })
 })
 
