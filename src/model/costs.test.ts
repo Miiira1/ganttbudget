@@ -82,6 +82,15 @@ describe('náklad jednoho řádku (ručně spočítané)', () => {
     ).toBe(361_500)
   })
 
+  it('materiál: zaokrouhlení přesně na haléře, bez chyby desetinných čísel (audit V-N4)', () => {
+    const amount = (quantity: number, price: number) =>
+      single(line({ id: 'l', kind: 'material', categoryId: 'cat-material', materialId: 'x-cable', quantity, unitPriceOverride: price })).amount
+    expect(amount(1.005, 100)).toBe(101) // 1,005 × 1,00 Kč = 1,005 Kč → 1,01 Kč (dřív 1,00)
+    expect(amount(2.675, 100)).toBe(268)
+    expect(amount(0.001, 1)).toBe(0)
+    expect(amount(120.5, 3_250)).toBe(391_625)
+  })
+
   it('jednorázový náklad = částka', () => {
     expect(single(line({ id: 'l', kind: 'oneTime', categoryId: 'cat-services', name: 'Záloha', amount: 5_000_000, timing: 'start' }))).toEqual({
       amount: 5_000_000,

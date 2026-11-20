@@ -122,7 +122,8 @@ export function czechHolidays(year: number): Holiday[] {
     date: `${year}-${pad(month)}-${pad(d)}`,
     key,
   }))
-  holidays.push({ date: dayToIso(easter - 2), key: 'goodFriday' })
+  // Velký pátek je státní svátek až od roku 2016 (audit V-N3).
+  if (year >= 2016) holidays.push({ date: dayToIso(easter - 2), key: 'goodFriday' })
   holidays.push({ date: dayToIso(easter + 1), key: 'easterMonday' })
   return holidays.sort((x, y) => x.date.localeCompare(y.date))
 }

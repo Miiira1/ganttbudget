@@ -71,6 +71,12 @@ describe('české svátky', () => {
     expect(czechHolidays(2027).every((h) => h.key.length > 0)).toBe(true)
     expect(new Set(czechHolidays(2027).map((h) => h.key)).size).toBe(13)
   })
+
+  it('Velký pátek je svátkem až od roku 2016 (zákon 245/2000 Sb. po novele; audit V-N3)', () => {
+    expect(czechHolidays(2015).map((h) => h.date)).not.toContain('2015-04-03')
+    expect(czechHolidays(2015)).toHaveLength(12)
+    expect(czechHolidays(2016).map((h) => h.date)).toContain('2016-03-25')
+  })
 })
 
 describe('pracovní dny', () => {

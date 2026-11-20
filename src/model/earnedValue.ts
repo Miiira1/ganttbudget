@@ -78,12 +78,49 @@ function childrenOf(tasks: readonly Task[]): Map<string | null, Task[]> {
 }
 
 /**
- * % hotovo každé položky: činnost a milník jak je zadáno, fáze spočítaná z podřízených činností
- * (i vnořených) – vážená plánovaným nákladem (bacByTask), bez něj délkou, a když mají všechny
- * délku 0 (milníky), prostým průměrem. Fáze bez činností = 0 %.
+ * % hotovo každé položky: činnost a milník jak je zadáno, fáze spočítaná z podřízených.
+ *
+ * S baseline (bacByTask) přesně jako pohled Sledování (Earned Value): % fáze = EV podřízených
+ * ÷ BAC podřízených, kde vnořená fáze přispívá i svými vlastními náklady (audit V-N6 – dřív
+ * Gantt bral jen činnosti a ukazoval jiné číslo než Sledování). Když podřízené nemají žádný
+ * plánovaný náklad, platí výpočet bez baseline.
+ *
+ * Bez baseline: z činností (i vnořených) vážených délkou, a když mají všechny délku 0
+ * (milníky), prostým průměrem. Fáze bez činností = 0 %.
  */
 export function rollupPercent(project: Project, bacByTask: ReadonlyMap<string, number> | null): Map<string, number> {
   const children = childrenOf(project.tasks)
+  const byDuration = rollupByDuration(project, children)
+  if (!bacByTask) return byDuration
+
+  const result = new Map<string, number>()
+  const done = new Map<string, { bac: number; ev: number }>()
+  const visit = (task: Task): { bac: number; ev: number } => {
+    const known = done.get(task.id)
+    if (known) return known
+    const own = bacByTask.get(task.id) ?? 0
+    let value: { bac: number; ev: number }
+    if (task.kind !== 'phase') {
+      result.set(task.id, task.percentComplete)
+      value = { bac: own, ev: Math.round((own * task.percentComplete) / 100) }
+    } else {
+      // Stejné výpočty a zaokrouhlení jako earnedValue() níže.
+      const kids = (children.get(task.id) ?? []).map(visit)
+      const kidsBac = kids.reduce((sum, k) => sum + k.bac, 0)
+      const kidsEv = kids.reduce((sum, k) => sum + k.ev, 0)
+      const percent = kidsBac > 0 ? Math.round((kidsEv / kidsBac) * 100) : (byDuration.get(task.id) ?? 0)
+      result.set(task.id, percent)
+      value = { bac: kidsBac + own, ev: kidsEv + Math.round((own * percent) / 100) }
+    }
+    done.set(task.id, value)
+    return value
+  }
+  for (const task of project.tasks) visit(task)
+  return result
+}
+
+/** % hotovo fází bez baseline: činnosti vážené délkou, při nulových délkách prostý průměr. */
+function rollupByDuration(project: Project, children: Map<string | null, Task[]>): Map<string, number> {
   const result = new Map<string, number>()
   const leavesOf = (id: string): Task[] => (children.get(id) ?? []).flatMap((c) => (c.kind === 'phase' ? leavesOf(c.id) : [c]))
   for (const task of project.tasks) {
@@ -96,7 +133,7 @@ export function rollupPercent(project: Project, bacByTask: ReadonlyMap<string, n
       const total = leaves.reduce((sum, t) => sum + weight(t), 0)
       return total > 0 ? Math.round(leaves.reduce((sum, t) => sum + weight(t) * t.percentComplete, 0) / total) : null
     }
-    result.set(task.id, (bacByTask ? weighted((t) => bacByTask.get(t.id) ?? 0) : null) ?? weighted((t) => t.durationDays) ?? weighted(() => 1) ?? 0)
+    result.set(task.id, weighted((t) => t.durationDays) ?? weighted(() => 1) ?? 0)
   }
   return result
 }

@@ -187,9 +187,59 @@ describe('typy vazeb SS, FF, SF (fáze 4c)', () => {
     })
 
     it('milník jako předchůdce SS a FF', () => {
+      // Milník s omezením leží na ZAČÁTKU pá 20. = konec čt 19.
       const M = (): Task => ({ ...task('M', 0, [], 'milestone'), constraintStart: '2026-11-20' })
       expect(dates(project([M(), typed('B', 2, [['M', 'SS', 0]])]), 'B')).toEqual(['2026-11-20', '2026-11-23'])
-      expect(dates(project([M(), typed('B', 2, [['M', 'FF', 0]])]), 'B')).toEqual(['2026-11-19', '2026-11-20'])
+      // FF: B smí skončit koncem čt 19. (stejný okamžik jako milník; audit V-N2, dřív pá 20.)
+      expect(dates(project([M(), typed('B', 2, [['M', 'FF', 0]])]), 'B')).toEqual(['2026-11-18', '2026-11-19'])
+    })
+
+    it('fáze, která obsahuje jen milníky, má délku 0 dní (audit V-N5)', () => {
+      const p = project([
+        task('F', 0, [], 'phase'),
+        { ...task('M1', 0, [], 'milestone'), parentId: 'F' },
+        { ...task('M2', 0, [], 'milestone'), parentId: 'F' },
+        task('G', 0, [], 'phase'),
+        { ...task('X', 2), parentId: 'G' },
+        { ...task('M3', 0, [], 'milestone'), parentId: 'G' },
+      ])
+      const result = schedule(p)
+      expect(result.tasks.get('F')?.durationDays).toBe(0) // dřív 1 den
+      expect(result.tasks.get('G')?.durationDays).toBe(2) // s činností se nic nemění
+    })
+
+    describe('milník na konci / začátku dne jako předchůdce (audit V-S1, V-N1, V-N2)', () => {
+      // A: Po 16., (Út 17. svátek), St 18., Čt 19., Pá 20., Po 23. → konec Po 23.
+      const chain = (link: Task) => project([task('A', 5), task('M', 0, [['A', 0]], 'milestone'), link])
+
+      it('SS z milníku na konci dne: následník začne až další pracovní den', () => {
+        const p = chain(typed('B', 2, [['M', 'SS', 0]]))
+        expect(dates(p, 'M')).toEqual(['2026-11-23', '2026-11-23'])
+        expect(dates(p, 'B')).toEqual(['2026-11-24', '2026-11-25']) // dřív Po 23., kdy A ještě běží
+      })
+
+      it('SS z milníku na konci dne: kritická cesta souhlasí s termíny', () => {
+        const result = schedule(chain(typed('B', 2, [['M', 'SS', 0]])))
+        for (const id of ['A', 'M', 'B']) {
+          expect(result.tasks.get(id)?.totalSlack).toBe(0)
+          expect(result.tasks.get(id)?.critical).toBe(true)
+        }
+      })
+
+      it('SF z milníku na konci dne: následník skončí v den milníku', () => {
+        expect(dates(chain(typed('B', 1, [['M', 'SF', 0]])), 'B')).toEqual(['2026-11-23', '2026-11-23']) // dřív Pá 20.
+      })
+
+      it('FF z milníku na začátku dne: následník smí skončit den předtím', () => {
+        // M přes SS z A +2 = začátek čt 19. (= konec st 18.) → B (1 den) skončí st 18.
+        const p = project([task('A', 3), typed('M', 0, [['A', 'SS', 2]], 'milestone'), typed('B', 1, [['M', 'FF', 0]])])
+        expect(dates(p, 'M')).toEqual(['2026-11-19', '2026-11-19'])
+        expect(dates(p, 'B')).toEqual(['2026-11-18', '2026-11-18']) // dřív čt 19.
+      })
+
+      it('FS z milníku se nemění (konec dne → další den, začátek dne → týž den)', () => {
+        expect(dates(chain(task('B', 1, [['M', 0]])), 'B')).toEqual(['2026-11-24', '2026-11-24'])
+      })
     })
   })
 

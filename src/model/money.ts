@@ -41,13 +41,18 @@ export function formatAmount(minorUnits: number, languageCode: string): string {
 
 /**
  * Zadaný text → haléře, nebo null (nesmysl, záporné číslo, víc než 2 desetinná místa).
- * Přijme „1 234,50 Kč“, „1234.5“, „1.234,50“, „1,234.50“. Oddělovač s přesně třemi číslicemi
- * za sebou (a jediný svého druhu na konci) se bere jako oddělovač tisíců: „1,234“ = 1 234.
+ * Přijme „1 234,50 Kč“, „1234.5“, „1.234,50“, „1,234.50“, „,50“ (= 0,50). Tečka nebo víc čárek
+ * s přesně třemi číslicemi se berou jako oddělovač tisíců: „1.234“ = 1 234, „1,234,567“.
+ * Jediná čárka se třemi číslicemi („12,500“) je nejednoznačná → null (uživatel napíše znovu).
  * Převod jde přes text, ne přes float – žádné chyby zaokrouhlení.
  */
 export function parseMoney(text: string): number | null {
+  // Mezera mezi číslicemi = oddělovač tisíců („1 234,50“). Pak už čárka / tečka nemůže být tisíce.
+  const spaceGrouped = /\d[\s  ]+\d/.test(text)
   // Pryč mezery (i nezlomitelné) a značky měny / písmena na začátku a na konci.
-  const cleaned = text.replace(/[\s  ]/g, '').replace(/^[^\d]+|[^\d]+$/g, (m) => (/[-]/.test(m) ? '-' : ''))
+  // Úvodní oddělovač zůstane: „,50“ = 0,50 (dřív se smazal a vyšlo 50 Kč – audit V-S2).
+  let cleaned = text.replace(/[\s  ]/g, '').replace(/^[^\d.,]+|[^\d]+$/g, (m) => (/[-]/.test(m) ? '-' : ''))
+  if (/^[.,]\d/.test(cleaned)) cleaned = `0${cleaned}`
   if (!/^\d[\d.,]*$/.test(cleaned)) return null
 
   const lastComma = cleaned.lastIndexOf(',')
@@ -61,8 +66,14 @@ export function parseMoney(text: string): number | null {
     const after = cleaned.slice(decimalIndex + 1)
     const sameCount = cleaned.split(decimalChar).length - 1
     // „0,125“ nejsou tisíce (skupina tisíců nezačíná nulou) – a tři desetinná místa nejdou.
+    // Jediná čárka se třemi číslicemi („12,500“) je nejednoznačná – česky to může být 12,50 –
+    // proto se nebere jako tisíce a jako tři desetinná místa se odmítne (audit V-S2).
     const isThousands =
-      after.length === 3 && !/^0[.,]/.test(cleaned) && (sameCount > 1 || !cleaned.includes(otherChar))
+      after.length === 3 &&
+      !spaceGrouped &&
+      !/^0[.,]/.test(cleaned) &&
+      !(decimalChar === ',' && sameCount === 1) &&
+      (sameCount > 1 || !cleaned.includes(otherChar))
     if (isThousands) {
       // Všechny oddělovače jsou tisíce: „1,234“, „1.234.567“.
       if (cleaned.includes(otherChar)) return null

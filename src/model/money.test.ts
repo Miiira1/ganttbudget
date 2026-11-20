@@ -35,7 +35,26 @@ describe('peníze: zadaný text → haléře (celé číslo, nikdy float)', () =
     expect(parseMoney('1.234.567,89')).toBe(123_456_789)
     expect(parseMoney('1,234,567.89')).toBe(123_456_789)
     expect(parseMoney('€1,234.50')).toBe(123_450)
-    expect(parseMoney('1,234')).toBe(123_400) // tři číslice za jediným oddělovačem = tisíce
+    expect(parseMoney('1.234')).toBe(123_400) // tři číslice za jedinou tečkou = tisíce
+    expect(parseMoney('1,234,567')).toBe(123_456_700) // víc čárek = tisíce
+  })
+
+  it('nejednoznačné zápisy se odmítnou, místo aby se tiše změnil řád (audit V-S2)', () => {
+    // Česky „12,500“ může být 12,50 Kč – dřív z toho bylo 12 500 Kč.
+    expect(parseMoney('12,500')).toBeNull()
+    expect(parseMoney('1,234')).toBeNull()
+    // Mezera odděluje tisíce → za čárkou jsou desetinná místa, a ta smí být jen dvě.
+    expect(parseMoney('1 234,567')).toBeNull()
+    expect(parseMoney('1 234.567')).toBeNull()
+    expect(parseMoney('1.234,567')).toBeNull()
+  })
+
+  it('částka začínající oddělovačem je menší než 1 (audit V-S2)', () => {
+    expect(parseMoney(',50')).toBe(50) // dřív 5 000 (50 Kč)
+    expect(parseMoney('.5')).toBe(50)
+    expect(parseMoney(',5 Kč')).toBe(50)
+    expect(parseMoney(',505')).toBeNull() // tři desetinná místa
+    expect(parseMoney(',')).toBeNull()
   })
 
   it('přesnost: žádné chyby zaokrouhlení', () => {

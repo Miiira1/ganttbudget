@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { isoToDay } from '../engine/calendar'
 import { schedule } from '../engine/schedule'
-import { createBaseline } from './baseline'
+import { baselineBac, createBaseline } from './baseline'
 import { computeCosts } from './costs'
 import { computeCostTimeline } from './costTimeline'
 import { earnedValue, evCurves, rollupPercent, sampleCurves } from './earnedValue'
@@ -167,6 +167,25 @@ describe('% hotovo fáze', () => {
     })
     expect(rollupPercent(q, null).get('Q')).toBe(50)
     expect(rollupPercent(q, null).get('P')).toBe(50)
+  })
+
+  it('vlastní náklady vnořené fáze se počítají stejně jako ve Sledování (audit V-N6)', () => {
+    // F: vnořená fáze G (vlastní řádek 1 000 Kč) s činností A (1 000 Kč, 0 %) + činnost B (1 000 Kč, 100 %).
+    const p = project((x) => {
+      x.tasks = [
+        { ...createTask({ id: 'F', name: 'F', order: 0, kind: 'phase' }) },
+        { ...createTask({ id: 'G', name: 'G', order: 0, kind: 'phase' }), parentId: 'F', lines: [oneTimeEnd('g1', 100_000)] },
+        task('A', 1, [oneTimeEnd('a1', 100_000)], 0, 'G', 0),
+        task('B', 1, [oneTimeEnd('b1', 100_000)], 1, 'F', 100),
+      ]
+    })
+    const base = baselineOf(p)
+    const percent = rollupPercent(p, baselineBac(base))
+    const ev = earnedValue(p, schedule(p), base, day('2026-11-30'))
+    // Hotovo je 1 000 z 3 000 Kč → 33 % (dřív Gantt ukazoval 50 %, protože vlastní řádek G vynechal).
+    expect(percent.get('F')).toBe(33)
+    expect(percent.get('F')).toBe(ev.byId.get('F')?.percent)
+    expect(percent.get('G')).toBe(ev.byId.get('G')?.percent)
   })
 })
 

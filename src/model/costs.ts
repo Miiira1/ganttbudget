@@ -132,7 +132,9 @@ export function computeCosts(project: Project, scheduleResult: ScheduleResult): 
       }
       case 'material': {
         const price = line.unitPriceOverride ?? materials.get(line.materialId)?.unitPrice ?? 0
-        return { amount: Math.round(line.quantity * price), hours: null, warning: null }
+        // Množství má nejvýš 3 desetinná místa (schéma) → počítat v tisícinách jako celé číslo,
+        // ať 1,005 × 100 hal nevyjde 100,4999… (audit V-N4). Poloviny jsou pak přesné.
+        return { amount: Math.round((Math.round(line.quantity * 1000) * price) / 1000), hours: null, warning: null }
       }
       case 'oneTime':
         return { amount: line.amount, hours: null, warning: null }

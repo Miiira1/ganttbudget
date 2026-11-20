@@ -61,6 +61,14 @@ interface Computed {
   finishDay: number
   /** Kdy nejdřív může začít následník vazby FS (bez prodlevy). */
   successorStartDay: number
+  /**
+   * Milník = okamžik. Leží buď na začátku dne `startDay` (pak successorStartDay = startDay),
+   * nebo na jeho konci (successorStartDay = další pracovní den). Vazby SS, FF a SF z milníku
+   * proto počítají s tímto okamžikem, ne s „dnem milníku“ (audit V-S1, V-N1, V-N2).
+   */
+  milestone?: true
+  /** Fáze, která obsahuje jen milníky (i vnořeně) – má délku 0 dní (audit V-N5). */
+  onlyMilestones?: true
 }
 
 export const EMPTY_SCHEDULED: ScheduledTask = {
@@ -160,15 +168,19 @@ export function schedule(project: Project): ScheduleResult {
    * U FS je to další pracovní den po konci předchůdce, u SF pracovní den před jeho začátkem.
    */
   function boundOf(pred: Computed, type: Dependency['type'], lag: number): { kind: 'start' | 'finish'; day: number; type: Dependency['type'] } {
+    // Začátek a konec předchůdce jako pracovní dny. U milníku oba odpovídají jeho okamžiku:
+    // „začátek“ = den, kdy po milníku může něco začít; „konec“ = den, který milníkem končí.
+    const startDay = pred.milestone ? pred.successorStartDay : pred.startDay
+    const finishDay = pred.milestone ? calendar.previousWorkingDay(pred.successorStartDay - 1) : pred.finishDay
     switch (type) {
       case 'FS':
         return { kind: 'start', day: calendar.addWorkingDays(pred.successorStartDay, lag), type }
       case 'SS':
-        return { kind: 'start', day: calendar.addWorkingDays(pred.startDay, lag), type }
+        return { kind: 'start', day: calendar.addWorkingDays(startDay, lag), type }
       case 'FF':
-        return { kind: 'finish', day: calendar.addWorkingDays(pred.finishDay, lag), type }
+        return { kind: 'finish', day: calendar.addWorkingDays(finishDay, lag), type }
       case 'SF':
-        return { kind: 'finish', day: calendar.addWorkingDays(calendar.previousWorkingDay(pred.startDay - 1), lag), type }
+        return { kind: 'finish', day: calendar.addWorkingDays(calendar.previousWorkingDay(startDay - 1), lag), type }
     }
   }
 
@@ -228,18 +240,20 @@ export function schedule(project: Project): ScheduleResult {
       const dependencyDay = fromDependencies.reduce(later)[0]
       if (dependencyDay >= projectStartDay && constraintDay < dependencyDay) constraintOverridden.add(t.id)
     }
-    return { startDay: day, finishDay: day, successorStartDay: next }
+    return { startDay: day, finishDay: day, successorStartDay: next, milestone: true }
   }
 
   function computePhase(t: Task): Computed | null {
     const parts = (children.get(t.id) ?? []).map((c) => computed.get(c.id)).filter((c) => c !== undefined)
     if (parts.length === 0) return null
     const finishDay = Math.max(...parts.map((p) => p.finishDay))
-    return {
+    const result: Computed = {
       startDay: Math.min(...parts.map((p) => p.startDay)),
       finishDay,
       successorStartDay: Math.max(...parts.map((p) => p.successorStartDay)),
     }
+    if (parts.every((p) => p.milestone || p.onlyMilestones)) result.onlyMilestones = true
+    return result
   }
 
   // --- 4. Konec projektu ---
@@ -257,7 +271,8 @@ export function schedule(project: Project): ScheduleResult {
       tasks.set(t.id, EMPTY)
       continue
     }
-    const durationDays = t.kind === 'phase' ? calendar.countWorkingDays(c.startDay, c.finishDay) : t.durationDays
+    const durationDays =
+      t.kind !== 'phase' ? t.durationDays : c.onlyMilestones ? 0 : calendar.countWorkingDays(c.startDay, c.finishDay)
     const l = late.get(t.id)
     tasks.set(t.id, {
       start: dayToIso(c.startDay),
