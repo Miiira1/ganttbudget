@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "description": "Jednoduchý Ganttův diagram s navázaným rozpočtem – webová aplikace bez serveru.",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "dev": "vite",

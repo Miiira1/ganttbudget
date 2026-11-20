@@ -1,0 +1,63 @@
+MiRo project
+Copyright © 2026 Miroslav Žilka. Všechna práva vyhrazena.
+
+Tento software – zdrojový kód, sestavená aplikace, dokumentace (složky
+dokumentace/ a pruvodce/), logo a další grafika značky MiRo project – je
+chráněn autorským právem.
+
+Bez předchozího písemného souhlasu autora není dovoleno software ani jeho
+části kopírovat, upravovat, šířit, zveřejňovat, poskytovat dalším osobám,
+prodávat ani z nich vytvářet odvozená díla.
+
+Používat aplikaci v prohlížeči na adrese, kterou autor zpřístupní (například
+https://miiira1.github.io/ganttbudget/), je dovoleno pro osobní a výukové
+účely po dobu, kdy ji autor zpřístupňuje. Zveřejnění zdrojového kódu na
+GitHubu neznamená udělení licence: podmínky služby GitHub ostatním
+uživatelům dovolují repozitář pouze zobrazit a vytvořit si jeho kopii (fork)
+v rámci GitHubu; žádná další práva se neudělují.
+
+Výjimky:
+- Knihovny třetích stran uvedené v package.json a package-lock.json se řídí
+  svými vlastními licencemi.
+- Písma Inter, Inter Tight a JetBrains Mono (src/assets/fonts/) se řídí
+  licencí SIL Open Font License 1.1 (soubory LICENSE-*.txt v téže složce).
+- Verze projektu zveřejněné do commitu 7434bd3 (19. 11. 2026) včetně byly
+  zveřejněny pod licencí MIT; pro tyto verze licence MIT nadále platí.
+  Tato licence platí od následující verze.
+
+Žádosti o svolení k dalšímu použití směřujte autorovi přes GitHub
+(https://github.com/Miiira1).
+
+-------------------------------------------------------------------------------
+
+MiRo project
+Copyright © 2026 Miroslav Žilka. All rights reserved.
+
+This software – the source code, the built application, the documentation
+(folders dokumentace/ and pruvodce/), the logo and other MiRo project brand
+graphics – is protected by copyright.
+
+Without the prior written permission of the author, you may not copy, modify,
+distribute, publish, sublicense, sell or create derivative works of the
+software or any part of it.
+
+You may use the application in a web browser at an address made available by
+the author (for example https://miiira1.github.io/ganttbudget/) for personal
+and educational purposes for as long as the author makes it available.
+Publishing the source code on GitHub does not grant a licence: the GitHub
+Terms of Service only allow other users to view this repository and fork it
+within GitHub; no other rights are granted.
+
+Exceptions:
+- Third-party libraries listed in package.json and package-lock.json are
+  governed by their own licences.
+- The Inter, Inter Tight and JetBrains Mono fonts (src/assets/fonts/) are
+  governed by the SIL Open Font License 1.1 (LICENSE-*.txt files in the same
+  folder).
+- Versions of the project published up to and including commit 7434bd3
+  (19 November 2026) were released under the MIT licence; the MIT licence
+  continues to apply to those versions. This licence applies from the next
+  version onwards.
+
+Requests for permission to use the software otherwise should be sent to the
+author via GitHub (https://github.com/Miiira1).

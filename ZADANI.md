@@ -1,7 +1,7 @@
 # ZADÁNÍ: Aplikace pro Ganttovy diagramy s navázaným rozpočtem
 
 > Název aplikace: **MiRo project** (pracovní název do v1.10: GanttBudget)
-> Verze zadání: 1.29 · Datum: 17. 11. 2026 (změny viz kap. 14)
+> Verze zadání: 1.30 · Datum: 20. 11. 2026 (změny viz kap. 14)
 > Dokument je zároveň vstupem pro Claude Code (vibe coding) a osnovou výukové case study.
 
 ---
@@ -38,7 +38,7 @@
 | Rozpočet | Položky přiřazené k činnostem; kategorie + volné štítky |
 | AI | Kopírování promptu a JSON (bez API klíčů); později průvodce generováním plánu |
 | Myšlenková mapa | Vestavěný jednoduchý editor (pozdější fáze) |
-| Distribuce | Veřejný web zdarma (GitHub Pages) + open source |
+| Distribuce | Veřejný web zdarma (GitHub Pages); zdrojový kód veřejně viditelný, **všechna práva vyhrazena** (od v1.30, dříve open source MIT) |
 | Vzorové projekty | Z prostředí strojírenství a výroby (např. zavedení automatizace do výroby) |
 
 ---
@@ -193,7 +193,7 @@ Státní svátky ČR k zakódování: 1. 1.; Velký pátek; Velikonoční pondě
 | N-04 | Světlý i tmavý režim, přepínač a respektování systémového nastavení. |
 | N-05 | Rozumné rozložení na šířce od 1024 px; na menších šířkách alespoň čtení. **Mobilní verze** (displej pod 768 px, doplněk po fázi 13): jen prohlížení – úzké záhlaví (symbol loga, název a údaje projektu, ⚙ jazyk a vzhled, menu ⋯: Otevřít projekt, Vzorový projekt, Slovníček, Kde jsou moje data, Plná verze) a spodní lišta pohledů **Plán, Náklady, Sledování, Analýza, Mapa** (Zdroje a Vytížení jen na počítači). Plán = **seznam karet** po fázích (fáze jdou sbalit; karta: název, WBS, termín, délka, % hotovo, kritická cesta, 📌; klepnutím detail – předchůdci, náklady po řádcích, poznámka) nebo **Gantt** (úsporný obrázek bez tabulky, názvy a % hotovo u úseček, měřítko Týdny / Měsíce / Čtvrtletí, posun prstem). Ostatní pohledy bez upravovacích prvků (limity, baseline, export, uložené pohledy, úpravy mapy), nastavení sbalené, souhrnné dlaždice po dvou. Volba **Plná verze ↔ Mobilní verze** se pamatuje (tablet na šířku má plnou verzi). Projekt se do telefonu dostane jen otevřením souboru – aplikace nic neposílá na server. |
 | N-06 | **Plánovací jádro je oddělené od uživatelského rozhraní** (čistá funkce: projekt dovnitř, vypočtené termíny ven) a pokryté automatickými testy. |
-| N-07 | Zdrojový kód s komentáři a README v češtině; open source licence (doporučeno MIT). |
+| N-07 | Zdrojový kód s komentáři a README v češtině. **Licence: všechna práva vyhrazena** (Copyright © 2026 Miroslav Žilka, soubor `LICENSE` česky i anglicky; `package.json` `"license": "UNLICENSED"`). Používání aplikace v prohlížeči pro osobní a výukové účely je dovoleno; kopírování, úpravy a šíření kódu i dokumentace jen s písemným souhlasem autora. Verze zveřejněné do commitu `7434bd3` (19. 11. 2026) zůstávají pod licencí MIT. Knihovny třetích stran a písma (SIL OFL) se řídí svými licencemi. |
 | N-08 | Žádná ztráta dat: před přepsáním/importem upozornění, před zavřením s neuloženými změnami varování. |
 | N-09 | Chybové hlášky srozumitelné laikovi (co se stalo a co s tím), nikdy technický výpis. |
 | N-10 | **Bezpečný import**: každý načítaný soubor (JSON, CSV, XLSX, výstup z AI) se před použitím ověří proti schématu (Zod). Neplatná data se nikdy nepoužijí částečně. Texty od uživatele se nikdy nevkládají do stránky jako HTML. **XLSX (archiv ZIP) se před otevřením zkontroluje** (fáze 13b): nejvýš 50 MB po rozbalení, 2 000 souborů v archivu, poměr komprese do 200 : 1 u souborů nad 1 MB, a skutečná velikost po rozbalení se ověří proudovým rozbalením (podvržená hlavička nepomůže); podezřelý soubor se odmítne srozumitelnou hláškou. |
@@ -435,7 +435,7 @@ Technicky: build bez chyb, testy plánovacího jádra projdou, aplikace je nasaz
 | 4 | Průběžný náklad „za měsíc" u činnosti, která nezačíná na začátku měsíce | ✅ Rozhodnuto (v1.13): poměrně po kalendářních dnech – každý den = částka ÷ počet dní jeho měsíce (stejně v nákladech i v náběhu) |
 | 5 | Skutečné náklady (AC) pro Earned Value | ✅ Rozhodnuto (v1.16): ručně jako položky k datu u činností (datum, částka, poznámka; panel Detail činnosti a list Skutečnost v sešitu); do AC se počítají jen položky do data stavu včetně |
 | 6 | Pracovní název a logo aplikace | ✅ Rozhodnuto (v1.11): **MiRo project**, logo a barvy podle brand kitu (N-13). Přípony souborů `.ganttbudget.json` / `.ganttbudget-lib.json` a klíče v prohlížeči zůstávají kvůli kompatibilitě s uloženými projekty |
-| 7 | Licence | MIT, pokud zadavatel (fakulta) nevyžaduje jinak |
+| 7 | Licence | ✅ Rozhodnuto (v1.30, 20. 11. 2026): **všechna práva vyhrazena**, držitel Miroslav Žilka (viz N-07). Původní MIT platí jen pro verze do commitu `7434bd3` |
 | 8 | Použití ve výuce: potřeba odevzdávat projekty učiteli | Zatím soubor projektu (.json), sešit celého projektu (XLSX, I-07) nebo PDF e-mailem či přes LMS |
 | 9 | Majetková práva k aplikaci (případné zaměstnanecké dílo ČVUT) | ✅ Ověřeno u fakulty (14. 11. 2026) |
 | 10 | E-mail v Git commitech veřejného repozitáře | ✅ Vyřešeno (14. 11. 2026): Git používá skrytou adresu GitHubu (`…@users.noreply.github.com`) |
@@ -476,3 +476,4 @@ Technicky: build bez chyb, testy plánovacího jádra projdou, aplikace je nasaz
 | 1.27 | 17. 11. 2026 | Během fáze 13d na žádost uživatele: **brand kit 2.0** a audit přehlednosti rozhraní. N-13 přepsán: nové logo „Monolinka“ a ikona aplikace (dark); písmo Lato nahrazeno trojicí **Inter Tight** (nadpisy) / **Inter** (text, čísla) / **JetBrains Mono** (strojový text; čísla původně také, na přání uživatele vrácena na tradičnější Inter) – Inter a JetBrains Mono staženy z oficiálních repozitářů (OFL) a přibaleny jako WOFF2; tmavá tyrkysová `#08708C` → `#0E7490`, světlá `#C4F3FF` → `#C9F4FF`; ukazatel přetahování z modré na barvu interakce značky. Rozvržení: záhlaví ve dvou řadách místo čtyř až pěti, nové menu **Nápověda** (Zkratky, Slovníček, Průvodce, Vzorový projekt, Kde jsou moje data) a panel **⚙ Zobrazení** (jazyk, vzhled), záložky pohledů a podkarty jako podtržené záložky, úpravy struktury plánu pod 1280 px jen ikonami, panel detailu bez výběru jako úzký pruh (plán ukáže zhruba dvojnásobek řádků), skrývatelná jednořádková informace o datech. Odstavec README o barvách opraven (dva akcenty). Na přání uživatele jsou čísla, data a částky písmem Inter (stejně široké číslice), JetBrains Mono jen pro strojový text |
 | 1.28 | 17. 11. 2026 | Fáze 13d – svátky dalších zemí a přístupnost, **uzavření roadmapy**: K-04 upřesněn podle implementace (SK, PL, DE celostátní, AT; pravidla vázaná na roky ověřená proti zákonům, zdroje uvedeny); U-06 doplněn o výsledky kontroly (test kontrastu, audit popisků, rámeček fokusu, „Přeskočit na obsah“, oprava 11 slabě kontrastních textů a ikon, struktura stromu mapy). Roadmapa fází 0–13 dokončena |
 | 1.29 | 17. 11. 2026 | Doplňky po fázi 13 na žádost uživatele: **popisky vedle úseček Gantta** (G-07 – Název, Termín, Délka, % hotovo, Náklady; i v exportu) a **mobilní verze jen pro prohlížení** (N-05 – displej pod 768 px, spodní lišta pěti pohledů, Plán jako seznam karet nebo úsporný Gantt, ostatní pohledy bez upravovacích prvků, přepínač Plná / Mobilní verze). Mimo to: export Gantta v měřítku Měsíce / Čtvrtletí nekreslí víkendy (jako obrazovka); Slovníček má zavírací ✕ v přilepeném záhlaví; tlačítka ⓘ jsou na dotykovém displeji 28 × 28 px |
+| 1.30 | 20. 11. 2026 | Na žádost uživatele: **dokumentace** ve složce `dokumentace/` (uživatelský manuál, průvodce prvním projektem – case study „Zavedení CNC obráběcího centra“, správcovský metodický manuál; Word ve vizuálu brand kitu 2.0). **Změna licence** z MIT na „všechna práva vyhrazena“ (N-07, kap. 2, otevřená otázka 7; soubor `LICENSE`, `package.json` UNLICENSED); verze do commitu `7434bd3` zůstávají pod MIT. README: sešit celého projektu má 13 listů (přibyl list Skutečnost), ukazatel VAC, odkaz na dokumentaci a nová sekce Licence. Připravuje se omezený přístup studentů na dobu semestru (Cloudflare Pages s přihlašovací bránou; schválen vývojový nástroj `wrangler`) – zatím neimplementováno |

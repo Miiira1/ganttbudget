@@ -22,14 +22,14 @@ Je určená studentům a praktikům bez zkušenosti s projektovým řízením. B
 > týdnech, měsících; histogram; přetížení červeně a jako varování v Detailu činnosti). Fáze 7 přidala pohled **Náklady**
 > (náběh nákladů po týdnech, měsících a čtvrtletích, kumulativně, skládaný graf, filtry kategorií, fází, druhů a štítků),
 > volné **štítky** u řádků, **limity rozpočtu** (projekt a kategorie, varování s datem překročení) a export / import
-> rozpočtu do Excelu a CSV. Doplněk po fázi 7: **celý projekt v jednom sešitu Excelu** (12 listů – projekt, kalendář,
-> činnosti, řádky, databáze zdrojů, náběh) jde exportovat, upravit a zase načíst; šedé sloupce „(vypočteno)“ import
+> rozpočtu do Excelu a CSV. Doplněk po fázi 7: **celý projekt v jednom sešitu Excelu** (13 listů – projekt, kalendář,
+> činnosti, řádky, skutečné náklady, databáze zdrojů, náběh) jde exportovat, upravit a zase načíst; šedé sloupce „(vypočteno)“ import
 > ignoruje. Fáze 8 přidala pohled **Analýza** (kontingenční tabulka nákladů a hodin podle fází, kategorií, štítků,
 > zdrojů, středisek a období; čtyři typy grafů; přednastavené a vlastní pohledy uložené v projektu; export do Excelu
 > a CSV) a dashboardy: v pohledu Náklady ukazatele a graf **S-křivka / Cash flow** s čarou „Dnes“, v pohledu
 > Vytížení filtry, ukazatele a souhrnný histogram skupiny. Fáze 9 přidala **baseline** (uložený schválený plán,
 > stínová úsečka v grafu), **% hotovo** (výplň úsečky, u fází spočítané), **skutečné náklady** k datu u činností
-> a pohled **Sledování** s Earned Value (BAC, PV, EV, AC, SPI, CPI, EAC s vysvětlením pojmů), grafem a tabulkou;
+> a pohled **Sledování** s Earned Value (BAC, PV, EV, AC, SPI, CPI, EAC, VAC s vysvětlením pojmů), grafem a tabulkou;
 > vzorový projekt je „v běhu“. Fáze 10 přidala **průvodce prvním projektem** (název a měna, začátek, kalendář,
 > první fáze), okno **Nový projekt** s pěti **šablonami** ze strojírenství a výroby, tlačítka **ⓘ** s vysvětlením
 > pojmů a **Slovníček**, a **Kontrolu plánu** (chybějící vazby, prázdné fáze, zpoždění, přetížení, překročený
@@ -48,6 +48,16 @@ Je určená studentům a praktikům bez zkušenosti s projektovým řízením. B
 > (nové logo, písma Inter, přehlednější záhlaví s menu Nápověda). Doplňky po fázi 13: **popisky vedle úseček**
 > Gantta (Název, Termín, Délka, % hotovo, Náklady) a **mobilní verze jen pro prohlížení** – na telefonu spodní lišta
 > pohledů, Plán jako seznam karet nebo Gantt (viz [ZADANI.md](ZADANI.md), kap. 8 a N-05).
+
+## Dokumentace
+
+Ve složce [`dokumentace/`](dokumentace/) jsou tři dokumenty Word ve vizuálu brand kitu 2.0:
+
+| Dokument | Pro koho |
+|---|---|
+| [Uživatelský manuál](dokumentace/MiRo-project-1-Uzivatelsky-manual.docx) | každý uživatel – popis všech částí aplikace a ovládacích prvků |
+| [Průvodce prvním projektem](dokumentace/MiRo-project-2-Pruvodce-prvnim-projektem.docx) | studenti a nováčci – case study „Zavedení CNC obráběcího centra“: sestavení plánu a vyhodnocení (Earned Value), úkoly a klíč pro vyučující |
+| [Správcovský metodický manuál](dokumentace/MiRo-project-3-Spravcovsky-metodicky-manual.docx) | vyučující a správci – datový model, přesné výpočty, formáty souborů, bezpečnost a technická správa |
 
 ## Soubory: co kdy použít
 
@@ -134,6 +144,7 @@ requesty. Nic se nesloučí samo: u každého počkejte, až projdou testy, a sl
 | `src/i18n/` | překlady (`locales/cs.json`, `locales/en.json`) a formát data a čísel |
 | `src/samples/` | šablony projektů (`templates.ts` – seznam, `template.ts` – společný stavitel) a jejich data: vzorový projekt „Zavedení automatizace do výroby“ (`automatizace.ts`), vývoj výrobku, výrobní linka, investiční akce, odstávka |
 | `pruvodce/` | výuková case study – jedna kapitola na fázi vývoje |
+| `dokumentace/` | uživatelský manuál, průvodce prvním projektem a správcovský metodický manuál (Word) |
 
 ## Přidání jazyka
 
@@ -143,4 +154,9 @@ requesty. Nic se nesloučí samo: u každého počkejte, až projdou testy, a sl
 
 ## Licence
 
-MIT
+Copyright © 2026 Miroslav Žilka. **Všechna práva vyhrazena** – podrobnosti v souboru [LICENSE](LICENSE).
+Aplikaci smíte používat v prohlížeči pro osobní a výukové účely; kopírovat, upravovat a šířit kód
+ani dokumentaci bez písemného souhlasu autora nelze.
+
+Verze zveřejněné do commitu `7434bd3` (19. 11. 2026) včetně byly zveřejněny pod licencí MIT a pro ně
+tato licence nadále platí. Knihovny třetích stran a písma (SIL OFL) se řídí svými vlastními licencemi.
