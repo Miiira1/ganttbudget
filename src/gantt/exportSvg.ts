@@ -69,6 +69,8 @@ const LIGHT = {
   phase: '#262626',
   phaseProgress: '#3bdaff',
   critical: '#ffc000',
+  /** Výplň kritické činnosti: průsvitná žlutá – méně ostrá, víkendy a svátky lehce prosvítají. */
+  criticalTask: 'rgba(255,192,0,0.65)',
   criticalStroke: '#b38600',
   criticalProgress: 'rgba(38,38,38,0.7)',
   arrow: '#6b6b66',
@@ -93,6 +95,7 @@ const DARK: typeof LIGHT = {
   phase: '#f6f5f0',
   phaseProgress: '#0e7490',
   critical: '#ffc000',
+  criticalTask: 'rgba(255,192,0,0.7)',
   criticalStroke: '#d9a400',
   criticalProgress: 'rgba(38,38,38,0.7)',
   arrow: '#9a9a95',
@@ -270,7 +273,7 @@ export function renderGanttSvg(input: GanttSvgInput): GanttSvg {
     } else {
       const y = cy - BAR_HALF_HEIGHT
       out.push(
-        `<rect ${attrs} x="${r1(bar.xStart)}" y="${r1(y)}" width="${r1(w)}" height="${2 * BAR_HALF_HEIGHT}" rx="3" fill="${crit ? C.critical : C.task}" stroke="${crit ? C.criticalStroke : C.taskStroke}"/>`,
+        `<rect ${attrs} x="${r1(bar.xStart)}" y="${r1(y)}" width="${r1(w)}" height="${2 * BAR_HALF_HEIGHT}" rx="3" fill="${crit ? C.criticalTask : C.task}" stroke="${crit ? C.criticalStroke : C.taskStroke}"/>`,
       )
       if (percent > 0) {
         out.push(

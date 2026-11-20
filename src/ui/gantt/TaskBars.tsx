@@ -169,13 +169,13 @@ function Shape({ bar, critical }: { bar: Bar; critical: boolean | null }) {
           </>
         )
       }
-      // Kritická: ve světlém vzhledu plná žlutá; v tmavém běžná (šedá) úsečka s průsvitnou žlutou vrstvou
-      // (žlutá je utlumená, neoslňuje) a jemným světle žlutým rámečkem.
+      // Kritická: průsvitná žlutá vrstva na neprůhledném podkladu (jako běžná činnost) – žlutá je
+      // utlumená, neoslňuje. Ve světlém vzhledu bílý podklad a zlatý rámeček, v tmavém šedý podklad
+      // a jemný světle žlutý rámeček.
       return (
         <>
-          <rect {...rect} className="fill-miro-yellow stroke-miro-gold dark:fill-slate-400 dark:stroke-miro-yellow-light" strokeWidth={1} />
-          {/* Jemný světle žlutý rámeček kritické činnosti (jen v tmavém vzhledu). */}
-          <rect {...rect} className="hidden fill-miro-yellow/60 stroke-miro-yellow-light dark:inline" strokeWidth={1} pointerEvents="none" />
+          <rect {...rect} className="fill-white dark:fill-slate-400" />
+          <rect {...rect} className="fill-miro-yellow/65 stroke-miro-gold dark:fill-miro-yellow/60 dark:stroke-miro-yellow-light" strokeWidth={1} />
         </>
       )
     }

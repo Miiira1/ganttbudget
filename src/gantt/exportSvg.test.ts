@@ -103,6 +103,16 @@ describe('export Gantta do SVG', () => {
     expect(renderGanttSvg(input(p)).svg).not.toContain('data-critical="true"')
   })
 
+  it('kritická činnost má průsvitnou žlutou výplň (víkendy prosvítají), milník zůstává plný', () => {
+    const p = sample()
+    const { svg } = renderGanttSvg(input(p, { critical: true }))
+    expect(svg).toContain(`fill="${GANTT_SVG_COLORS.light.criticalTask}"`)
+    expect(GANTT_SVG_COLORS.light.criticalTask).toMatch(/^rgba\(255,192,0,0\.\d+\)$/)
+    expect(GANTT_SVG_COLORS.dark.criticalTask).toMatch(/^rgba\(255,192,0,0\.\d+\)$/)
+    // Kritická úsečka činnosti už nemá plnou žlutou (ta zůstává jen milníkům).
+    expect(svg).not.toMatch(/<rect[^>]*data-critical="true"[^>]*fill="#ffc000"/)
+  })
+
   it('stejný vstup dá stejný výstup', () => {
     const p = sample()
     expect(renderGanttSvg(input(p)).svg).toBe(renderGanttSvg(input(p)).svg)
