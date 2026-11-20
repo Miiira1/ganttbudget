@@ -104,7 +104,8 @@ function ResizeHandle({ id, label }: { id: ColumnId; label: string }) {
       onPointerCancel={onPointerUp}
       onDoubleClick={() => resetWidth(id)}
       onKeyDown={onKeyDown}
-      className="absolute right-0 top-0 z-20 h-full w-2 cursor-col-resize touch-none border-r-2 border-transparent hover:border-miro-turquoise focus:outline-none focus-visible:border-focus dark:hover:border-miro-turquoise"
+      // Dotyk: širší úchyt (24 px), aby šel chytit prstem (audit U7).
+      className="absolute right-0 top-0 z-20 h-full w-2 pointer-coarse:w-6 cursor-col-resize touch-none border-r-2 border-transparent hover:border-miro-turquoise focus:outline-none focus-visible:border-focus dark:hover:border-miro-turquoise"
     />
   )
 }

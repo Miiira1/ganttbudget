@@ -312,7 +312,7 @@ function RateButton(props: { rate: number | null; source: string; label: string;
       <span className={props.rate === null ? 'italic text-slate-500 dark:text-slate-400' : 'font-medium'}>
         {props.rate === null ? t('resources.noRate') : `${formatMoney(props.rate, currency, i18n.language)} / h`}
       </span>
-      <span aria-hidden="true" className="text-slate-500">✎</span>
+      <span aria-hidden="true" className="text-slate-500 dark:text-slate-400">✎</span>
     </button>
   )
 }
@@ -457,8 +457,8 @@ function WorkersTable() {
             title={t('absence.hint')}
             className="flex w-full items-center justify-end gap-2 rounded px-1.5 py-0.5 tabular-nums hover:bg-miro-turquoise-light/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:bg-slate-700"
           >
-            <span className={days > 0 ? '' : 'text-slate-500'}>{days > 0 ? t('absence.workingDays', { count: days }) : '—'}</span>
-            <span aria-hidden="true" className="text-slate-500">✎</span>
+            <span className={days > 0 ? '' : 'text-slate-500 dark:text-slate-400'}>{days > 0 ? t('absence.workingDays', { count: days }) : '—'}</span>
+            <span aria-hidden="true" className="text-slate-500 dark:text-slate-400">✎</span>
           </button>
         )
       },

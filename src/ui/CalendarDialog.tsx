@@ -201,7 +201,7 @@ export function CalendarDialog({ open, onClose }: { open: boolean; onClose: () =
                   </span>
                   <button
                     type="button"
-                    className="rounded px-2 py-0.5 text-slate-500 hover:bg-red-100 hover:text-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:hover:bg-red-900/40 dark:hover:text-red-300"
+                    className="rounded px-2 py-0.5 text-slate-500 dark:text-slate-400 hover:bg-red-100 hover:text-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:hover:bg-red-900/40 dark:hover:text-red-300"
                     aria-label={t('calendar.customRemove', { name: range.name })}
                     onClick={() => updateCalendar({ customHolidays: calendar.customHolidays.filter((_, i) => i !== index) })}
                   >

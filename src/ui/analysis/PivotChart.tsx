@@ -274,7 +274,8 @@ function StackedChart({ series, columns, labelOf, colorOf, format, compact, colu
               const r = isTop ? Math.min(4, height, bar / 2) : 0
               const d = `M ${x} ${top + height} V ${top + r} a ${r} ${r} 0 0 1 ${r} ${-r} H ${x + bar - r} a ${r} ${r} 0 0 1 ${r} ${r} V ${top + height} z`
               return (
-                <path key={s.key} d={d} className={colorOf!(s).fill}>
+                // Slabá barva dostane tenký obrys, aby byl úsek vidět i na bílé (audit U4).
+                <path key={s.key} d={d} className={`${colorOf!(s).fill} ${colorOf!(s).edge}`} strokeWidth={1}>
                   <title>{`${columnLabel(c)} – ${labelOf(s)}: ${format(s.values[i]!)}`}</title>
                 </path>
               )

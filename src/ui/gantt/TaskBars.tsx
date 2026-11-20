@@ -109,7 +109,8 @@ const BASELINE_HEIGHT = 4
 
 function BaselineShape({ bar }: { bar: Bar }) {
   const y = bar.centerY + BAR_HALF_HEIGHT + 2
-  const cls = 'fill-slate-400 dark:fill-slate-500'
+  // Světlý vzhled: slate-500 (5 : 1 na bílé); slate-400 měla jen 2,2 : 1 a baseline skoro nebyla vidět (audit U5).
+  const cls = 'fill-slate-500 dark:fill-slate-500'
   if (bar.kind === 'milestone') {
     const cx = bar.xStart + MILESTONE_HALF
     const h = 3
@@ -339,8 +340,9 @@ function SlackBar({ bar, to, title }: { bar: Bar; to: number; title: string }) {
   return (
     <g>
       <title>{title}</title>
-      <rect x={from} y={bar.centerY - 2} width={to - from} height={4} rx={2} className="fill-slate-400/50 dark:fill-slate-500/50" />
-      <line x1={to} x2={to} y1={bar.centerY - 5} y2={bar.centerY + 5} strokeWidth={1.5} className="stroke-slate-400 dark:stroke-slate-500" />
+      {/* Světlý vzhled tmavší šedou – dřív byl pruh rezervy na bílé skoro neviditelný (audit U5). */}
+      <rect x={from} y={bar.centerY - 2} width={to - from} height={4} rx={2} className="fill-slate-500/70 dark:fill-slate-500/50" />
+      <line x1={to} x2={to} y1={bar.centerY - 5} y2={bar.centerY + 5} strokeWidth={1.5} className="stroke-slate-500 dark:stroke-slate-500" />
     </g>
   )
 }

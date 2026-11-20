@@ -63,7 +63,7 @@ export function MobilePlanList() {
                 onClick={() => row.hasChildren && toggleCollapsed(task.id)}
                 className="flex w-full items-start gap-2 rounded-md px-1 pt-2 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
               >
-                <span aria-hidden="true" className="w-4 shrink-0 pt-0.5 text-slate-500">
+                <span aria-hidden="true" className="w-4 shrink-0 pt-0.5 text-slate-500 dark:text-slate-400">
                   {row.hasChildren ? (isCollapsed ? '▸' : '▾') : ''}
                 </span>
                 <span className="min-w-0 flex-1">

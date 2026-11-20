@@ -177,7 +177,7 @@ function CollapseToggle({ task, hasChildren, collapsed }: { task: Task; hasChild
       aria-label={t(collapsed ? 'table.expand' : 'table.collapse', { name: task.name })}
       title={t(collapsed ? 'table.expandHint' : 'table.collapseHint')}
       onClick={() => toggle(task.id)}
-      className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-slate-500 hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:bg-slate-700"
+      className="inline-flex h-5 w-5 pointer-coarse:h-7 pointer-coarse:w-7 shrink-0 items-center justify-center rounded text-slate-500 dark:text-slate-400 hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:bg-slate-700"
     >
       <span aria-hidden="true">{collapsed ? '▸' : '▾'}</span>
     </button>
@@ -267,7 +267,7 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
         dragging ? 'opacity-50' : ''
       }`}
     >
-      <td className={`${td} px-1 text-right tabular-nums text-slate-500`}>
+      <td className={`${td} px-1 text-right tabular-nums text-slate-500 dark:text-slate-400`}>
         <span className="flex items-center justify-between gap-1">
           {/* Úchyt pro přetažení řádku myší. Z klávesnice se řádky přesouvají Alt+Shift+šipkami. */}
           <span
@@ -283,7 +283,7 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
           {number}
         </span>
       </td>
-      <td className={`${td} px-2 tabular-nums text-slate-500`}>{wbs}</td>
+      <td className={`${td} px-2 tabular-nums text-slate-500 dark:text-slate-400`}>{wbs}</td>
       <td className={`${td}`}>
         <div className="flex items-center gap-1" style={{ paddingLeft: depth * INDENT_PX }}>
           <CollapseToggle task={task} hasChildren={hasChildren} collapsed={collapsed} />
@@ -403,7 +403,7 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
       </td>
       <td className={`${td}`}>
         {isPhase ? (
-          <span className="block px-1.5 text-slate-500" title={t('table.phasePredecessorsHint')}>
+          <span className="block px-1.5 text-slate-500 dark:text-slate-400" title={t('table.phasePredecessorsHint')}>
             {t('table.notComputed')}
           </span>
         ) : (
@@ -467,7 +467,7 @@ const TaskRow = memo(function TaskRow(props: TaskRowProps) {
           aria-label={t('table.deleteRow', { number, name: task.name })}
           title={t('table.delete')}
           onClick={handleDelete}
-          className="rounded px-2 py-1 text-slate-500 hover:bg-red-100 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500/50 dark:hover:bg-red-900/40 dark:hover:text-red-300"
+          className="rounded px-2 py-1 pointer-coarse:px-3 pointer-coarse:py-1.5 text-slate-500 dark:text-slate-400 hover:bg-red-100 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500/50 dark:hover:bg-red-900/40 dark:hover:text-red-300"
         >
           <span aria-hidden="true">✕</span>
         </button>

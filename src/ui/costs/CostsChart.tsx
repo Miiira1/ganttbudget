@@ -172,7 +172,9 @@ export function CostsChart({
                       <path
                         key={s.key}
                         d={`M ${x} ${bottom} V ${topY + r} a ${r} ${r} 0 0 1 ${r} ${-r} H ${x + bar - r} a ${r} ${r} 0 0 1 ${r} ${r} V ${bottom} z`}
-                        className={s.color.fill}
+                        // Slabá barva dostane tenký obrys, aby byl úsek vidět i na bílé (audit U4).
+                        className={`${s.color.fill} ${s.color.edge}`}
+                        strokeWidth={1}
                         pointerEvents="none"
                       />
                     )

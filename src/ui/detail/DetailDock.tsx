@@ -68,7 +68,8 @@ export function DetailDock({ plan, header, children, empty = false }: { plan: Re
           onPointerUp={() => setDrag(null)}
           onPointerCancel={() => setDrag(null)}
           onKeyDown={onKeyDown}
-          className="h-1.5 shrink-0 cursor-row-resize touch-none bg-slate-200 hover:bg-miro-turquoise focus:outline-none focus-visible:bg-focus dark:bg-slate-700 dark:hover:bg-miro-turquoise/70"
+          // Dotyk: aktivní plocha ~26 px přes neviditelný přesah, čára zůstane tenká (audit U7).
+          className="relative z-10 h-1.5 shrink-0 cursor-row-resize touch-none pointer-coarse:after:absolute pointer-coarse:after:-inset-y-2.5 pointer-coarse:after:inset-x-0 pointer-coarse:after:content-[''] bg-slate-200 hover:bg-miro-turquoise focus:outline-none focus-visible:bg-focus dark:bg-slate-700 dark:hover:bg-miro-turquoise/70"
         />
       )}
       <section
@@ -83,7 +84,7 @@ export function DetailDock({ plan, header, children, empty = false }: { plan: Re
               onClick={() => setOpen(!open)}
               aria-expanded={open}
               title={t(open ? 'detail.collapse' : 'detail.expand')}
-              className="rounded px-1.5 text-slate-500 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:bg-slate-800"
+              className="rounded px-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:bg-slate-800"
             >
               <span aria-hidden="true">{open ? '▾' : '▸'}</span>
               <span className="sr-only">{t(open ? 'detail.collapse' : 'detail.expand')}</span>

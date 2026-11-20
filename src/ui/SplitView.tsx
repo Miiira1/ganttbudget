@@ -133,7 +133,9 @@ export function SplitView({
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onKeyDown={onKeyDown}
-        className={`${vertical ? 'h-1.5 cursor-row-resize' : 'w-1.5 cursor-col-resize'} shrink-0 touch-none bg-slate-200 hover:bg-miro-turquoise focus:outline-none focus-visible:bg-focus dark:bg-slate-700 dark:hover:bg-miro-turquoise/70`}
+        // Na dotykovém displeji je aktivní plocha oddělovače ~26 px (neviditelný přesah after:),
+        // viditelná čára zůstane tenká (audit U7).
+        className={`${vertical ? 'h-1.5 cursor-row-resize pointer-coarse:after:-inset-y-2.5 pointer-coarse:after:inset-x-0' : 'w-1.5 cursor-col-resize pointer-coarse:after:-inset-x-2.5 pointer-coarse:after:inset-y-0'} relative z-10 shrink-0 touch-none pointer-coarse:after:absolute pointer-coarse:after:content-[''] bg-slate-200 hover:bg-miro-turquoise focus:outline-none focus-visible:bg-focus dark:bg-slate-700 dark:hover:bg-miro-turquoise/70`}
       />
       <div
         ref={rightRef}

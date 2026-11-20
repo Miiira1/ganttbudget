@@ -71,4 +71,20 @@ describe('slabé šedé se nepoužívají jako text ani ikony', () => {
     }
     expect(found).toEqual([])
   })
+
+  it('text-slate-500 má vždy tmavou variantu – v tmavém vzhledu by měl jen 3 : 1 (audit U1)', () => {
+    const found: string[] = []
+    for (const [file, source] of Object.entries(sources)) {
+      if (file.endsWith('.test.tsx')) continue
+      source.split('\n').forEach((line, i) => {
+        if (/(^|[\s"'`{])text-slate-500\b/.test(line) && !/dark:text-/.test(line)) found.push(`${file}:${i + 1}`)
+      })
+    }
+    expect(found).toEqual([])
+  })
+
+  it('tlumený text v tmavém vzhledu (slate-400 na pozadí slate-800/900) ≥ 4,5 : 1, slate-500 by nestačil', () => {
+    expect(contrastRatio(color('slate-400'), color('slate-900'))).toBeGreaterThanOrEqual(4.5)
+    expect(contrastRatio(color('slate-500'), color('slate-900'))).toBeLessThan(4.5)
+  })
 })

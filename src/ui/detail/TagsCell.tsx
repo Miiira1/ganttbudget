@@ -48,7 +48,7 @@ export function TagsCell({ taskId, lineId, tags, suggestions, label }: { taskId:
             onClick={() => save(tags.filter((x) => x !== tag))}
             aria-label={t('detail.tags.remove', { tag })}
             title={t('detail.tags.remove', { tag })}
-            className="rounded-full px-1 leading-none text-slate-500 hover:bg-slate-200 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:bg-slate-700 dark:hover:text-slate-100"
+            className="rounded-full px-1 leading-none text-slate-500 dark:text-slate-400 hover:bg-slate-200 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:bg-slate-700 dark:hover:text-slate-100"
           >
             <span aria-hidden="true">×</span>
           </button>
