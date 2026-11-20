@@ -9,7 +9,7 @@
 import { memo, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
-import { formatNumber } from '../../i18n/format'
+import { formatHours, formatNumber } from '../../i18n/format'
 import type { LineCost } from '../../model/costs'
 import { lineLoadWarnings, type LineLoadWarnings } from '../../model/load'
 import { allTags } from '../../model/tags'
@@ -240,7 +240,7 @@ const LineRow = memo(function LineRow({
         <AmountCell taskId={taskId} line={line} label={label('amount')} />
       </td>
       <td className="px-1.5 py-0.5 text-right tabular-nums text-slate-600 dark:text-slate-300">
-        {cost?.hours != null ? `${formatNumber(Math.round(cost.hours * 10) / 10, i18n.language)} h` : ''}
+        {cost?.hours != null ? formatHours(cost.hours, i18n.language) : ''}
         {warnings && warnings.absenceDays > 0 && (
           <span
             className="ml-1 text-miro-gold dark:text-miro-yellow"

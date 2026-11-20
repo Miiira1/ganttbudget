@@ -310,7 +310,7 @@ function RateButton(props: { rate: number | null; source: string; label: string;
     >
       {props.source !== 'none' && <span className="text-xs text-slate-500 dark:text-slate-400">{t(`resources.rateSource.${props.source}`)}</span>}
       <span className={props.rate === null ? 'italic text-slate-500 dark:text-slate-400' : 'font-medium'}>
-        {props.rate === null ? t('resources.noRate') : `${formatMoney(props.rate, currency, i18n.language)} / h`}
+        {props.rate === null ? t('resources.noRate') : t('rate.perHour', { currency: formatMoney(props.rate, currency, i18n.language) })}
       </span>
       <span aria-hidden="true" className="text-slate-500 dark:text-slate-400">✎</span>
     </button>

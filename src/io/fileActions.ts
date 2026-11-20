@@ -20,6 +20,7 @@ import { projectStore } from '../store/useProject'
 import { showNotice } from '../ui/notice'
 import { useViewState } from '../ui/viewState'
 import { trackFileSessions } from './fileSession'
+import { issueWhere } from './issueWhere'
 import {
   fileNameFor,
   MAX_PROJECT_FILE_CHARS,
@@ -85,11 +86,17 @@ function isAbort(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError'
 }
 
+/** „u činnosti č. 4“ místo technické cesty „tasks.3.durationDays“ (audit U2). */
+export function issueWhereText(path: string, t: TFunction): string {
+  const { key, number } = issueWhere(path)
+  return t(`file.where.${key}`, { number })
+}
+
 /** Text srozumitelné chyby souboru. */
 export function fileErrorText(error: ProjectFileError, t: TFunction): string {
   switch (error.code) {
     case 'invalid':
-      return t('file.error.invalid', { count: error.issues.length, where: error.issues[0]?.path ?? '' })
+      return t('file.error.invalid', { count: error.issues.length, where: issueWhereText(error.issues[0]?.path ?? '', t) })
     case 'newerVersion':
       return t('file.error.newerVersion', { version: error.version })
     default:
@@ -156,6 +163,8 @@ export async function saveProject(t: TFunction, asNew = false): Promise<void> {
     const previous = asNew ? null : useFileState.getState().handle
     const saved = await saveBlob(blob, fileNameFor(project), pickerTypes(t)[0]!, previous)
     useFileState.setState({ savedProject: project, fileName: saved.name, handle: saved.handle })
+    // Firefox / Safari soubor jen stáhnou – začátečník by nevěděl kam (audit U8). Chrome/Edge mají vlastní okno.
+    if (saved.handle === null) showNotice(t('file.savedDownload', { name: saved.name }), 'info')
     // Pojistka (audit R1): uložit vždy (data se neztratí), ale varovat, když soubor nepůjde otevřít.
     if (!projectFileFits(text)) showNotice(t('file.error.tooLargeToReopen'))
   } catch (error) {

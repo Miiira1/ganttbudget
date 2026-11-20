@@ -3,7 +3,7 @@
  * Data připraví budgetExport.ts (čisté funkce s testy); ExcelJS se načte až při exportu do XLSX.
  */
 import type { TFunction } from 'i18next'
-import { formatMonth } from '../i18n/format'
+import { currencyLabel, formatMonth } from '../i18n/format'
 import { splitPeriods } from '../model/periods'
 import { getCostTimeline, getCosts, projectStore } from '../store/useProject'
 import { showNotice } from '../ui/notice'
@@ -28,7 +28,8 @@ function prepare(t: TFunction, language: string) {
     },
   }
   const lines = buildBudgetLines(project, getCosts(project), labels)
-  const headers = BUDGET_COLUMNS.map((c) => t(`budgetExport.columns.${c}`))
+  // Měna projektu v hlavičce („Sazba EUR/h“), ne pevné „Kč“ (audit U3).
+  const headers = BUDGET_COLUMNS.map((c) => t(`budgetExport.columns.${c}`, { currency: currencyLabel(project.currency) }))
   const baseName = `${fileNameFor(project).slice(0, -FILE_EXTENSION.length)} – ${t('budgetExport.fileSuffix')}`
   return { project, labels, lines, headers, baseName }
 }

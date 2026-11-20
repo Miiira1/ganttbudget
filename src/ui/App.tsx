@@ -450,6 +450,10 @@ export default function App() {
                 title={t('toolbar.undoHint')}
               >
                 <span aria-hidden="true">↶</span>
+                {/* Na širší obrazovce i text – hlášky radí „tlačítkem Zpět“ (audit U16). */}
+                <span aria-hidden="true" className="ml-1 hidden 2xl:inline">
+                  {t('toolbar.undo')}
+                </span>
               </button>
               <button
                 type="button"
@@ -460,6 +464,9 @@ export default function App() {
                 title={t('toolbar.redoHint')}
               >
                 <span aria-hidden="true">↷</span>
+                <span aria-hidden="true" className="ml-1 hidden 2xl:inline">
+                  {t('toolbar.redo')}
+                </span>
               </button>
             </div>
             <button type="button" className="btn-secondary" onClick={() => setCalendarOpen(true)} title={t('toolbar.calendarHint')}>
@@ -490,7 +497,8 @@ export default function App() {
                 { id: 'shortcuts', label: t('toolbar.shortcuts'), icon: '⌨', shortcut: 'F1', onSelect: () => setShortcutsOpen(true) },
                 { id: 'glossary', label: t('toolbar.glossary'), icon: '📖', onSelect: () => setGlossaryOpen(true) },
                 { id: 'wizard', label: t('toolbar.wizard'), icon: '🧭', onSelect: () => setWizardOpen(true) },
-                { id: 'sample', label: t('toolbar.loadSample'), icon: '📂', onSelect: handleLoadSample },
+                // Vzorový projekt má všude 🧪; 📂 patří jen k „Otevřít“ (audit U19).
+                { id: 'sample', label: t('toolbar.loadSample'), icon: '🧪', onSelect: () => void handleLoadSample() },
                 { id: 'privacy', label: t('app.privacyMenu'), icon: '🔒', onSelect: () => setPrivacyHidden(false) },
                 ...(layout.narrow ? [{ id: 'mobile', label: t('mobile.mobileVersion'), icon: '📱', onSelect: () => layout.setPreference('auto') }] : []),
               ]}

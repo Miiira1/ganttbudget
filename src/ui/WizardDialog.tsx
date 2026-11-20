@@ -5,7 +5,7 @@
  * Otevírá se z okna Nový projekt a z úvodní obrazovky prázdného plánu. Sám se neotevírá.
  */
 import { HOLIDAY_COUNTRIES, type HolidayChoice } from '../engine/calendar'
-import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useId, useRef, useState, type FormEvent, type SyntheticEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatIsoDate } from '../i18n/format'
 import { newProject } from '../io/fileActions'
@@ -56,13 +56,23 @@ export function WizardDialog({ open, onClose }: { open: boolean; onClose: () => 
   const [stepIndex, setStepIndex] = useState(0)
   const [errors, setErrors] = useState<WizardError[]>([])
   const step = STEPS[stepIndex]!
+  /** Odpovědi při otevření – podle nich se pozná, jestli uživatel už něco vyplnil. */
+  const startAnswers = useRef('')
+
+  // Esc v rozepsaném průvodci se nejdřív zeptá – dřív zahodil vyplněné údaje bez dotazu (audit U17).
+  function onCancel(event: SyntheticEvent<HTMLDialogElement>) {
+    const touched = stepIndex > 0 || JSON.stringify(answers) !== startAnswers.current
+    if (touched && !window.confirm(t('wizard.confirmDiscard'))) event.preventDefault()
+  }
 
   // Nativní dialog: Esc zavře, fokus zůstane uvnitř. Každé otevření začne od začátku.
   useEffect(() => {
     const dialog = dialogRef.current
     if (!dialog) return
     if (open && !dialog.open) {
-      setAnswers(initial())
+      const fresh = initial()
+      startAnswers.current = JSON.stringify(fresh)
+      setAnswers(fresh)
       setStepIndex(0)
       setErrors([])
       dialog.showModal()
@@ -121,6 +131,7 @@ export function WizardDialog({ open, onClose }: { open: boolean; onClose: () => 
       ref={dialogRef}
       aria-labelledby={titleId}
       onClose={onClose}
+      onCancel={onCancel}
       className="m-auto max-h-[90vh] w-[min(40rem,calc(100vw-2rem))] overflow-y-auto rounded-lg border border-slate-300 bg-white p-0 text-slate-900 shadow-xl backdrop:bg-slate-900/50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
     >
       <form className="p-5" onSubmit={goNext} noValidate>

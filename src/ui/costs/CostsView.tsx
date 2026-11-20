@@ -10,7 +10,7 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { dayToIso, isoToDay } from '../../engine/calendar'
-import { formatIsoDate, formatNumber } from '../../i18n/format'
+import { formatIsoDate, formatNumber, formatPercent } from '../../i18n/format'
 import { costKpis, cumulative, KIND_ORDER, rootsOf, summarizeCosts, type CostGroupBy } from '../../model/costTimeline'
 import { todayIso } from '../../model/dates'
 import { wbsNumbers } from '../../model/hierarchy'
@@ -259,7 +259,7 @@ export function CostsView() {
             <Kpi label={t('costs.kpi.average')} value={money(kpis.average)} />
             <Kpi
               label={t('costs.kpi.limit')}
-              value={status.project ? `${Math.round((status.project.spent / status.project.limit) * 100)} %` : '–'}
+              value={status.project ? formatPercent((status.project.spent / status.project.limit) * 100, lang) : '–'}
               hint={status.project ? t('costs.kpi.limitOf', { limit: money(status.project.limit) }) : t('costs.kpi.limitNone')}
               alert={(status.project?.over ?? 0) > 0}
               help={glossaryHelp(t, 'budgetLimit')}
@@ -365,14 +365,16 @@ export function CostsView() {
 
 /** Malá značka u kategorie s limitem: tyrkysová = v limitu, červená ⚠ = překročeno. */
 function LimitMark({ status, text }: { status: { limit: number; spent: number; over: number }; text: (s: { limit: number; spent: number }) => string }) {
+  const { i18n } = useTranslation()
   const title = text(status)
+  const percent = formatPercent((status.spent / status.limit) * 100, i18n.language)
   return status.over > 0 ? (
     <span title={title} aria-label={title} className="shrink-0 text-xs font-semibold text-red-700 dark:text-red-300">
-      ⚠ {Math.round((status.spent / status.limit) * 100)} %
+      ⚠ {percent}
     </span>
   ) : (
     <span title={title} aria-label={title} className="shrink-0 text-xs text-miro-turquoise-dark dark:text-miro-turquoise">
-      {Math.round((status.spent / status.limit) * 100)} %
+      {percent}
     </span>
   )
 }

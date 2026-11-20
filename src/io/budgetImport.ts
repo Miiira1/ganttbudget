@@ -12,6 +12,7 @@
  */
 import cs from '../i18n/locales/cs.json'
 import en from '../i18n/locales/en.json'
+import { currencyVariants } from '../i18n/format'
 import { defaultCategoryId } from '../model/defaultCategories'
 import { wbsNumbers } from '../model/hierarchy'
 import { parseMoney } from '../model/money'
@@ -28,17 +29,20 @@ export type BudgetImportResult =
   | { ok: false; errors: ImportError[] }
 
 const HEADER_ALIASES = new Map<string, BudgetColumn>()
-for (const column of BUDGET_COLUMNS) for (const l of [cs, en]) HEADER_ALIASES.set(normalize(l.budgetExport.columns[column]), column)
+// Hlavička s měnou („Sazba {{currency}}/h“) se pozná s jakoukoli měnou i ve starší podobě „Kč“ (audit U3).
+for (const column of BUDGET_COLUMNS) for (const l of [cs, en]) for (const v of currencyVariants(l.budgetExport.columns[column])) HEADER_ALIASES.set(normalize(v), column)
 const REQUIRED: BudgetColumn[] = ['wbs', 'kind', 'resource']
 
 const KINDS = ['labor', 'machine', 'material', 'oneTime', 'recurring'] as const
+/** Klíč pro porovnání hodnot: jako nameKey, navíc nezlomitelná mezera = obyčejná (česká typografie v textech). */
+const labelKey = (label: string) => nameKey(label.replace(/\s+/g, ' '))
 const KIND_ALIASES = new Map<string, TaskLine['kind']>()
-for (const kind of KINDS) for (const label of [kind, cs.detail.kind[kind], en.detail.kind[kind]]) KIND_ALIASES.set(nameKey(label), kind)
+for (const kind of KINDS) for (const label of [kind, cs.detail.kind[kind], en.detail.kind[kind]]) KIND_ALIASES.set(labelKey(label), kind)
 
 const TIMINGS = ['start', 'end', 'date', 'day', 'week', 'month'] as const
 type Timing = (typeof TIMINGS)[number]
 const TIMING_ALIASES = new Map<string, Timing>()
-for (const timing of TIMINGS) for (const label of [timing, cs.budgetExport.timing[timing], en.budgetExport.timing[timing]]) TIMING_ALIASES.set(nameKey(label), timing)
+for (const timing of TIMINGS) for (const label of [timing, cs.budgetExport.timing[timing], en.budgetExport.timing[timing]]) TIMING_ALIASES.set(labelKey(label), timing)
 
 /** Desetinné číslo z buňky (číslo, „2,5“, „50 %“); undefined = prázdné, null = nesmysl. */
 export function decimal(value: CellValue): number | null | undefined {
@@ -102,7 +106,7 @@ export function importBudget(rawRows: unknown[][], base: Project, makeId: () => 
     const line = ((): TaskLine | null => {
       const task = taskByWbs.get(str('wbs'))
       if (!task) return error('unknownTask')
-      const kind = KIND_ALIASES.get(nameKey(str('kind')))
+      const kind = KIND_ALIASES.get(labelKey(str('kind')))
       if (!kind) return error('badKind')
       if (task.kind === 'milestone' && !(MILESTONE_LINE_KINDS as readonly string[]).includes(kind)) return error('lineNotAllowed')
       const resource = str('resource')
@@ -172,7 +176,7 @@ export function importBudget(rawRows: unknown[][], base: Project, makeId: () => 
           const amount = money(cell('amount'))
           if (amount === null || amount === undefined) return error('badAmount')
           const timingText = str('timing')
-          const timing = timingText === '' ? undefined : TIMING_ALIASES.get(nameKey(timingText))
+          const timing = timingText === '' ? undefined : TIMING_ALIASES.get(labelKey(timingText))
           if (timingText !== '' && timing === undefined) return error('badTiming') // neznámý text, ne výchozí hodnota
           const categoryId = category?.id ?? servicesCategory
           if (!categoryId) return error('unknownCategory')

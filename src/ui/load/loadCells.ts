@@ -5,7 +5,7 @@
 import type { TFunction } from 'i18next'
 import { dayToIso } from '../../engine/calendar'
 import { isoWeek } from '../../gantt/timeline'
-import { formatDayMonth, formatIsoDate, formatMonth, formatNumber, formatWeekdayShort } from '../../i18n/format'
+import { formatDayMonth, formatHours as formatHoursUnit, formatIsoDate, formatMonth, formatNumber, formatPercent, formatWeekdayShort } from '../../i18n/format'
 import type { PeriodLoad, ResourceLoad } from '../../model/load'
 import type { DayRange, PeriodUnit } from '../../model/periods'
 
@@ -35,8 +35,8 @@ const hours = (value: number, lang: string) => formatNumber(Math.round(value * 1
 /** Text v buňce: nejvyšší denní vytížení v %, u profese bez lidí hodiny. */
 export function cellText(summary: PeriodLoad, level: CellLevel, lang: string): string {
   if (level === 'empty') return ''
-  if (level === 'demandOnly') return `${hours(summary.demand, lang)} h`
-  return summary.peakPct === null ? '!' : `${summary.peakPct} %`
+  if (level === 'demandOnly') return formatHoursUnit(summary.demand, lang)
+  return summary.peakPct === null ? '!' : formatPercent(summary.peakPct, lang)
 }
 
 /** Bublina buňky: kolik hodin z kolika, nejvyšší vytížení a počet přetížených dnů. */

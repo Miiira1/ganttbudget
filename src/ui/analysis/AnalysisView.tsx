@@ -10,7 +10,7 @@
  */
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { formatNumber } from '../../i18n/format'
+import { formatHours, formatNumber } from '../../i18n/format'
 import { wbsNumbers } from '../../model/hierarchy'
 import { formatMoney, formatMoneyCompact } from '../../model/money'
 import { chartAvailability, chartSeries, type ChartType } from '../../model/pivotChart'
@@ -101,7 +101,7 @@ export function AnalysisView() {
     if (config.agg === 'count') return { text: formatNumber(v, lang), title: formatNumber(v, lang) }
     if (config.metric === 'cost') return { text: formatNumber(Math.round(v / 100), lang), title: formatMoney(Math.round(v), project.currency, lang) }
     const rounded = Math.round(v * 10) / 10
-    return { text: formatNumber(rounded, lang), title: `${formatNumber(Math.round(v * 100) / 100, lang)} h` }
+    return { text: formatNumber(rounded, lang), title: formatHours(v, lang, 2) }
   }
   const columnLabel = (key: string) => {
     if (config.column !== 'period') return { top: label(config.column!, key), bottom: '' }
@@ -115,9 +115,9 @@ export function AnalysisView() {
   // Zvolený graf nejde (např. koláč z průměrů) → sloupcový, který jde vždy.
   const shownChart: ChartType | 'none' = chart !== 'none' && available[chart] ? 'bar' : chart
   const exact = (v: number) =>
-    config.agg === 'count' ? formatNumber(v, lang) : config.metric === 'cost' ? formatMoney(Math.round(v), project.currency, lang) : `${formatNumber(Math.round(v * 100) / 100, lang)} h`
+    config.agg === 'count' ? formatNumber(v, lang) : config.metric === 'cost' ? formatMoney(Math.round(v), project.currency, lang) : formatHours(v, lang, 2)
   const compact = (v: number) =>
-    config.agg === 'count' ? formatNumber(Math.round(v), lang) : config.metric === 'cost' ? formatMoneyCompact(v, project.currency, lang) : `${formatNumber(Math.round(v), lang)} h`
+    config.agg === 'count' ? formatNumber(Math.round(v), lang) : config.metric === 'cost' ? formatMoneyCompact(v, project.currency, lang) : formatHours(v, lang, 0)
   const unitNote = config.agg === 'count' ? t('analysis.unitCount') : config.metric === 'cost' ? t('analysis.unitCost', { currency: project.currency }) : t('analysis.unitHours')
 
   const tableNode = (

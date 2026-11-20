@@ -13,6 +13,7 @@
 import { HOLIDAY_COUNTRIES } from '../engine/calendar'
 import cs from '../i18n/locales/cs.json'
 import en from '../i18n/locales/en.json'
+import { currencyVariants } from '../i18n/format'
 import { createDefaultRateCalc, type RateCalc } from '../model/rates'
 import {
   calendarDaysInclusive,
@@ -60,7 +61,8 @@ export type WorkbookImportResult = { ok: true; project: Project; summary: Workbo
 // --- Názvy listů, sloupců, položek a hodnot česky i anglicky ---
 const aliases = <K extends string>(keys: readonly K[], label: (l: { workbook: typeof cs.workbook }, k: K) => string, extra: (k: K) => string[] = () => []) => {
   const map = new Map<string, K>()
-  for (const k of keys) for (const l of [cs, en]) for (const name of [label(l, k), ...extra(k)]) map.set(normalize(name), k)
+  // Hlavička s měnou („Částka {{currency}}“) se pozná s jakoukoli měnou i ve starší podobě „Kč“ (audit U3).
+  for (const k of keys) for (const l of [cs, en]) for (const name of [label(l, k), ...extra(k)]) for (const v of currencyVariants(name)) map.set(normalize(v), k)
   return map
 }
 const SHEETS = aliases(WORKBOOK_SHEETS, (l, k) => l.workbook.sheets[k])

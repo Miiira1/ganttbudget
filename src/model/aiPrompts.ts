@@ -11,6 +11,7 @@
  */
 import type { ScheduleResult } from '../engine/schedule'
 import { formatIsoDate } from '../i18n/format'
+import { localeFor } from '../i18n/languages'
 import type { AiPlanError } from './aiPlan'
 import type { CostsResult } from './costs'
 import { totalsByCategory, type BudgetStatus, type CostTimeline } from './costTimeline'
@@ -111,7 +112,7 @@ export function projectForAi(t: Translate, language: string, data: AiExportData,
   const { project, scheduled, costs } = data
   const money = (v: number) => formatMoney(v, project.currency, language)
   const date = (iso: string | null | undefined) => (iso ? formatIsoDate(iso, language) : '–')
-  const index = (v: number | null) => (v === null ? '–' : new Intl.NumberFormat(language, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v))
+  const index = (v: number | null) => (v === null ? '–' : new Intl.NumberFormat(localeFor(language), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v))
   const wbs = wbsNumbers(project)
   const numbers = rowNumbers(project)
   const tasks = new Map(project.tasks.map((x) => [x.id, x]))
@@ -127,7 +128,7 @@ export function projectForAi(t: Translate, language: string, data: AiExportData,
 
   // Přehled
   const count = (kind: Task['kind']) => project.tasks.filter((x) => x.kind === kind).length
-  const weekdays = project.calendar.workingWeekdays.map((d) => new Intl.DateTimeFormat(language, { weekday: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(2024, 0, d)))).join(', ')
+  const weekdays = project.calendar.workingWeekdays.map((d) => new Intl.DateTimeFormat(localeFor(language), { weekday: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(2024, 0, d)))).join(', ')
   out.push(`## ${t('ai.export.overviewHeading')}`)
   out.push(`- ${t('ai.export.start')}: ${date(project.startDate)}`)
   out.push(`- ${t('ai.export.finish')}: ${date(scheduled.projectFinish)}`)

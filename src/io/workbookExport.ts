@@ -15,7 +15,7 @@ import { splitPeriods } from '../model/periods'
 import { effectiveWorkerRate, professionRate, workingDaysInYear, type RateCalc } from '../model/rates'
 import type { Project } from '../model/schema'
 import { dayToIso } from '../engine/calendar'
-import { formatMonth } from '../i18n/format'
+import { currencyLabel, formatMonth } from '../i18n/format'
 import { BUDGET_COLUMNS, BUDGET_COMPUTED_COLUMNS, BUDGET_DATE_COLUMNS, BUDGET_MONEY_COLUMNS, buildBudgetLines, buildBudgetPhasing, type BudgetLabels } from './budgetExport'
 import { treeOrder, wbsNumbers } from '../model/hierarchy'
 import { buildExportTable, DATE_COLUMNS, EXPORT_COLUMNS, type Cell } from './tableExport'
@@ -101,9 +101,12 @@ export function buildWorkbook(
   scheduleResult: ScheduleResult,
   costs: CostsResult,
   timeline: CostTimeline,
-  t: (key: string) => string,
+  translate: (key: string, options?: { currency: string }) => string,
   language: string,
 ): WorkbookSheet[] {
+  // Hlavičky s měnou („Částka {{currency}}“) dostanou měnu projektu, ne pevné „Kč“ (audit U3).
+  const currency = currencyLabel(project.currency)
+  const t = (key: string) => translate(key, { currency })
   const fundDays = workingDaysInYear(project.calendar, Number(project.startDate.slice(0, 4)))
   const nameOf = <T extends { id: string; name: string }>(list: T[], id: string | undefined) => (id === undefined ? null : (list.find((x) => x.id === id)?.name ?? null))
   const budgetLabels: BudgetLabels = {

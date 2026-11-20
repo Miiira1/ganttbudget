@@ -5,7 +5,8 @@
  */
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { formatNumber } from '../../i18n/format'
+import { formatHours, formatNumber, formatPercent } from '../../i18n/format'
+import { localeFor } from '../../i18n/languages'
 import { formatAmount, formatMoney, parseMoney } from '../../model/money'
 import { calculateRate, createDefaultRateCalc, professionRate, workingDaysInYear, type RateCalc } from '../../model/rates'
 import { projectStore, useProject } from '../../store/useProject'
@@ -35,7 +36,7 @@ const fieldClass =
   'w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-right text-sm tabular-nums focus:outline-none focus-visible:ring-2 focus-visible:ring-focus aria-[invalid=true]:border-red-500 dark:border-slate-600 dark:bg-slate-800'
 
 function toDraft(calc: RateCalc, manualRate: number | undefined, lang: string): Draft {
-  const num = (n: number) => n.toLocaleString(lang, { maximumFractionDigits: 2 })
+  const num = (n: number) => n.toLocaleString(localeFor(lang), { maximumFractionDigits: 2 })
   return {
     manualRate: manualRate === undefined ? '' : formatAmount(manualRate, lang),
     monthlyWage: formatAmount(calc.monthlyWage, lang),
@@ -238,7 +239,7 @@ export function RateDialog({ target, onClose }: { target: RateTarget | null; onC
                     <dt>− {t('rate.steps.absence')}</dt>
                     <dd className="text-right">{t('rate.daysCount', { count: result.fundDays - result.availableDays })}</dd>
                     <dt>× {t('rate.steps.hoursAndProductivity')}</dt>
-                    <dd className="text-right">{`${formatNumber(calc!.hoursPerDay, lang)} h × ${formatNumber(calc!.productivityPct, lang)} %`}</dd>
+                    <dd className="text-right">{`${formatHours(calc!.hoursPerDay, lang, 2)} × ${formatPercent(calc!.productivityPct, lang, 2)}`}</dd>
                     <dt className="border-t border-slate-300 pt-1 font-semibold dark:border-slate-600">= {t('rate.steps.productiveHours')}</dt>
                     <dd className="border-t border-slate-300 pt-1 text-right font-semibold dark:border-slate-600">
                       {formatNumber(result.productiveHours, lang)} h

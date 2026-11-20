@@ -7,7 +7,7 @@ import type { TFunction } from 'i18next'
 import { create } from 'zustand'
 import { projectStore } from '../store/useProject'
 import { showNotice } from '../ui/notice'
-import { saveBlob } from './fileActions'
+import { issueWhereText, saveBlob } from './fileActions'
 import { buildLibrary, libraryFileName, mergeLibrary, parseLibraryFile, serializeLibrary, type Library, type LibraryFileError } from './libraryFile'
 import { MAX_FILE_CHARS } from './projectFile'
 import { syncLaborLines } from '../model/catalogs'
@@ -33,7 +33,7 @@ interface PendingLibrary {
 export const useLibraryState = create<{ pending: PendingLibrary | null }>(() => ({ pending: null }))
 
 export function libraryErrorText(error: LibraryFileError, t: TFunction): string {
-  if (error.code === 'invalid') return t('library.error.invalid', { count: error.issues.length, where: error.issues[0]?.path ?? '' })
+  if (error.code === 'invalid') return t('library.error.invalid', { count: error.issues.length, where: issueWhereText(error.issues[0]?.path ?? '', t) })
   if (error.code === 'newerVersion') return t('library.error.newerVersion', { version: error.version })
   return t(`library.error.${error.code}`)
 }

@@ -7,6 +7,7 @@
  */
 import { memo, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { formatPercent } from '../../i18n/format'
 import { absenceWorkingDays } from '../../model/catalogs'
 import { filterLoad, groupLoad, loadKpis, loadPeriods, NO_DEPARTMENT, summarizePeriod, type LoadPeriodUnit, type LoadResourceKind, type PeriodLoad, type ResourceLoad } from '../../model/load'
 import { useLoad, useProject } from '../../store/useProject'
@@ -75,7 +76,7 @@ export function LoadView({ onShowPlan }: { onShowPlan: () => void }) {
     visible.find((r) => r.contributions.length > 0) ??
     visible[0] ??
     null
-  const pct = (value: number | null) => (value === null ? '–' : `${value} %`)
+  const pct = (value: number | null) => (value === null ? '–' : formatPercent(value, i18n.language))
 
   return (
     <div className="flex h-full min-h-0 flex-col">

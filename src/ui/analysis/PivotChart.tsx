@@ -12,6 +12,7 @@
  * Graf se přizpůsobí šířce a výšce panelu (width / height) – tažení rozdělovníku ho překreslí.
  */
 import { useTranslation } from 'react-i18next'
+import { formatPercent } from '../../i18n/format'
 import { OTHER, type ChartSeriesData, type ChartType } from '../../model/pivotChart'
 import { SERIES_COLORS, seriesColor, type SeriesColor } from '../costs/palette'
 import { useElementSize } from '../useElementSize'
@@ -132,7 +133,7 @@ function BarChart({ series, labelOf, format, compact, width }: Inner) {
 
 /** Prstenec podílů; mezi výsečemi mezera barvy pozadí. Tabulka podílů vedle, v úzkém panelu pod ním. */
 function PieChart({ series, labelOf, colorOf, format, width, height }: Inner) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   // Prstenec nechá místo i pro tabulku podílů (vedle, nebo v úzkém panelu pod ním).
   const SIZE = Math.round(Math.min(240, Math.max(120, Math.min(width - 8, width >= 520 ? height - 16 : height * 0.55))))
   const C = SIZE / 2
@@ -155,7 +156,7 @@ function PieChart({ series, labelOf, colorOf, format, width, height }: Inner) {
               : `M ${point(start, R)} A ${R} ${R} 0 ${large} 1 ${point(end, R)} L ${point(end, r)} A ${r} ${r} 0 ${large} 0 ${point(start, r)} z`
           return (
             <path key={s.key} d={d} fillRule="evenodd" strokeWidth={2} className={`${colorOf!(s).fill} ${SURFACE}`}>
-              <title>{`${labelOf(s)}: ${format(s.total)} (${Math.round(share * 1000) / 10} %)`}</title>
+              <title>{`${labelOf(s)}: ${format(s.total)} (${formatPercent(share * 100, i18n.language, 1)})`}</title>
             </path>
           )
         })}
@@ -169,7 +170,7 @@ function PieChart({ series, labelOf, colorOf, format, width, height }: Inner) {
               </td>
               <td className="max-w-56 truncate pr-3 text-slate-700 dark:text-slate-300">{labelOf(s)}</td>
               <td className="pr-3 text-right tabular-nums">{format(s.total)}</td>
-              <td className="text-right tabular-nums text-slate-500 dark:text-slate-400">{Math.round((Math.max(0, s.total) / total) * 1000) / 10} %</td>
+              <td className="text-right tabular-nums text-slate-500 dark:text-slate-400">{formatPercent((Math.max(0, s.total) / total) * 100, i18n.language, 1)}</td>
             </tr>
           ))}
         </tbody>

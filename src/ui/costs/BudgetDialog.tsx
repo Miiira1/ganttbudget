@@ -5,6 +5,7 @@
  */
 import { useEffect, useId, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import { formatPercent } from '../../i18n/format'
 import { totalsByCategory } from '../../model/costTimeline'
 import { formatAmount, formatMoney, parseMoney } from '../../model/money'
 import { projectStore, useCostTimeline, useProject } from '../../store/useProject'
@@ -56,7 +57,7 @@ export function BudgetDialog({ open, onClose }: { open: boolean; onClose: () => 
           />
         </td>
         <td className={`w-20 px-2 py-1 text-right tabular-nums ${pct !== null && pct > 100 ? 'font-semibold text-red-700 dark:text-red-300' : 'text-slate-600 dark:text-slate-300'}`}>
-          {pct === null ? '' : `${pct} %`}
+          {pct === null ? '' : formatPercent(pct, lang)}
         </td>
       </tr>
     )

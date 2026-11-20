@@ -5,7 +5,7 @@
  * Záporné CV / SV (předražení, zpoždění) jsou červeně s mínusem – nejen barvou.
  */
 import { useTranslation } from 'react-i18next'
-import { formatIsoDate } from '../../i18n/format'
+import { formatIsoDate, formatPercent } from '../../i18n/format'
 import type { EarnedValueResult, EvRow } from '../../model/earnedValue'
 import { formatMoney } from '../../model/money'
 
@@ -71,7 +71,7 @@ export function TrackingTable({ ev, wbs, currency }: { ev: EarnedValueResult; wb
                 <td className="whitespace-nowrap px-2 py-1 tabular-nums">{r.baselineStart ? `${date(r.baselineStart)} – ${date(r.baselineFinish)}` : ''}</td>
                 <td className="whitespace-nowrap px-2 py-1 tabular-nums">{r.start ? `${date(r.start)} – ${date(r.finish)}` : ''}</td>
                 <td className={`${num} ${(r.finishShift ?? 0) > 0 ? 'text-red-700 dark:text-red-300' : ''}`}>{shift(r.finishShift)}</td>
-                <td className={num}>{r.kind === 'milestone' ? (r.percent >= 100 ? '✓' : '–') : `${r.percent} %`}</td>
+                <td className={num}>{r.kind === 'milestone' ? (r.percent >= 100 ? '✓' : '–') : formatPercent(r.percent, i18n.language)}</td>
                 <td className={num}>{money(r.bac)}</td>
                 <td className={num}>{money(r.pv)}</td>
                 <td className={num}>{money(r.ev)}</td>

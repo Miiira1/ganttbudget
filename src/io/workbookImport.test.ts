@@ -12,10 +12,11 @@ import type { Cell } from './tableExport'
 import { buildWorkbook, type WorkbookSheet } from './workbookExport'
 import { importWorkbook } from './workbookImport'
 
-const translator = (locale: object) => (key: string): string => {
+/** Jako i18next: najde text podle klíče a dosadí hodnoty {{…}} (např. měnu do hlavičky). */
+const translator = (locale: object) => (key: string, options?: Record<string, string>): string => {
   const value = key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], locale)
   if (typeof value !== 'string') throw new Error(`chybí překlad ${key}`)
-  return value
+  return value.replace(/\{\{(\w+)\}\}/g, (all, name: string) => options?.[name] ?? all)
 }
 
 /** Projekt → listy jako v souboru: { název listu: [hlavička s dovětkem u vypočtených, ...řádky] }. */
@@ -217,7 +218,7 @@ describe('celý projekt z Excelu – baseline a skutečné náklady (fáze 9)', 
     const sheets = toSheets(p)
     const name = cs.workbook.sheets.actuals
     const rows = sheets.get(name)!
-    const amount = rows[0]!.findIndex((h) => h === cs.workbook.columns.amount)
+    const amount = rows[0]!.findIndex((h) => h === cs.workbook.columns.amount.replace('{{currency}}', 'Kč'))
     rows[1]![amount] = 40_000
     rows.splice(2, 1)
     const result = importWorkbook(sheets, p, makeId)
@@ -233,11 +234,31 @@ describe('celý projekt z Excelu – baseline a skutečné náklady (fáze 9)', 
     if (result.ok) expect(actualsOf(result.project)).toEqual(actualsOf(p))
   })
 
+  it('projekt v EUR: hlavičky s měnou projektu („Částka EUR“) a import je pozná (audit U3)', () => {
+    const p = { ...withTracking(), currency: 'EUR' }
+    const sheets = toSheets(p)
+    const header = sheets.get(cs.workbook.sheets.actuals)![0]!
+    expect(header).toContain('Částka EUR')
+    expect(header.some((h) => typeof h === 'string' && h.includes('Kč'))).toBe(false)
+    const result = importWorkbook(sheets, p, makeId)
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(actualsOf(result.project)).toEqual(actualsOf(p))
+  })
+
+  it('starší sešit s hlavičkami „… Kč“ se dál načte', () => {
+    const p = withTracking()
+    const sheets = toSheets({ ...p, currency: 'EUR' })
+    // Hlavičky jako ze starší verze aplikace (pevné „Kč“), obsah projektu v EUR.
+    for (const rows of sheets.values()) rows[0] = rows[0]!.map((h) => (typeof h === 'string' ? h.replaceAll('EUR', 'Kč') : h))
+    expect(importWorkbook(sheets, p, makeId).ok).toBe(true)
+  })
+
   it('chyby listu Skutečnost: neznámé WBS, datum, částka', () => {
     const p = withTracking()
     const sheets = toSheets(p)
     const rows = sheets.get(cs.workbook.sheets.actuals)!
-    const col = (key: 'wbs' | 'date' | 'amount') => rows[0]!.findIndex((h) => typeof h === 'string' && h.startsWith(cs.workbook.columns[key]))
+    const col = (key: 'wbs' | 'date' | 'amount') =>
+      rows[0]!.findIndex((h) => typeof h === 'string' && h.startsWith(cs.workbook.columns[key].replace('{{currency}}', 'Kč')))
     rows[1]![col('wbs')] = '99.9'
     rows[2]![col('date')] = '31.2.2027'
     rows[3]![col('amount')] = -5

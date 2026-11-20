@@ -11,6 +11,7 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { isoToDay } from '../../engine/calendar'
 import { formatIsoDate } from '../../i18n/format'
+import { localeFor } from '../../i18n/languages'
 import { evCurves, sampleCurves } from '../../model/earnedValue'
 import { wbsNumbers } from '../../model/hierarchy'
 import { splitPeriods } from '../../model/periods'
@@ -116,7 +117,7 @@ export function TrackingView() {
   }
 
   const money = (v: number) => formatMoney(v, project.currency, lang)
-  const index = (v: number) => new Intl.NumberFormat(lang, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)
+  const index = (v: number) => new Intl.NumberFormat(localeFor(lang), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)
   const { totals } = ev
   const evPct = totals.bac > 0 ? Math.round((totals.ev / totals.bac) * 100) : 0
   const spiHint =

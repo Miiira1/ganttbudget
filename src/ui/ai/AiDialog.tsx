@@ -7,6 +7,7 @@
  */
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import { formatNumber } from '../../i18n/format'
 import { AI_QUESTIONS, projectForAi, type AiQuestion, type Translate } from '../../model/aiPrompts'
 import { AiIcon } from '../icons'
 import { AiPlanTab } from './AiPlanTab'
@@ -202,7 +203,7 @@ function ExportTab({ lang }: { lang: string }) {
           <label htmlFor={ids.preview} className="font-medium">
             {t('aiDialog.export.preview')}
           </label>
-          <span className="text-xs text-slate-500 dark:text-slate-400">{t('aiDialog.export.size', { chars: new Intl.NumberFormat(lang).format(text.length) })}</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">{t('aiDialog.export.size', { chars: formatNumber(text.length, lang) })}</span>
         </div>
         <textarea ref={previewRef} id={ids.preview} readOnly value={text} rows={12} className="field-select mt-1 w-full font-mono text-xs" />
       </div>
