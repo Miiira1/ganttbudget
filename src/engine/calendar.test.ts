@@ -25,6 +25,17 @@ describe('převod dat', () => {
     expect(day('2026-11-15') - day('2026-11-14')).toBe(1)
   })
 
+  it('rychlý převod bez Date dává pro každý den let 1900–2200 stejný výsledek jako Date (audit R5)', () => {
+    const MS = 86_400_000
+    const from = Date.UTC(1900, 0, 1) / MS
+    const to = Date.UTC(2200, 11, 31) / MS
+    for (let d = from; d <= to; d++) {
+      const reference = new Date(d * MS).toISOString().slice(0, 10)
+      if (iso(d) !== reference) throw new Error(`dayToIso(${d}) = ${iso(d)}, má být ${reference}`)
+      if (day(reference) !== d) throw new Error(`isoToDay(${reference}) = ${day(reference)}, má být ${d}`)
+    }
+  })
+
   it('den v týdnu: 1 = pondělí … 7 = neděle', () => {
     expect(isoWeekday(day('2026-11-16'))).toBe(1) // pondělí
     expect(isoWeekday(day('2026-11-14'))).toBe(6) // sobota

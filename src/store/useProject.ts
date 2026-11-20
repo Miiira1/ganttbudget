@@ -1,6 +1,10 @@
 /**
  * Jedno úložiště stavu pro celou aplikaci a „háčky“ (hooks) pro komponenty Reactu.
  * Komponenta si vybere jen to, co potřebuje: useProject((s) => s.project.tasks)
+ *
+ * Spočítané výsledky (termíny, náklady, vytížení…) se pamatují jen pro poslední 3 verze
+ * projektu (versionCache.ts, audit R2) – počítají se jen po změně, ale historie Zpět
+ * kvůli nim nedrží v paměti stovky MB.
  */
 import { useStore } from 'zustand'
 import i18n from '../i18n'
@@ -16,6 +20,7 @@ import { isoToDay } from '../engine/calendar'
 import { todayIso } from '../model/dates'
 import { createEmptyProject, type Project } from '../model/schema'
 import { createProjectStore, type ProjectState } from './projectStore'
+import { createVersionCache } from './versionCache'
 
 export const projectStore = createProjectStore(
   createEmptyProject({ name: i18n.t('project.defaultName'), language: i18n.language }),
@@ -25,17 +30,12 @@ export function useProject<T>(selector: (state: ProjectState) => T): T {
   return useStore(projectStore, selector)
 }
 
-// Spočítané termíny se pamatují pro každou verzi projektu – počítají se jen po změně.
-const scheduleCache = new WeakMap<Project, ScheduleResult>()
+// Spočítané termíny se pamatují pro poslední verze projektu – počítají se jen po změně.
+const scheduleCache = createVersionCache<Project, ScheduleResult>()
 
 /** Spočítané termíny dané verze projektu (z paměti, pokud už byly spočítané). */
 export function getSchedule(project: Project): ScheduleResult {
-  let result = scheduleCache.get(project)
-  if (!result) {
-    result = schedule(project)
-    scheduleCache.set(project, result)
-  }
-  return result
+  return scheduleCache.get(project, () => schedule(project))
 }
 
 /** Spočítané termíny aktuálního projektu (výsledek plánovacího jádra). */
@@ -44,16 +44,11 @@ export function useSchedule(): ScheduleResult {
 }
 
 // Náklady (fáze 6b) se také počítají jen jednou pro každou verzi projektu.
-const costsCache = new WeakMap<Project, CostsResult>()
+const costsCache = createVersionCache<Project, CostsResult>()
 
 /** Náklady řádků, položek a projektu pro danou verzi projektu (z paměti, pokud už byly spočítané). */
 export function getCosts(project: Project): CostsResult {
-  let result = costsCache.get(project)
-  if (!result) {
-    result = computeCosts(project, getSchedule(project))
-    costsCache.set(project, result)
-  }
-  return result
+  return costsCache.get(project, () => computeCosts(project, getSchedule(project)))
 }
 
 /** Náklady aktuálního projektu. */
@@ -62,16 +57,11 @@ export function useCosts(): CostsResult {
 }
 
 // Vytížení zdrojů (fáze 6c) – také jen jednou pro každou verzi projektu.
-const loadCache = new WeakMap<Project, LoadResult>()
+const loadCache = createVersionCache<Project, LoadResult>()
 
 /** Vytížení pracovníků, profesí a strojů pro danou verzi projektu. */
 export function getLoad(project: Project): LoadResult {
-  let result = loadCache.get(project)
-  if (!result) {
-    result = computeLoad(project, getSchedule(project))
-    loadCache.set(project, result)
-  }
-  return result
+  return loadCache.get(project, () => computeLoad(project, getSchedule(project)))
 }
 
 /** Vytížení aktuálního projektu. */
@@ -80,16 +70,11 @@ export function useLoad(): LoadResult {
 }
 
 // Časový náběh nákladů (fáze 7) – také jen jednou pro každou verzi projektu.
-const costTimelineCache = new WeakMap<Project, CostTimeline>()
+const costTimelineCache = createVersionCache<Project, CostTimeline>()
 
 /** Rozpad nákladů projektu do dnů (pro pohled Náklady, limity a export). */
 export function getCostTimeline(project: Project): CostTimeline {
-  let result = costTimelineCache.get(project)
-  if (!result) {
-    result = computeCostTimeline(project, getSchedule(project), getCosts(project))
-    costTimelineCache.set(project, result)
-  }
-  return result
+  return costTimelineCache.get(project, () => computeCostTimeline(project, getSchedule(project), getCosts(project)))
 }
 
 /** Časový náběh nákladů aktuálního projektu. */
@@ -98,15 +83,10 @@ export function useCostTimeline(): CostTimeline {
 }
 
 // Stav limitů rozpočtu (fáze 7) – pro záhlaví, pohled Náklady a dialog limitů.
-const budgetCache = new WeakMap<Project, BudgetStatus>()
+const budgetCache = createVersionCache<Project, BudgetStatus>()
 
 export function getBudgetStatus(project: Project): BudgetStatus {
-  let result = budgetCache.get(project)
-  if (!result) {
-    result = budgetStatus(project, getCostTimeline(project))
-    budgetCache.set(project, result)
-  }
-  return result
+  return budgetCache.get(project, () => budgetStatus(project, getCostTimeline(project)))
 }
 
 export function useBudgetStatus(): BudgetStatus {
@@ -114,15 +94,10 @@ export function useBudgetStatus(): BudgetStatus {
 }
 
 // Fakta pro analýzu (fáze 8) – řádky činností s rozpadem nákladu a hodin po dnech.
-const factsCache = new WeakMap<Project, Facts>()
+const factsCache = createVersionCache<Project, Facts>()
 
 export function getFacts(project: Project): Facts {
-  let result = factsCache.get(project)
-  if (!result) {
-    result = buildFacts(project, getSchedule(project), getCostTimeline(project))
-    factsCache.set(project, result)
-  }
-  return result
+  return factsCache.get(project, () => buildFacts(project, getSchedule(project), getCostTimeline(project)))
 }
 
 export function useFacts(): Facts {
@@ -130,16 +105,13 @@ export function useFacts(): Facts {
 }
 
 // % hotovo (fáze 9) – fáze spočítaná z činností, vážená plánovaným nákladem vybrané baseline (jinak délkou).
-const percentCache = new WeakMap<Project, Map<string, number>>()
+const percentCache = createVersionCache<Project, Map<string, number>>()
 
 export function getPercents(project: Project): Map<string, number> {
-  let result = percentCache.get(project)
-  if (!result) {
+  return percentCache.get(project, () => {
     const baseline = activeBaseline(project)
-    result = rollupPercent(project, baseline ? baselineBac(baseline) : null)
-    percentCache.set(project, result)
-  }
-  return result
+    return rollupPercent(project, baseline ? baselineBac(baseline) : null)
+  })
 }
 
 export function usePercents(): Map<string, number> {
@@ -147,16 +119,21 @@ export function usePercents(): Map<string, number> {
 }
 
 // Earned Value (fáze 9) k datu stavu (bez něj dnes) a vybrané baseline; null = baseline není.
-const evCache = new WeakMap<Project, { day: number; result: EarnedValueResult | null }>()
+const evCache = createVersionCache<Project, { day: number; result: EarnedValueResult | null }>()
 
 export function getEarnedValue(project: Project): EarnedValueResult | null {
   const day = isoToDay(project.statusDate ?? todayIso())
-  const cached = evCache.get(project)
-  if (cached && cached.day === day) return cached.result
-  const baseline = activeBaseline(project)
-  const result = baseline ? earnedValue(project, getSchedule(project), baseline, day) : null
-  evCache.set(project, { day, result })
-  return result
+  const compute = () => {
+    const baseline = activeBaseline(project)
+    return baseline ? earnedValue(project, getSchedule(project), baseline, day) : null
+  }
+  const cached = evCache.get(project, () => ({ day, result: compute() }))
+  if (cached.day !== day) {
+    // Přes půlnoc se změnil dnešek (datum stavu není zadané) → spočítat znovu.
+    cached.day = day
+    cached.result = compute()
+  }
+  return cached.result
 }
 
 export function useEarnedValue(): EarnedValueResult | null {
@@ -164,15 +141,17 @@ export function useEarnedValue(): EarnedValueResult | null {
 }
 
 // Kontrola kvality plánu (fáze 10, U-04) – závisí i na dnešku (kontrola „mělo začít“).
-const issuesCache = new WeakMap<Project, { today: string; result: PlanIssue[] }>()
+const issuesCache = createVersionCache<Project, { today: string; result: PlanIssue[] }>()
 
 export function getPlanIssues(project: Project): PlanIssue[] {
   const today = todayIso()
-  const cached = issuesCache.get(project)
-  if (cached && cached.today === today) return cached.result
-  const result = checkPlan({ project, scheduled: getSchedule(project), load: getLoad(project), budget: getBudgetStatus(project), today })
-  issuesCache.set(project, { today, result })
-  return result
+  const compute = () => checkPlan({ project, scheduled: getSchedule(project), load: getLoad(project), budget: getBudgetStatus(project), today })
+  const cached = issuesCache.get(project, () => ({ today, result: compute() }))
+  if (cached.today !== today) {
+    cached.today = today
+    cached.result = compute()
+  }
+  return cached.result
 }
 
 export function usePlanIssues(): PlanIssue[] {

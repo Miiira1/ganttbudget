@@ -143,6 +143,26 @@ describe('data', () => {
     expect(isValidIsoDate('2027-02-29')).toBe(false)
     expect(isValidIsoDate('2026-13-01')).toBe(false)
     expect(isValidIsoDate('14. 11. 2026')).toBe(false)
+    // Kontrola bez Date (audit R11): roky dělitelné 100 a 400, okrajové dny měsíců.
+    expect(isValidIsoDate('2000-02-29')).toBe(true)
+    expect(isValidIsoDate('2100-02-29')).toBe(false)
+    expect(isValidIsoDate('2026-04-31')).toBe(false)
+    expect(isValidIsoDate('2026-12-31')).toBe(true)
+    expect(isValidIsoDate('2026-00-10')).toBe(false)
+    expect(isValidIsoDate('2026-01-00')).toBe(false)
+  })
+
+  it('rychlá kontrola dává pro každý den let 1999–2031 stejný výsledek jako Date', () => {
+    for (let y = 1999; y <= 2031; y++) {
+      for (let m = 0; m <= 13; m++) {
+        for (let d = 0; d <= 32; d++) {
+          const text = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+          const date = new Date(Date.UTC(y, m - 1, d))
+          const reference = date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d
+          if (isValidIsoDate(text) !== reference) throw new Error(`${text}: ${!reference}`)
+        }
+      }
+    }
   })
 
   it('dnešek vrací ve formátu YYYY-MM-DD', () => {

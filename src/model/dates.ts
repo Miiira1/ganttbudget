@@ -7,9 +7,14 @@ export const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 /** Je text platný den "YYYY-MM-DD" (včetně kontroly, že den v měsíci existuje)? */
 export function isValidIsoDate(value: string): boolean {
   if (!ISO_DATE_PATTERN.test(value)) return false
-  const [y, m, d] = value.split('-').map(Number) as [number, number, number]
-  const date = new Date(Date.UTC(y, m - 1, d))
-  return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d
+  // Bez objektu Date (volá se při každém otevření souboru u každého data – audit R11).
+  const y = Number(value.slice(0, 4))
+  const m = Number(value.slice(5, 7))
+  const d = Number(value.slice(8, 10))
+  if (m < 1 || m > 12 || d < 1) return false
+  const leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0
+  const daysInMonth = m === 2 ? (leap ? 29 : 28) : m === 4 || m === 6 || m === 9 || m === 11 ? 30 : 31
+  return d <= daysInMonth
 }
 
 /** Dnešní den v místním čase jako "YYYY-MM-DD". */

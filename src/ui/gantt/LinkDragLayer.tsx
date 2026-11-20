@@ -99,13 +99,22 @@ export function LinkDragLayer(props: LinkDragLayerProps) {
       if (!task || !bar || task.id === drag.fromId) return null
       if (x < bar.xStart - TARGET_MARGIN || x > bar.xEnd + TARGET_MARGIN) return null
       const { anchor, type } = linkTarget(drag.fromAnchor, bar, x)
-      const result = withDependency(projectStore.getState().project, task.id, drag.fromId, type)
+      // Kontrola vazby (číslování řádků, hledání kruhu) jen při změně cíle, ne při každém
+      // pohybu myši nad stejnou úsečkou (audit R10).
+      const previous = drag.target
+      const error =
+        previous && previous.taskId === task.id && previous.type === type
+          ? previous.error
+          : (() => {
+              const result = withDependency(projectStore.getState().project, task.id, drag.fromId, type)
+              return result.ok ? null : result.error
+            })()
       return {
         taskId: task.id,
         anchor,
         type,
         point: [anchor === 'start' ? bar.xStart : bar.xEnd, bar.centerY],
-        error: result.ok ? null : result.error,
+        error,
       }
     }
 

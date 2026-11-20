@@ -1,14 +1,14 @@
 /** Hlavní okno aplikace: lišta s nástroji, tabulka činností a patička. */
 import logoOnLight from '../assets/brand/miro-horizontal-color-on-light.svg'
 import logoOnDark from '../assets/brand/miro-horizontal-color-on-dark.svg'
-import { useEffect, useRef, useState } from 'react'
+import { useDeferredValue, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LANGUAGES } from '../i18n/languages'
 import { formatIsoDate } from '../i18n/format'
 import { addSampleTracking, createSampleProject } from '../samples/automatizace'
 import { dayToIso, isoToDay } from '../engine/calendar'
 import { todayIso } from '../model/dates'
-import { projectStore, useBudgetStatus, useCosts, useLoad, usePlanIssues, useProject, useSchedule } from '../store/useProject'
+import { getBudgetStatus, getLoad, getPlanIssues, projectStore, useCosts, useProject, useSchedule } from '../store/useProject'
 import { formatMoney } from '../model/money'
 import { applyTheme, loadThemePreference, saveThemePreference, THEME_PREFERENCES, watchSystemTheme, type ThemePreference } from './theme'
 import { CalendarDialog } from './CalendarDialog'
@@ -77,7 +77,11 @@ export default function App() {
   const { addTask, undo, redo } = projectStore.getState()
   const { projectFinish, error: scheduleError } = useSchedule()
   const projectCost = useCosts().project.total
-  const budget = useBudgetStatus()
+  // Odznaky v záhlaví (rozpočet, přetížení, kontrola plánu) potřebují náběh nákladů a vytížení –
+  // u velkého plánu desítky ms. Počítají se z „odložené“ verze projektu: React nejdřív ukáže
+  // samotnou změnu a odznaky dopočítá hned potom (audit R4).
+  const deferredProject = useDeferredValue(project)
+  const budget = getBudgetStatus(deferredProject)
   const budgetOver = (budget.project?.over ?? 0) > 0 || budget.categories.some((c) => c.over > 0)
   const notice = useNotice((s) => s.message)
   const clearNotice = useNotice((s) => s.clear)
@@ -91,7 +95,7 @@ export default function App() {
   const [aiOpen, setAiOpen] = useState(false)
   const [printOpen, setPrintOpen] = useState(false)
   const [aiTab, setAiTab] = useState<AiTab>('export')
-  const issueCount = usePlanIssues().length
+  const issueCount = getPlanIssues(deferredProject).length
   const fileName = useFileState((s) => s.fileName)
   const dirty = useFileState((s) => s.savedProject) !== project
   const selectedId = useSelectedId(project)
@@ -110,7 +114,7 @@ export default function App() {
     return VIEWS.find((v) => v === saved) ?? 'plan'
   })
   // Počet přetížených zdrojů pro odznak na přepínači (počítá se jen jednou pro každou verzi projektu).
-  const overloadedCount = useLoad().overloadedCount
+  const overloadedCount = getLoad(deferredProject).overloadedCount
   const setView = (next: View) => {
     setViewState(next)
     savePreference('view', next)

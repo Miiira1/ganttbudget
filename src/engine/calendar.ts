@@ -10,17 +10,48 @@
  */
 import type { Calendar } from '../model/schema'
 
-const MS_PER_DAY = 86_400_000
+
+/*
+ * Převody data ↔ číslo dne čistou aritmetikou (algoritmus H. Hinnanta „days from civil“),
+ * bez vytváření objektů Date – volají se v přepočtu desetitisíckrát (audit R5).
+ * Test porovná výsledek s Date pro každý den let 1900–2200.
+ */
+
+/** Rok, měsíc (1–12), den → číslo dne. */
+function daysFromCivil(year: number, month: number, day: number): number {
+  const y = month <= 2 ? year - 1 : year
+  const era = Math.floor(y / 400)
+  const yearOfEra = y - era * 400
+  const dayOfYear = Math.floor((153 * (month + (month > 2 ? -3 : 9)) + 2) / 5) + day - 1
+  const dayOfEra = yearOfEra * 365 + Math.floor(yearOfEra / 4) - Math.floor(yearOfEra / 100) + dayOfYear
+  return era * 146_097 + dayOfEra - 719_468
+}
+
+/** Číslo dne → [rok, měsíc 1–12, den]. */
+function civilFromDays(dayNumber: number): [number, number, number] {
+  const z = dayNumber + 719_468
+  const era = Math.floor(z / 146_097)
+  const dayOfEra = z - era * 146_097
+  const yearOfEra = Math.floor((dayOfEra - Math.floor(dayOfEra / 1460) + Math.floor(dayOfEra / 36_524) - Math.floor(dayOfEra / 146_096)) / 365)
+  const dayOfYear = dayOfEra - (365 * yearOfEra + Math.floor(yearOfEra / 4) - Math.floor(yearOfEra / 100))
+  const mp = Math.floor((5 * dayOfYear + 2) / 153)
+  const day = dayOfYear - Math.floor((153 * mp + 2) / 5) + 1
+  const month = mp < 10 ? mp + 3 : mp - 9
+  return [yearOfEra + era * 400 + (month <= 2 ? 1 : 0), month, day]
+}
 
 /** ISO den "YYYY-MM-DD" → číslo dne. */
 export function isoToDay(isoDate: string): number {
   const [y, m, d] = isoDate.split('-').map(Number) as [number, number, number]
-  return Math.round(Date.UTC(y, m - 1, d) / MS_PER_DAY)
+  return daysFromCivil(y, m, d)
 }
+
+const pad2 = (n: number) => (n < 10 ? `0${n}` : `${n}`)
 
 /** Číslo dne → ISO den "YYYY-MM-DD". */
 export function dayToIso(day: number): string {
-  return new Date(day * MS_PER_DAY).toISOString().slice(0, 10)
+  const [y, m, d] = civilFromDays(day)
+  return `${String(y).padStart(4, '0')}-${pad2(m)}-${pad2(d)}`
 }
 
 /** Den v týdnu podle ISO: 1 = pondělí … 7 = neděle. (1. 1. 1970 byl čtvrtek.) */
@@ -29,7 +60,7 @@ export function isoWeekday(day: number): number {
 }
 
 function yearOf(day: number): number {
-  return new Date(day * MS_PER_DAY).getUTCFullYear()
+  return civilFromDays(day)[0]
 }
 
 /**
@@ -313,10 +344,16 @@ export function createWorkCalendar(calendar: Calendar): WorkCalendar {
     return { kind: 'working' }
   }
 
+  // Výsledek „je pracovní den?“ si pamatujeme – přepočet se ptá na stejné dny mnohokrát (audit R9).
+  const workingCache = new Map<number, boolean>()
   function isWorkingDay(day: number): boolean {
-    if (!workingWeekdays.has(isoWeekday(day))) return false
-    if (holidayKey(day)) return false
-    return !customRanges.some((r) => day >= r.start && day <= r.end)
+    let working = workingCache.get(day)
+    if (working === undefined) {
+      working =
+        workingWeekdays.has(isoWeekday(day)) && !holidayKey(day) && !customRanges.some((r) => day >= r.start && day <= r.end)
+      workingCache.set(day, working)
+    }
+    return working
   }
 
   function step(day: number, direction: 1 | -1): number {
