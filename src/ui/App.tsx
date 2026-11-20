@@ -37,7 +37,7 @@ import { BudgetImportDialog } from './costs/BudgetImportDialog'
 import { WorkbookImportDialog } from './WorkbookImportDialog'
 import { LibraryDialog } from './resources/LibraryDialog'
 import { ProjectName } from './ProjectName'
-import { isDirty, openProject, saveProject, useFileState } from '../io/fileActions'
+import { isDirty, loadSampleProject, openProject, saveProject, useFileState } from '../io/fileActions'
 import { startAutosave } from '../io/autosaveRunner'
 import { deleteSelected, duplicateSelected } from './structureCommands'
 import { ResourcesView } from './resources/ResourcesView'
@@ -74,7 +74,7 @@ export default function App() {
   const project = useProject((s) => s.project)
   const canUndo = useProject((s) => s.past.length > 0)
   const canRedo = useProject((s) => s.future.length > 0)
-  const { addTask, undo, redo, loadProject } = projectStore.getState()
+  const { addTask, undo, redo } = projectStore.getState()
   const { projectFinish, error: scheduleError } = useSchedule()
   const projectCost = useCosts().project.total
   const budget = useBudgetStatus()
@@ -241,7 +241,8 @@ export default function App() {
     const today = todayIso()
     const sample = createSampleProject((key) => t(key), i18n.language, dayToIso(isoToDay(today) - SAMPLE_WEEKS_AGO * 7))
     addSampleTracking(sample, (key) => t(key), today)
-    loadProject(sample)
+    // Odpojí od otevřeného souboru – Ctrl+S pak nepřepíše původní soubor vzorem (audit V1).
+    loadSampleProject(sample)
   }
 
   // Upozornění (chybný zápis, nespočitatelné termíny) – čtečka obrazovky ho přečte hned.

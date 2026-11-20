@@ -19,6 +19,7 @@ import { createEmptyProject, type Project } from '../model/schema'
 import { projectStore } from '../store/useProject'
 import { showNotice } from '../ui/notice'
 import { useViewState } from '../ui/viewState'
+import { trackFileSessions } from './fileSession'
 import { fileNameFor, MAX_FILE_CHARS, parseProjectFile, serializeProject, type ProjectFileError } from './projectFile'
 
 // --- Minimální popis File System Access API (není ve všech prohlížečích ani v typech TypeScriptu) ---
@@ -54,6 +55,14 @@ export const useFileState = create<FileState>(() => ({
   handle: null,
 }))
 
+/** Hlídá, aby Zpět / Znovu přes „Otevřít“, „Nový“ a vzorový projekt vrátilo i napojení na soubor. */
+const fileSessions = trackFileSessions(projectStore, useFileState)
+
+/** Nahradí celý projekt (jeden krok Zpět) a nastaví, ke kterému souboru patří. */
+function switchProject(next: Project, file: Partial<FileState>): void {
+  fileSessions.switchProject(() => projectStore.getState().loadProject(next), file)
+}
+
 /** Má projekt změny, které nejsou v souboru? (Zpět až k uložené verzi = zase uloženo.) */
 export function isDirty(project: Project = projectStore.getState().project): boolean {
   return project !== useFileState.getState().savedProject
@@ -88,10 +97,19 @@ export function fileErrorText(error: ProjectFileError, t: TFunction): string {
 export function newProject(t: TFunction, language: string, project?: Project): boolean {
   if (!confirmDiscard(t)) return false
   const next = project ?? createEmptyProject({ name: t('project.defaultName'), language })
-  projectStore.getState().loadProject(next)
-  useFileState.setState({ savedProject: next, fileName: null, handle: null })
+  switchProject(next, { savedProject: next, fileName: null, handle: null })
   useViewState.getState().setCollapsed(new Set())
   return true
+}
+
+/**
+ * Načte vzorový projekt (dotaz na nahrazení plánu dělá volající). Odpojí ho od otevřeného
+ * souboru, aby Ctrl+S nepřepsalo původní soubor vzorem – první Uložit se zeptá na místo.
+ * Vzor zůstane označený jako neuložený. Jde vrátit Ctrl+Z (i s napojením na soubor).
+ */
+export function loadSampleProject(sample: Project): void {
+  switchProject(sample, { fileName: null, handle: null })
+  useViewState.getState().setCollapsed(new Set())
 }
 
 /**
@@ -147,8 +165,7 @@ async function openFromFile(file: File, handle: FileHandle | null, t: TFunction)
     return
   }
   const { project, collapsed } = detachCollapsed(result.project)
-  projectStore.getState().loadProject(project)
-  useFileState.setState({ savedProject: project, fileName: file.name, handle })
+  switchProject(project, { savedProject: project, fileName: file.name, handle })
   useViewState.getState().setCollapsed(collapsed)
 }
 
