@@ -65,7 +65,9 @@ export function PivotChart(props: PivotChartProps) {
   return (
     <figure className="flex h-full min-h-0 flex-col gap-2">
       {legend}
-      <div ref={plotRef} className="min-h-0 flex-1 overflow-auto">
+      {/* Místo pro svislý posuvník je vyhrazené stále – když se objeví, nezmění šířku grafu
+          a nerozjede smyčku „posuvník → menší graf → bez posuvníku → větší graf“. */}
+      <div ref={plotRef} className="min-h-0 flex-1 overflow-auto [scrollbar-gutter:stable]">
         {size.width > 0 && (
           <>
             {props.type === 'bar' && <BarChart {...props} {...size} series={nonEmpty} labelOf={labelOf} />}
@@ -179,11 +181,16 @@ function PieChart({ series, labelOf, colorOf, format, width, height }: Inner) {
   )
 }
 
-/** Společný rámec čárového a skládaného grafu: osa Y vlevo, sloupce tabulky na ose X; vyplní panel. */
-function frameFor(columns: string[], max: number, available: { width: number; height: number }) {
+/**
+ * Společný rámec čárového a skládaného grafu: osa Y vlevo, sloupce tabulky na ose X; vyplní panel.
+ * Výška se zaokrouhluje DOLŮ s rezervou 1 px: graf nesmí plochu přesáhnout ani o zlomek pixelu –
+ * jinak se objeví posuvník, graf se zmenší, posuvník zmizí… a graf přeblikává (hlavně při
+ * zvětšení stránky v prohlížeči, kdy má plocha necelé rozměry).
+ */
+export function frameFor(columns: string[], max: number, available: { width: number; height: number }) {
   const LEFT = 60
   const TOP = 8
-  const PLOT_H = Math.round(Math.min(320, Math.max(60, available.height - 30))) // vyplní panel, i nízký (rozvržení Pod sebou)
+  const PLOT_H = Math.floor(Math.min(320, Math.max(60, available.height - 31))) // vyplní panel, i nízký (rozvržení Pod sebou)
   const slot = Math.max(6, Math.min(140, Math.floor((available.width - LEFT - 16) / Math.max(1, columns.length))))
   const width = LEFT + columns.length * slot + 16
   const top = niceMax(max)
