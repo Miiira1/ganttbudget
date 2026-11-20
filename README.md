@@ -130,6 +130,17 @@ Jednorázové nastavení:
 
 **Dependabot** (`.github/dependabot.yml`) jednou týdně navrhne aktualizace knihoven jako pull
 requesty. Nic se nesloučí samo: u každého počkejte, až projdou testy, a sloučte ho ručně.
+Akce GitHubu v `deploy.yml` jsou připnuté na přesný otisk verze (SHA, s číslem verze v komentáři);
+Dependabot je aktualizuje stejně jako knihovny.
+
+**Bezpečnost provozu:**
+
+- **Na tomto účtu GitHub nezapínejte Pages u dalších projektů.** Všechny weby
+  `https://<uživatel>.github.io/…` jednoho účtu sdílejí úložiště prohlížeče – jiný web na stejném
+  účtu by mohl číst rozpracované projekty uživatelů (zálohu v prohlížeči). Kdo potřebuje další web,
+  ať použije jiný účet nebo vlastní doménu.
+- Stránka má přísná pravidla **CSP** (vkládá je build, `vite.config.ts`): skripty, styly, písma a obrázky
+  jen z vlastní adresy a žádná síťová spojení (`connect-src 'none'`) – aplikace nic neposílá.
 
 ## Struktura kódu
 

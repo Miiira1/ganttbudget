@@ -16,7 +16,9 @@ const CSP = [
   "style-src 'self'",
   "img-src 'self' data:",
   "font-src 'self'",
-  "connect-src 'self'",
+  // Aplikace nic nestahuje ani neposílá (fetch, WebSocket…) – síťová spojení úplně zakázaná (audit).
+  // Odložené části aplikace se načítají jako skripty (script-src), na ně se to nevztahuje.
+  "connect-src 'none'",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'none'",
