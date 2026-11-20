@@ -9,8 +9,18 @@
 import { createDefaultCategories } from '../model/defaultCategories'
 import { ProjectSchema, SCHEMA_VERSION, type Project } from '../model/schema'
 
-/** Nejdelší soubor, který aplikace přečte (znaky ≈ bajty; 5 MB je pro 5 000 činností víc než dost). */
+/**
+ * Nejdelší soubor pro IMPORT (CSV, XLSX, MS Project, GanttProject, knihovna zdrojů): 5 MB
+ * (znaky ≈ bajty). Souvisí s ochranou proti „bombovým“ souborům, viz ZADANI I-04 až I-07.
+ */
 export const MAX_FILE_CHARS = 5 * 1024 * 1024
+
+/**
+ * Nejdelší SOUBOR PROJEKTU (.ganttbudget.json) a záloha v prohlížeči: 50 MB.
+ * Schéma dovolí 5 000 činností a 10 baseline – takový projekt má s odsazením až ~35 MB.
+ * Dřív tu byl společný limit 5 MB a velký projekt šel uložit, ale ne znovu otevřít (audit R1).
+ */
+export const MAX_PROJECT_FILE_CHARS = 50 * 1024 * 1024
 
 /** Přípona souborů projektu. */
 export const FILE_EXTENSION = '.ganttbudget.json'
@@ -29,14 +39,23 @@ export type ProjectFileError =
   | { code: 'newerVersion'; version: number }
   | { code: 'invalid'; issues: FileIssue[] }
 
-/** Projekt → text souboru (čitelný JSON s odsazením, na konci nový řádek). */
-export function serializeProject(project: Project): string {
-  return `${JSON.stringify(project, null, 2)}\n`
+/**
+ * Projekt → text souboru. Soubor je čitelný JSON s odsazením (na konci nový řádek).
+ * `compact` = bez odsazení, asi poloviční velikost – pro zálohu v prohlížeči.
+ */
+export function serializeProject(project: Project, options: { compact?: boolean } = {}): string {
+  return options.compact ? JSON.stringify(project) : `${JSON.stringify(project, null, 2)}\n`
+}
+
+/** Vejde se text do limitu souboru projektu, aby šel znovu otevřít? (Počítá bajty v UTF-8.) */
+export function projectFileFits(text: string): boolean {
+  if (text.length > MAX_PROJECT_FILE_CHARS) return false
+  return new TextEncoder().encode(text).length <= MAX_PROJECT_FILE_CHARS
 }
 
 /** Text souboru → ověřený projekt, nebo chyba. */
 export function parseProjectFile(text: string): { ok: true; project: Project } | { ok: false; error: ProjectFileError } {
-  if (text.length > MAX_FILE_CHARS) return { ok: false, error: { code: 'tooLarge' } }
+  if (text.length > MAX_PROJECT_FILE_CHARS) return { ok: false, error: { code: 'tooLarge' } }
 
   let data: unknown
   try {

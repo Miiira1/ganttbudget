@@ -3,6 +3,7 @@ import { createSampleProject } from '../samples/automatizace'
 import { translateCs } from '../samples/translateForTests'
 import { createEmptyProject } from '../model/schema'
 import { fromBackup, shouldRestore, toBackup } from './autosave'
+import { serializeProject } from './projectFile'
 
 const sample = () => createSampleProject(translateCs, 'cs', '2026-11-16')
 const now = new Date('2026-11-14T21:30:00Z')
@@ -19,6 +20,19 @@ describe('automatická záloha v prohlížeči', () => {
       saved: true,
       savedAt: '2026-11-14T21:30:00.000Z',
     })
+  })
+
+  it('záloha se ukládá úsporně (bez odsazení) – asi poloviční velikost (audit R1, R8)', () => {
+    const project = sample()
+    const backup = toBackup(project, { fileName: null, saved: false }, now)
+    expect(backup.text).toBe(serializeProject(project, { compact: true }))
+    expect(backup.text).not.toContain('\n  ')
+  })
+
+  it('starší záloha s odsazením se dál obnoví', () => {
+    const project = sample()
+    const old = { savedAt: now.toISOString(), text: serializeProject(project), fileName: 'plan.ganttbudget.json', saved: true }
+    expect(fromBackup(old)).toMatchObject({ ok: true, project, fileName: 'plan.ganttbudget.json' })
   })
 
   it('poškozená záloha se nepoužije (ověří se stejně jako soubor)', () => {

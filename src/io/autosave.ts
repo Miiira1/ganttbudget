@@ -15,7 +15,7 @@ import { parseProjectFile, serializeProject } from './projectFile'
 export interface Backup {
   /** Kdy se zálohovalo (ISO čas). */
   savedAt: string
-  /** Projekt jako text souboru (stejný formát jako .ganttbudget.json). */
+  /** Projekt jako text souboru (formát .ganttbudget.json, jen bez odsazení). */
   text: string
   /** Název souboru, do kterého se projekt ukládal (null = ještě nikdy). */
   fileName: string | null
@@ -24,7 +24,9 @@ export interface Backup {
 }
 
 export function toBackup(project: Project, state: { fileName: string | null; saved: boolean }, now = new Date()): Backup {
-  return { savedAt: now.toISOString(), text: serializeProject(project), fileName: state.fileName, saved: state.saved }
+  // Úsporně bez odsazení: poloviční velikost a rychlejší zápis (audit R1, R8). Starší zálohy
+  // s odsazením se čtou dál – parseProjectFile přečte obojí.
+  return { savedAt: now.toISOString(), text: serializeProject(project, { compact: true }), fileName: state.fileName, saved: state.saved }
 }
 
 /** Záznam z prohlížeče → ověřený projekt. Cokoli neplatného se nepoužije. */

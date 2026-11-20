@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createSampleProject } from '../samples/automatizace'
 import { translateCs } from '../samples/translateForTests'
 import { SCHEMA_VERSION } from '../model/schema'
-import { fileNameFor, MAX_FILE_CHARS, parseProjectFile, serializeProject } from './projectFile'
+import { fileNameFor, MAX_FILE_CHARS, MAX_PROJECT_FILE_CHARS, parseProjectFile, projectFileFits, serializeProject } from './projectFile'
 
 /** Vzorový projekt s „přeloženými“ názvy = klíči (překlady tu nepotřebujeme). */
 const sample = () => createSampleProject(translateCs, 'cs', '2026-11-16')
@@ -96,8 +96,32 @@ describe('soubor projektu (JSON)', () => {
     expect(result.ok === false && result.error.code === 'invalid' && result.error.issues.some((i) => i.message === 'parentCycle')).toBe(true)
   })
 
-  it('příliš velký soubor se ani nečte', () => {
-    expect(parseProjectFile(' '.repeat(MAX_FILE_CHARS + 1))).toEqual({ ok: false, error: { code: 'tooLarge' } })
+  it('příliš velký soubor se ani nečte (limit souboru projektu 50 MB)', () => {
+    expect(parseProjectFile(' '.repeat(MAX_PROJECT_FILE_CHARS + 1))).toEqual({ ok: false, error: { code: 'tooLarge' } })
+  })
+
+  it('soubor projektu větší než limit importů (5 MB) se otevře (audit R1)', () => {
+    // Velký projekt (např. 4 000 činností) má přes 5 MB – musí jít znovu otevřít.
+    const project = sample()
+    const text = serializeProject(project) + ' '.repeat(MAX_FILE_CHARS + 1)
+    expect(text.length).toBeGreaterThan(MAX_FILE_CHARS)
+    expect(parseProjectFile(text)).toEqual({ ok: true, project })
+  })
+
+  it('úsporný zápis (bez odsazení) se načte stejně a je menší', () => {
+    const project = sample()
+    const compact = serializeProject(project, { compact: true })
+    expect(compact.startsWith('{"schemaVersion":2,')).toBe(true)
+    expect(compact.length).toBeLessThan(serializeProject(project).length * 0.8)
+    expect(parseProjectFile(compact)).toEqual({ ok: true, project })
+  })
+
+  it('kontrola před uložením: vejde se soubor do limitu? (počítá bajty, ne znaky)', () => {
+    expect(projectFileFits('{}')).toBe(true)
+    expect(projectFileFits('a'.repeat(MAX_PROJECT_FILE_CHARS))).toBe(true)
+    expect(projectFileFits('a'.repeat(MAX_PROJECT_FILE_CHARS + 1))).toBe(false)
+    // „č“ má v souboru 2 bajty – znaků je málo, ale bajtů přes limit.
+    expect(projectFileFits('č'.repeat(MAX_PROJECT_FILE_CHARS / 2 + 1))).toBe(false)
   })
 
   it('název souboru z názvu projektu (bez znaků, které Windows nepovolí)', () => {

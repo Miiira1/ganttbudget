@@ -126,7 +126,8 @@
     "import": "Import from Excel / CSV…",
     "importHint": "Replace the tasks with a table from an .xlsx or .csv file (you will see a preview first)",
     "error": {
-      "tooLarge": "The file is too large (over 5 MB) – it is probably not a MiRo project file. Nothing has changed.",
+      "tooLarge": "The file is too large (over 50 MB) – it is probably not a MiRo project file. Nothing has changed.",
+      "tooLargeToReopen": "The project was saved, but it is larger than 50 MB and the app cannot open it again. Make it smaller (e.g. delete old baselines in the Tracking view) and save again.",
       "notJson": "The file cannot be read – it is damaged or not a project file (.json). Nothing has changed.",
       "notProject": "This file is not a MiRo project file. Nothing has changed.",
       "newerVersion": "The file is from a newer version of the app (format {{version}}). Please update the app. Nothing has changed.",

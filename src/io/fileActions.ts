@@ -20,7 +20,14 @@ import { projectStore } from '../store/useProject'
 import { showNotice } from '../ui/notice'
 import { useViewState } from '../ui/viewState'
 import { trackFileSessions } from './fileSession'
-import { fileNameFor, MAX_FILE_CHARS, parseProjectFile, serializeProject, type ProjectFileError } from './projectFile'
+import {
+  fileNameFor,
+  MAX_PROJECT_FILE_CHARS,
+  parseProjectFile,
+  projectFileFits,
+  serializeProject,
+  type ProjectFileError,
+} from './projectFile'
 
 // --- Minimální popis File System Access API (není ve všech prohlížečích ani v typech TypeScriptu) ---
 export interface FileHandle {
@@ -143,11 +150,14 @@ export async function saveBlob(
 /** Uložit (asNew = Uložit jako… – vždy se zeptá na místo a název). */
 export async function saveProject(t: TFunction, asNew = false): Promise<void> {
   const project = projectStore.getState().project
-  const blob = new Blob([serializeProject(attachCollapsed(project, useViewState.getState().collapsed))], { type: 'application/json' })
+  const text = serializeProject(attachCollapsed(project, useViewState.getState().collapsed))
+  const blob = new Blob([text], { type: 'application/json' })
   try {
     const previous = asNew ? null : useFileState.getState().handle
     const saved = await saveBlob(blob, fileNameFor(project), pickerTypes(t)[0]!, previous)
     useFileState.setState({ savedProject: project, fileName: saved.name, handle: saved.handle })
+    // Pojistka (audit R1): uložit vždy (data se neztratí), ale varovat, když soubor nepůjde otevřít.
+    if (!projectFileFits(text)) showNotice(t('file.error.tooLargeToReopen'))
   } catch (error) {
     if (!isAbort(error)) showNotice(t('file.error.saveFailed'))
   }
@@ -155,7 +165,7 @@ export async function saveProject(t: TFunction, asNew = false): Promise<void> {
 
 /** Načte text vybraného souboru, ověří ho a otevře projekt (jde vrátit Ctrl+Z). */
 async function openFromFile(file: File, handle: FileHandle | null, t: TFunction): Promise<void> {
-  if (file.size > MAX_FILE_CHARS) {
+  if (file.size > MAX_PROJECT_FILE_CHARS) {
     showNotice(fileErrorText({ code: 'tooLarge' }, t))
     return
   }

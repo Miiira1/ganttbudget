@@ -138,7 +138,8 @@
     "import": "Importovat z Excelu / CSV…",
     "importHint": "Nahradit činnosti tabulkou ze souboru .xlsx nebo .csv (nejdřív uvidíte náhled)",
     "error": {
-      "tooLarge": "Soubor je příliš velký (víc než 5 MB) – nejspíš to není projekt z aplikace MiRo project. Nic se nezměnilo.",
+      "tooLarge": "Soubor je příliš velký (víc než 50 MB) – nejspíš to není projekt z aplikace MiRo project. Nic se nezměnilo.",
+      "tooLargeToReopen": "Projekt se uložil, ale je větší než 50 MB a aplikace ho nedokáže znovu otevřít. Zmenšete ho (např. smažte staré baseline v pohledu Sledování) a uložte znovu.",
       "notJson": "Soubor se nedá přečíst – je poškozený nebo to není soubor projektu (.json). Nic se nezměnilo.",
       "notProject": "Tento soubor není projekt z aplikace MiRo project. Nic se nezměnilo.",
       "newerVersion": "Soubor je z novější verze aplikace (formát {{version}}). Aktualizujte aplikaci. Nic se nezměnilo.",
