@@ -20,6 +20,8 @@ export class XmlError extends Error {}
 
 const MAX_DEPTH = 64
 const MAX_ELEMENTS = 500_000
+/** Jeden atribut: mezera, název, „=“, hodnota v uvozovkách. Čte se přesně od zadaného místa (/y). */
+const ATTRIBUTE = /\s+([^\s=]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/y
 
 const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" }
 
@@ -92,9 +94,19 @@ export function parseXml(source: string): XmlElement {
       if (!match) fail('badTag')
       if (root !== null && stack.length === 0) fail('multipleRoots')
       if (++count > MAX_ELEMENTS) fail('tooManyElements')
+      // Atributy čteme jeden po druhém od místa, kde skončil předchozí (příznak /y). Dřív se
+      // hledaly kdekoli v textu značky a dlouhý text bez „=“ trval hodiny (ReDoS, audit B3).
       const attrs: Record<string, string> = {}
-      for (const a of body.slice(match![1]!.length).matchAll(/([^\s=]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)) {
+      let at = match![1]!.length
+      while (at < body.length) {
+        ATTRIBUTE.lastIndex = at
+        const a = ATTRIBUTE.exec(body)
+        if (!a) {
+          if (body.slice(at).trim() !== '') fail('badTag') // nesmysl mezi atributy
+          break
+        }
         if (!a[1]!.startsWith('xmlns')) attrs[localName(a[1]!)] = decode(a[2] ?? a[3] ?? '')
+        at = ATTRIBUTE.lastIndex
       }
       const el: XmlElement = { name: localName(match![1]!), attrs, children: [], text: '' }
       stack.at(-1)?.el.children.push(el)

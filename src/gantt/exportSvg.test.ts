@@ -5,7 +5,7 @@ import { wbsNumbers, treeOrder } from '../model/hierarchy'
 import { createEmptyProject, createTask, type Project, type Task } from '../model/schema'
 import { createSampleProject } from '../samples/automatizace'
 import { translateCs } from '../samples/translateForTests'
-import { renderGanttSvg, type GanttSvgInput } from './exportSvg'
+import { escapeXml, renderGanttSvg, type GanttSvgInput } from './exportSvg'
 import { HEADER_HEIGHT, ROW_HEIGHT } from './geometry'
 
 const LABELS: GanttSvgInput['labels'] = {
@@ -105,5 +105,16 @@ describe('export Gantta do SVG', () => {
   it('stejný vstup dá stejný výstup', () => {
     const p = sample()
     expect(renderGanttSvg(input(p)).svg).toBe(renderGanttSvg(input(p)).svg)
+  })
+})
+
+describe('escapování textu do SVG', () => {
+  it('speciální znaky XML se nahradí entitami', () => {
+    expect(escapeXml(`a < b & "c" > 'd'`)).toBe('a &lt; b &amp; &quot;c&quot; &gt; &#39;d&#39;')
+  })
+
+  it('řídicí znaky (v XML 1.0 zakázané) se vynechají, tabulátor a nový řádek zůstanou (audit B7)', () => {
+    expect(escapeXml('A\u0000B\u0007C\u000BD\u000CE\u001FF￾G')).toBe('ABCDEFG')
+    expect(escapeXml('a\tb\nc\rd')).toBe('a\tb\nc\rd')
   })
 })

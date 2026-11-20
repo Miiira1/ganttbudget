@@ -9,6 +9,7 @@
  *     hlavička (podvržený archiv), rozbalování hned zastavíme.
  * Rozbalená data se nikam neukládají, jen se spočítají.
  */
+import type { TFunction } from 'i18next'
 
 export const ZIP_LIMITS = {
   /** Největší celková velikost všech souborů po rozbalení. */
@@ -24,11 +25,22 @@ export type ZipLimits = typeof ZIP_LIMITS
 /** Proč soubor neprošel: není to ZIP / nepodporovaný ZIP / moc velký / moc souborů / podezřelá komprese. */
 export type ZipIssue = 'notZip' | 'unsupported' | 'tooLarge' | 'tooManyEntries' | 'ratio'
 
-/** Chyba při čtení XLSX, který neprošel kontrolou – aplikace ukáže vlastní hlášku. */
+/**
+ * Chyba při čtení XLSX, který neprošel kontrolou – aplikace ukáže vlastní hlášku.
+ * 'sheetTooLarge' = archiv je v pořádku, ale list je obří (audit B2); `sheet` = jeho název.
+ */
 export class UnsafeXlsxError extends Error {
-  constructor(readonly issue: ZipIssue) {
+  constructor(
+    readonly issue: ZipIssue | 'sheetTooLarge',
+    readonly sheet = '',
+  ) {
     super(`unsafe xlsx: ${issue}`)
   }
+}
+
+/** Text hlášky pro odmítnutý XLSX – stejný ve všech importech z Excelu. */
+export function unsafeXlsxText(error: UnsafeXlsxError, t: TFunction): string {
+  return error.issue === 'sheetTooLarge' ? t('import.error.sheetTooLarge', { sheet: error.sheet }) : t('import.error.unsafeXlsx')
 }
 
 const SIG_END = 0x06054b50
@@ -61,7 +73,10 @@ function readDirectory(view: DataView, limits: ZipLimits): ZipEntry[] | ZipIssue
   const dirOffset = view.getUint32(end + 16, true)
   if (count === 0xffff || dirOffset === 0xffffffff) return 'unsupported' // ZIP64 – XLSX do 5 MB ho nepotřebuje
   if (count > limits.maxEntries) return 'tooManyEntries'
-  if (dirOffset + dirSize > end) return 'notZip'
+  // Adresář musí končit přesně tam, kde začíná koncový záznam. Jinak jsou v souboru předsazená
+  // data a knihovna ExcelJS (JSZip) by četla jiný adresář než tato kontrola (audit B1).
+  // Soubory z Excelu, LibreOffice i ExcelJS tohle splňují vždy.
+  if (dirOffset + dirSize !== end) return 'notZip'
 
   const entries: ZipEntry[] = []
   let total = 0

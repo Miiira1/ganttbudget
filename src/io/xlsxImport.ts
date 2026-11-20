@@ -36,6 +36,27 @@ function plain(value: ExcelJS.CellValue): string | number | Date | null {
 }
 
 /**
+ * Největší list, který se přečte (audit B2). Největší import potřebuje 50 000 řádků (skutečné
+ * náklady v sešitu celého projektu) + záhlaví. Malý soubor může mít buňku v posledním řádku
+ * a sloupci (1 048 576 × 16 384) – procházení všech buněk by zahltilo prohlížeč.
+ */
+export const MAX_SHEET_ROWS = 60_000
+export const MAX_SHEET_CELLS = 5_000_000
+
+/** List → tabulka hodnot; obří list se odmítne dřív, než se začne procházet. */
+function readSheet(sheet: ExcelJS.Worksheet): unknown[][] {
+  const height = sheet.rowCount
+  const width = sheet.columnCount
+  if (height > MAX_SHEET_ROWS || height * width > MAX_SHEET_CELLS) throw new UnsafeXlsxError('sheetTooLarge', sheet.name)
+  const rows: unknown[][] = []
+  for (let r = 1; r <= height; r++) {
+    const row = sheet.getRow(r)
+    rows.push(Array.from({ length: width }, (_, c) => plain(row.getCell(c + 1).value)))
+  }
+  return rows
+}
+
+/**
  * Přečte list sešitu jako tabulku. `preferredSheets` = názvy listů, které se vezmou přednostně
  * (např. „Řádky“ z exportu rozpočtu); jinak první list.
  */
@@ -43,28 +64,13 @@ export async function readXlsx(buffer: ArrayBuffer, preferredSheets: readonly st
   const workbook = await loadWorkbook(buffer)
   const wanted = new Set(preferredSheets.map((n) => n.trim().toLowerCase()))
   const sheet = workbook.worksheets.find((w) => wanted.has(w.name.trim().toLowerCase())) ?? workbook.worksheets[0]
-  if (!sheet) return []
-  const width = sheet.columnCount
-  const rows: unknown[][] = []
-  for (let r = 1; r <= sheet.rowCount; r++) {
-    const row = sheet.getRow(r)
-    rows.push(Array.from({ length: width }, (_, c) => plain(row.getCell(c + 1).value)))
-  }
-  return rows
+  return sheet ? readSheet(sheet) : []
 }
 
 /** Všechny listy sešitu: název listu → tabulka (pro import celého projektu). */
 export async function readXlsxSheets(buffer: ArrayBuffer): Promise<Map<string, unknown[][]>> {
   const workbook = await loadWorkbook(buffer)
   const sheets = new Map<string, unknown[][]>()
-  for (const sheet of workbook.worksheets) {
-    const width = sheet.columnCount
-    const rows: unknown[][] = []
-    for (let r = 1; r <= sheet.rowCount; r++) {
-      const row = sheet.getRow(r)
-      rows.push(Array.from({ length: width }, (_, c) => plain(row.getCell(c + 1).value)))
-    }
-    sheets.set(sheet.name, rows)
-  }
+  for (const sheet of workbook.worksheets) sheets.set(sheet.name, readSheet(sheet))
   return sheets
 }

@@ -88,9 +88,14 @@ const COLUMNS = [
 const NAME_CHARS = 38
 const INDENT = 10
 
-/** Escapování textu pro XML (SVG). */
+/**
+ * Escapování textu pro XML (SVG). Řídicí znaky, které XML 1.0 vůbec nedovolí (např. z textu
+ * vloženého odjinud), se vynechají – jinak by SVG nešlo otevřít a PNG by selhal (audit B7).
+ */
 export function escapeXml(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+  return text
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F￾￿]/g, '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
 }
 
 const truncate = (text: string, max: number) => (text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text)

@@ -7,9 +7,9 @@ import { formatPredecessors } from '../model/predecessors'
 import { createEmptyProject, createTask, ProjectSchema, type Project } from '../model/schema'
 import cs from '../i18n/locales/cs.json'
 import en from '../i18n/locales/en.json'
-import { buildExportTable, EXPORT_COLUMNS, toCsv } from './tableExport'
+import { buildExportTable, EXPORT_COLUMNS, protectText, toCsv } from './tableExport'
 import { toXlsx } from './xlsxExport'
-import { importTable, readCsv, type ImportResult } from './tableImport'
+import { importTable, readCsv, text, type ImportResult } from './tableImport'
 import { readXlsx } from './xlsxImport'
 
 /** Vzorový projekt s omezením, poznámkami (i „vzorcem“) a všemi typy vazeb. */
@@ -86,6 +86,13 @@ describe('čtení vstupu', () => {
   it('apostrof z ochrany proti vzorcům se odstraní, jiný apostrof zůstane', () => {
     const imported = ok(importTable([['Název', 'Poznámka'], ["'=SUM(A1)", "'jen text"]], base(), makeId))
     expect([imported.tasks[0]!.name, imported.tasks[0]!.notes]).toEqual(['=SUM(A1)', "'jen text"])
+  })
+
+  it('export → import vrátí i varianty s mezerou a plnošířkovými znaky (audit B6)', () => {
+    for (const value of [' =HYPERLINK("x")', '＝1+1', '　@A1']) {
+      expect(text(protectText(value))).toBe(value)
+    }
+    expect(text("' poznámka s apostrofem")).toBe("' poznámka s apostrofem")
   })
 
   it('datum z Excelu (d.m.rrrr), číslo jako předchůdce, procenta se znakem %', () => {

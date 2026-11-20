@@ -111,6 +111,18 @@ describe('kontrola ZIP před načtením XLSX (ochrana proti „nafouknutým“ s
     expect(await checkZip(zip)).toBe('tooLarge')
   })
 
+  it('mezera mezi centrálním adresářem a jeho koncem (znak předsazených dat) → notZip (audit B1)', async () => {
+    // Útočník předsadí skutečný archiv falešným adresářem; kontrola by pak četla jiná data než
+    // knihovna, která sešit otevře. Platný sešit má adresář vždy těsně před koncovým záznamem.
+    const zip = new Uint8Array(await makeZip([{ name: 'a.xml', data: text('x'.repeat(100)) }]))
+    const endAt = zip.length - 22
+    const shifted = new Uint8Array(zip.length + 8)
+    shifted.set(zip.subarray(0, endAt), 0) // data + centrální adresář
+    shifted.set(zip.subarray(endAt), endAt + 8) // 8 bajtů navíc, pak koncový záznam
+    expect(await checkZip(zip.buffer)).toBeNull()
+    expect(await checkZip(shifted.buffer)).toBe('notZip')
+  })
+
   it('neznámý způsob komprese → unsupported', async () => {
     const zip = new Uint8Array(await makeZip([{ name: 'a.xml', data: text('x'), method: 0 }]))
     // Metodu přepíšeme v centrálním adresáři na 12 (bzip2).

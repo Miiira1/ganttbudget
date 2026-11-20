@@ -49,9 +49,12 @@ export function parseOutline(text: string, rootText: string, newId: () => string
   if (lines.length === 0) return { ok: false, errors: [{ code: 'empty', line: 0 }] }
 
   // 2) Úrovně: jednotka = nejmenší nenulový rozdíl odsazení; nejmenší odsazení = úroveň 0.
-  const minWidth = Math.min(...lines.map((l) => l.width))
+  // Minimum bez „...spread“: Safari povolí funkci nejvýš 65 536 argumentů a vložený text
+  // může mít až ~100 000 řádků (audit B5).
+  const minOf = (values: number[]) => values.reduce((min, v) => (v < min ? v : min), Number.POSITIVE_INFINITY)
+  const minWidth = minOf(lines.map((l) => l.width))
   const deeper = lines.map((l) => l.width - minWidth).filter((w) => w > 0)
-  const unit = deeper.length > 0 ? Math.min(...deeper) : 1
+  const unit = deeper.length > 0 ? minOf(deeper) : 1
   const rawLevels = lines.map((l) => Math.round((l.width - minWidth) / unit))
   // Nadpis bez odrážky nad seznamem se stejným odsazením („Projekt“ a pod ním „- Příprava“) = střední téma.
   const laterTop = lines.slice(1).filter((_, i) => rawLevels[i + 1] === 0)

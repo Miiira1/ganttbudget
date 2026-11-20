@@ -3,6 +3,11 @@
     "languageName": "Čeština",
     "locale": "cs-CZ"
   },
+  "crash": {
+    "title": "Něco se pokazilo",
+    "text": "V aplikaci nastala nečekaná chyba. Rozpracovaný projekt je uložený v záloze prohlížeče – po obnovení stránky se sám načte.",
+    "reload": "Obnovit stránku"
+  },
   "app": {
     "title": "MiRo project",
     "privacy": "Vaše data zůstávají jen v tomto počítači, nic se neposílá na server.",
@@ -32,6 +37,7 @@
       "tooLarge": "Soubor je příliš velký (víc než 5 MB). Nic se nezměnilo.",
       "unreadable": "Soubor se nedá přečíst – je poškozený nebo to není tabulka Excelu / CSV. Nic se nezměnilo.",
       "unsafeXlsx": "Soubor se po rozbalení podezřele zvětšuje (víc než 50 MB nebo neobvyklé stlačení). Z bezpečnostních důvodů se nenačetl. Nic se nezměnilo.",
+      "sheetTooLarge": "List „{{sheet}}“ je příliš velký (víc než 60 000 řádků nebo 5 milionů buněk). Často to způsobí jediná buňka daleko vpravo nebo dole – smažte prázdné řádky a sloupce za daty a zkuste to znovu. Nic se nezměnilo.",
       "unsupported": "Import umí jen soubory .xlsx a .csv. Nic se nezměnilo.",
       "empty": "Tabulka neobsahuje žádné činnosti (první řádek musí být hlavička se sloupcem Název).",
       "missingName": "V prvním řádku chybí sloupec „Název“ (hlavička tabulky).",

@@ -20,7 +20,7 @@ import { isValidIsoDate } from '../model/dates'
 import { wbsNumbers } from '../model/hierarchy'
 import { parsePredecessors, type PredecessorItem } from '../model/predecessors'
 import { createTask, MAX_TREE_DEPTH, nameKey, ProjectSchema, type Project, type Task, type TaskKind } from '../model/schema'
-import { EXPORT_COLUMNS, type ExportColumn } from './tableExport'
+import { EXPORT_COLUMNS, FORMULA_START, type ExportColumn } from './tableExport'
 
 /** Nejvíc řádků činností v jednom importu. */
 export const MAX_IMPORT_ROWS = 5000
@@ -67,7 +67,7 @@ for (const kind of ['task', 'phase', 'milestone'] as const) {
 export function text(value: CellValue): string {
   if (value === null) return ''
   const raw = value instanceof Date ? value.toISOString().slice(0, 10) : String(value)
-  return /^'[=+\-@\t\r]/.test(raw) ? raw.slice(1) : raw
+  return raw.startsWith("'") && FORMULA_START.test(raw.slice(1)) ? raw.slice(1) : raw
 }
 
 /** Celé číslo v rozsahu, nebo null (prázdná buňka = výchozí hodnota → undefined). */

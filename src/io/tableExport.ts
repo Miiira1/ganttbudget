@@ -80,9 +80,15 @@ export function buildExportTable(project: Project, result: ScheduleResult, kindL
   return { columns: EXPORT_COLUMNS, rows }
 }
 
+/**
+ * Začátek textu, který by Excel mohl spustit jako vzorec: = + - @ (i plnošířkové ＝＋－＠),
+ * i po úvodních mezerách; nebo tabulátor / nový řádek na začátku (audit B6).
+ */
+export const FORMULA_START = /^(?:[\s　]*[=+\-@＝＋－＠]|[\t\r\n])/
+
 /** Ochrana proti CSV injection: text, který by Excel spustil jako vzorec, dostane apostrof. */
 export function protectText(value: string): string {
-  return /^[=+\-@\t\r]/.test(value) ? `'${value}` : value
+  return FORMULA_START.test(value) ? `'${value}` : value
 }
 
 /** Tabulka → text CSV: UTF-8 s BOM (Excel pozná češtinu), oddělovač středník, řádky CRLF. */

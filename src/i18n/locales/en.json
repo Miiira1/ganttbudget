@@ -3,6 +3,11 @@
     "languageName": "English",
     "locale": "en-GB"
   },
+  "crash": {
+    "title": "Something went wrong",
+    "text": "An unexpected error occurred in the app. Your work in progress is kept in the browser backup and will load automatically when you reload the page.",
+    "reload": "Reload page"
+  },
   "app": {
     "title": "MiRo project",
     "privacy": "Your data stays on this computer only; nothing is sent to a server.",
@@ -28,6 +33,7 @@
       "tooLarge": "The file is too large (over 5 MB). Nothing has changed.",
       "unreadable": "The file cannot be read – it is damaged or not an Excel / CSV table. Nothing has changed.",
       "unsafeXlsx": "The file grows suspiciously when unpacked (more than 50 MB or unusual compression). It was not loaded for security reasons. Nothing has changed.",
+      "sheetTooLarge": "The sheet “{{sheet}}” is too large (more than 60,000 rows or 5 million cells). This is often caused by a single cell far to the right or below – delete the empty rows and columns after the data and try again. Nothing has changed.",
       "unsupported": "Only .xlsx and .csv files can be imported. Nothing has changed.",
       "empty": "The table contains no tasks (the first row must be a header with a Name column).",
       "missingName": "The first row (table header) has no “Name” column.",

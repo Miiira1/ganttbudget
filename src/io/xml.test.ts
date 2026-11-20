@@ -32,4 +32,22 @@ describe('čtení XML (bez knihovny)', () => {
     expect(() => parseXml('<!DOCTYPE a [<!ENTITY x "y">]><a>&x;</a>')).toThrow(XmlError)
     expect(() => parseXml('<a></a><b></b>')).toThrow(XmlError)
   })
+
+  it('atributy: mezery kolem „=“, víc atributů, nový řádek mezi nimi', () => {
+    const root = parseXml('<a x = "1"\n   y=\'2\'\tz="tři"/>')
+    expect(root.attrs).toEqual({ x: '1', y: '2', z: 'tři' })
+  })
+
+  it('dlouhá značka bez „=“ se zpracuje rychle a odmítne (ochrana proti ReDoS, audit B3)', () => {
+    // Dřív: 80 000 znaků = 11,5 s (čas rostl s druhou mocninou délky).
+    const started = performance.now()
+    expect(() => parseXml(`<Project ${'b'.repeat(200_000)}/>`)).toThrow(XmlError)
+    expect(() => parseXml(`<Project a="1" ${'b'.repeat(200_000)}></Project>`)).toThrow(XmlError)
+    expect(performance.now() - started).toBeLessThan(500)
+  })
+
+  it('nesmysl mezi atributy se odmítne (neplatné XML)', () => {
+    expect(() => parseXml('<a x="1" y></a>')).toThrow(XmlError)
+    expect(() => parseXml('<a x="1"y="2"></a>')).toThrow(XmlError)
+  })
 })

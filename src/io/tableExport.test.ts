@@ -72,6 +72,15 @@ describe('ochrana proti CSV injection (N-11)', () => {
     ['@SUM(A1)', "'@SUM(A1)"],
     ['\tx', "'\tx"],
     ['\rx', "'\rx"],
+    // Varianty, které Excel v některých verzích také spustí (audit B6):
+    [' =HYPERLINK("x")', `' =HYPERLINK("x")`],
+    ['   =SUM(A1)', "'   =SUM(A1)"],
+    ['　+1', "'　+1"],
+    ['＝1+1', "'＝1+1"], // plnošířkové ＝
+    ['＋1', "'＋1"],
+    ['－1', "'－1"],
+    ['＠A1', "'＠A1"],
+    ['\nx', "'\nx"],
   ])('„%s“ dostane apostrof', (value, expected) => {
     expect(protectText(value)).toBe(expected)
   })
@@ -80,6 +89,7 @@ describe('ochrana proti CSV injection (N-11)', () => {
     expect(protectText('Analýza 2 = hotovo')).toBe('Analýza 2 = hotovo')
     expect(protectText('')).toBe('')
     expect(protectText('3SS+2')).toBe('3SS+2')
+    expect(protectText('   Odsazená činnost')).toBe('   Odsazená činnost')
   })
 })
 

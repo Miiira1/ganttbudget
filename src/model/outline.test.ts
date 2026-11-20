@@ -57,6 +57,14 @@ describe('odsazený text → mapa', () => {
     const many = ['Projekt', ...Array.from({ length: MAX_OUTLINE_LINES }, (_, i) => `\tŘádek ${i}`)].join('\n')
     expect(parse(many)).toMatchObject({ ok: false, errors: [{ code: 'tooMany' }] })
   })
+
+  it('obří vložený text (70 000 řádků) skončí srozumitelnou chybou, ne pádem (audit B5)', () => {
+    // Safari dovolí funkci nejvýš 65 536 argumentů – Math.min(...řádky) by tu vyhodil výjimku.
+    const huge = Array.from({ length: 70_000 }, (_, i) => (i % 2 ? ' a' : 'b')).join('\n') // víc než 65 536 řádků
+    expect(huge.length).toBeLessThanOrEqual(200_000)
+    expect(() => parse(huge)).not.toThrow()
+    expect(parse(huge)).toMatchObject({ ok: false, errors: [{ code: 'tooMany' }] })
+  })
 })
 
 describe('mapa → odsazený text', () => {

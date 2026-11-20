@@ -13,7 +13,7 @@ import type { Project } from '../model/schema'
 import { projectStore } from '../store/useProject'
 import { showNotice } from '../ui/notice'
 import { MAX_FILE_CHARS } from './projectFile'
-import { UnsafeXlsxError } from './zipGuard'
+import { UnsafeXlsxError, unsafeXlsxText } from './zipGuard'
 import { importTable, readCsv, type ImportResult } from './tableImport'
 import { importMsProject } from './msProjectImport'
 import { importGanttProject } from './ganttProjectImport'
@@ -48,7 +48,7 @@ export async function prepareImport(file: File, t: TFunction): Promise<void> {
   try {
     rows = await readRows(file)
   } catch (error) {
-    return showNotice(t(error instanceof UnsafeXlsxError ? 'import.error.unsafeXlsx' : 'import.error.unreadable'))
+    return showNotice(error instanceof UnsafeXlsxError ? unsafeXlsxText(error, t) : t('import.error.unreadable'))
   }
   if (rows === null) return showNotice(t('import.error.unsupported'))
   const result = importTable(rows, projectStore.getState().project, () => crypto.randomUUID())
