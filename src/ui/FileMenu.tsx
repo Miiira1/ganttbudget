@@ -91,6 +91,8 @@ export function FileMenu({ onNew, onPrint }: { onNew: () => void; onPrint: () =>
   const { t, i18n } = useTranslation()
   const [open, setOpen] = useState(false)
   const [submenu, setSubmenu] = useState<SubmenuId | null>(null)
+  /** Popis položky, na které je myš nebo fokus (řádek dole v menu). */
+  const [hint, setHint] = useState<string | null>(null)
   const menuId = useId()
   const buttonRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLUListElement>(null)
@@ -101,6 +103,7 @@ export function FileMenu({ onNew, onPrint }: { onNew: () => void; onPrint: () =>
   useEffect(() => {
     if (!open) {
       setSubmenu(null)
+      setHint(null)
       return
     }
     const outside = (target: EventTarget | null) =>
@@ -187,14 +190,29 @@ export function FileMenu({ onNew, onPrint }: { onNew: () => void; onPrint: () =>
     event.stopPropagation()
   }
 
-  const renderAction = (item: Action) => (
-    <li key={item.id} role="none" className={item.separatorBefore ? separatorClass : ''}>
-      <button type="button" role="menuitem" onClick={() => run(item.id)} title={t(`file.${item.id}Hint`)} className={itemClass}>
-        <span>{t(`file.short.${item.id}`)}</span>
-        {item.shortcut && <kbd className="font-mono text-xs text-slate-500 dark:text-slate-400">{shortcutLabel(item.shortcut)}</kbd>}
-      </button>
-    </li>
-  )
+  // Popis položky (audit U22): dřív jen v bublině – na dotyku a z klávesnice nebyl vidět. Teď ho ukáže
+  // řádek dole v menu (při najetí myší i při pohybu šipkami) a čtečka ho přečte s položkou.
+  const hintId = (key: string) => `${menuId}-${key}-hint`
+  const describe = (key: string, text: string) => ({
+    'aria-describedby': hintId(key),
+    onFocus: () => setHint(text),
+    onPointerEnter: () => setHint(text),
+  })
+
+  const renderAction = (item: Action) => {
+    const text = t(`file.${item.id}Hint`)
+    return (
+      <li key={item.id} role="none" className={item.separatorBefore ? separatorClass : ''}>
+        <button type="button" role="menuitem" onClick={() => run(item.id)} title={text} className={itemClass} {...describe(item.id, text)}>
+          <span>{t(`file.short.${item.id}`)}</span>
+          {item.shortcut && <kbd className="font-mono text-xs text-slate-500 dark:text-slate-400">{shortcutLabel(item.shortcut)}</kbd>}
+          <span id={hintId(item.id)} className="sr-only">
+            {text}
+          </span>
+        </button>
+      </li>
+    )
+  }
 
   return (
     <div className="relative">
@@ -233,10 +251,14 @@ export function FileMenu({ onNew, onPrint }: { onNew: () => void; onPrint: () =>
                   aria-expanded={expanded}
                   data-submenu={id}
                   title={t(`file.${id}MenuHint`)}
+                  {...describe(`${id}Menu`, t(`file.${id}MenuHint`))}
                   onClick={() => (expanded ? setSubmenu(null) : openSubmenu(id, false))}
                   className={`${itemClass} ${expanded ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
                 >
                   <span>{t(`file.${id}Menu`)}</span>
+                  <span id={hintId(`${id}Menu`)} className="sr-only">
+                    {t(`file.${id}MenuHint`)}
+                  </span>
                   <span aria-hidden="true" className="text-slate-500 dark:text-slate-400">
                     ▸
                   </span>
@@ -257,6 +279,10 @@ export function FileMenu({ onNew, onPrint }: { onNew: () => void; onPrint: () =>
               </li>
             )
           })}
+          {/* Řádek s popisem právě zvolené položky (pro čtečky je popis přímo u položky). */}
+          <li role="none" aria-hidden="true" className={separatorClass}>
+            <p className="w-0 min-w-full whitespace-normal px-3 py-1 text-xs leading-snug text-slate-600 dark:text-slate-400">{hint ?? t('file.menuHintDefault')}</p>
+          </li>
         </ul>
       )}
     </div>

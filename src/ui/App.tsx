@@ -520,6 +520,8 @@ export default function App() {
               aria-current={view === id ? 'page' : undefined}
               onClick={() => setView(id)}
               title={t(`view.${id}Hint`)}
+              // Popis pohledu i pro čtečku a klávesnici, ne jen v bublině při najetí myší (audit U22).
+              aria-describedby={`view-hint-${id}`}
               // Aktivní pohled: žlutá čára (3 px) a jemný žlutý podklad – výrazné, ale klidné; váha písma stejná, nic neposkočí.
               className={`-mb-px inline-flex shrink-0 items-center gap-1.5 rounded-t-md border-b-[3px] px-3 pb-2 pt-1.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus ${
                 view === id
@@ -529,6 +531,9 @@ export default function App() {
             >
               {id === 'plan' ? <PlanIcon /> : id === 'resources' ? <ResourcesIcon /> : id === 'load' ? <LoadIcon /> : id === 'costs' ? <CostsIcon /> : id === 'analysis' ? <AnalysisIcon /> : id === 'tracking' ? <TrackingIcon /> : <MindMapIcon />}
               {t(`view.${id}`)}
+              <span id={`view-hint-${id}`} className="sr-only">
+                {t(`view.${id}Hint`)}
+              </span>
               {id === 'load' && overloadedCount > 0 && (
                 <span
                   className="ml-0.5 rounded-full bg-red-600 px-1.5 text-xs font-semibold leading-5 text-white dark:bg-red-500"
@@ -637,7 +642,8 @@ export default function App() {
       {/* Informace o datech: jedna řádka, jde skrýt (pamatuje si prohlížeč); znovu ji ukáže Nápověda. */}
       {!privacyHidden && (
         <footer className="flex items-center gap-3 border-t border-slate-200 px-4 py-1 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
-          <p className="min-w-0 flex-1 truncate" title={`${t('app.privacy')} ${t('app.notSavedYet')}`}>
+          {/* Na užší obrazovce se text zalomí (nejvýš 2 řádky) – dřív se uřízl a celý byl jen v bublině (audit U22). */}
+          <p className="line-clamp-2 min-w-0 flex-1" title={`${t('app.privacy')} ${t('app.notSavedYet')}`}>
             <span aria-hidden="true">🔒 </span>
             {t('app.privacy')} {t('app.notSavedYet')}
           </p>

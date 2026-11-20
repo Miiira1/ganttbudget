@@ -224,7 +224,8 @@
     "importMsProject": "Plán z MS Project (XML)…",
     "importMsProjectHint": "Načíst plán z MS Project uloženého jako XML (Soubor → Uložit jako → XML): fáze, činnosti, milníky, vazby, % hotovo. Zdroje a náklady se nepřenášejí.",
     "importGanttProject": "Plán z GanttProject (.gan)…",
-    "importGanttProjectHint": "Načíst plán ze souboru GanttProject (.gan): fáze, činnosti, milníky, vazby, % hotovo. Zdroje a náklady se nepřenášejí."
+    "importGanttProjectHint": "Načíst plán ze souboru GanttProject (.gan): fáze, činnosti, milníky, vazby, % hotovo. Zdroje a náklady se nepřenášejí.",
+    "menuHintDefault": "Najeďte na položku nebo se posuňte šipkami – tady uvidíte, co udělá."
   },
   "toolbar": {
     "label": "Hlavní nástroje",

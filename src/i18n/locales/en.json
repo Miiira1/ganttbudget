@@ -210,7 +210,8 @@
     "importMsProject": "Plan from MS Project (XML)…",
     "importMsProjectHint": "Load a plan from MS Project saved as XML (File → Save as → XML): phases, tasks, milestones, dependencies, % complete. Resources and costs are not transferred.",
     "importGanttProject": "Plan from GanttProject (.gan)…",
-    "importGanttProjectHint": "Load a plan from a GanttProject file (.gan): phases, tasks, milestones, dependencies, % complete. Resources and costs are not transferred."
+    "importGanttProjectHint": "Load a plan from a GanttProject file (.gan): phases, tasks, milestones, dependencies, % complete. Resources and costs are not transferred.",
+    "menuHintDefault": "Point to an item or move with the arrow keys – its description appears here."
   },
   "toolbar": {
     "label": "Main tools",
