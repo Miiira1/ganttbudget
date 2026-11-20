@@ -12,6 +12,7 @@ import { showNotice } from '../ui/notice'
 import { useViewState } from '../ui/viewState'
 import { fromBackup, readBackup, shouldRestore, toBackup, writeBackup } from './autosave'
 import { useFileState } from './fileActions'
+import { openTabChannel, watchOtherTabs } from './tabPresence'
 
 /** Za jak dlouho po poslední změně se zálohuje (ms). */
 const DELAY = 1000
@@ -22,13 +23,21 @@ export async function startAutosave(t: TFunction, language: string): Promise<voi
   if (started) return // jen jednou (React ve vývojovém režimu volá efekty dvakrát)
   started = true
 
+  // --- 0. Aplikace i v jiné záložce? Záloha je jen jedna – varovat (audit B4). ---
+  watchOtherTabs(openTabChannel(), () => showNotice(t('autosave.otherTab')))
+
   // --- 1. Obnova ---
   const initial = projectStore.getState().project
   const raw = await readBackup()
   if (raw !== null && raw !== undefined) {
     const restored = fromBackup(raw)
+    if (!restored.ok && restored.reason === 'newerVersion') {
+      // Zálohu uložila novější verze aplikace – tato ji neumí přečíst a nesmí ji přepsat (audit B4).
+      showNotice(t('autosave.newerVersion'))
+      return
+    }
     if (!restored.ok) {
-      showNotice(t('autosave.corrupted')) // poškozená záloha se nepoužije
+      showNotice(t('autosave.corrupted')) // poškozená záloha se nepoužije (a příští záloha ji nahradí)
     } else if (shouldRestore(projectStore.getState().project, initial)) {
       const { project, collapsed } = detachCollapsed(restored.project)
       projectStore.getState().resetProject(project)
@@ -45,12 +54,19 @@ export async function startAutosave(t: TFunction, language: string): Promise<voi
 
   // --- 2. Průběžné zálohování ---
   let timer = 0
+  let failureReported = false
   const backupNow = () => {
     window.clearTimeout(timer)
     const project = projectStore.getState().project
     const file = useFileState.getState()
     const withCollapsed = attachCollapsed(project, useViewState.getState().collapsed)
-    void writeBackup(toBackup(withCollapsed, { fileName: file.fileName, saved: project === file.savedProject }))
+    void writeBackup(toBackup(withCollapsed, { fileName: file.fileName, saved: project === file.savedProject })).then((ok) => {
+      // Nepovedená záloha (plné úložiště, anonymní okno) – jednou za relaci upozornit (audit B4).
+      if (!ok && !failureReported) {
+        failureReported = true
+        showNotice(t('autosave.writeFailed'))
+      }
+    })
   }
   const schedule = () => {
     window.clearTimeout(timer)

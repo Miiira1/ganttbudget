@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { createSampleProject } from '../samples/automatizace'
 import { translateCs } from '../samples/translateForTests'
-import { createEmptyProject } from '../model/schema'
-import { fromBackup, shouldRestore, toBackup } from './autosave'
+import { createEmptyProject, SCHEMA_VERSION } from '../model/schema'
+import { fromBackup, shouldRestore, toBackup, writeBackup } from './autosave'
 import { serializeProject } from './projectFile'
 
 const sample = () => createSampleProject(translateCs, 'cs', '2026-11-16')
@@ -39,6 +39,17 @@ describe('automatická záloha v prohlížeči', () => {
     const backup = toBackup(sample(), { fileName: null, saved: false }, now)
     expect(fromBackup({ ...backup, text: '{"schemaVersion": 1, "nam' }).ok).toBe(false)
     expect(fromBackup({ ...backup, text: '{"ahoj": 1}' }).ok).toBe(false)
+  })
+
+  it('záloha z novější verze aplikace se pozná zvlášť – nesmí se přepsat (audit B4)', () => {
+    const backup = toBackup(sample(), { fileName: null, saved: false }, now)
+    const newer = { ...backup, text: backup.text.replace(`"schemaVersion":${SCHEMA_VERSION}`, `"schemaVersion":${SCHEMA_VERSION + 1}`) }
+    expect(fromBackup(newer)).toEqual({ ok: false, reason: 'newerVersion' })
+    expect(fromBackup({ ...backup, text: '{"ahoj": 1}' })).toEqual({ ok: false, reason: 'invalid' })
+  })
+
+  it('zápis bez úložiště prohlížeče (IndexedDB) vrátí nezdar, nespadne (audit B4)', async () => {
+    expect(await writeBackup(toBackup(sample(), { fileName: null, saved: false }, now))).toBe(false)
   })
 
   it('nesmyslný záznam místo zálohy se nepoužije', () => {

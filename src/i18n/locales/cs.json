@@ -121,7 +121,10 @@
   },
   "autosave": {
     "restored": "Obnoven rozpracovaný projekt ze zálohy v prohlížeči ({{date}}).",
-    "corrupted": "Záloha rozpracovaného projektu v prohlížeči je poškozená, proto se nepoužila. Pokud máte projekt uložený v souboru, otevřete ho přes Soubor → Otevřít."
+    "corrupted": "Záloha rozpracovaného projektu v prohlížeči je poškozená, proto se nepoužila. Pokud máte projekt uložený v souboru, otevřete ho přes Soubor → Otevřít.",
+    "otherTab": "Aplikace je otevřená ve více záložkách. Záloha v prohlížeči je jen jedna a záložky si ji navzájem přepisují. Pracujte v jedné záložce a ostatní zavřete.",
+    "writeFailed": "Zálohu v prohlížeči se nepodařilo uložit (plné úložiště nebo anonymní okno). Ukládejte projekt do souboru (Ctrl+S).",
+    "newerVersion": "Záloha v prohlížeči je z novější verze aplikace. Obnovte stránku (Ctrl+F5), aby se načetla nová verze. Do té doby se v této záložce nezálohuje, aby se záloha nepřepsala."
   },
   "file": {
     "menu": "Soubor",

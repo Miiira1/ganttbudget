@@ -109,7 +109,10 @@
   },
   "autosave": {
     "restored": "Your unfinished project was restored from the browser backup ({{date}}).",
-    "corrupted": "The browser backup of your unfinished project is damaged, so it was not used. If you have the project saved in a file, open it via File → Open."
+    "corrupted": "The browser backup of your unfinished project is damaged, so it was not used. If you have the project saved in a file, open it via File → Open.",
+    "otherTab": "The app is open in more than one tab. There is only one browser backup and the tabs overwrite each other. Work in one tab and close the others.",
+    "writeFailed": "The browser backup could not be saved (storage full or a private window). Save your project to a file (Ctrl+S).",
+    "newerVersion": "The browser backup comes from a newer version of the app. Reload the page (Ctrl+F5) to load the new version. Until then this tab does not back up, so the backup is not overwritten."
   },
   "file": {
     "menu": "File",

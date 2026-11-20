@@ -29,15 +29,18 @@ export function toBackup(project: Project, state: { fileName: string | null; sav
   return { savedAt: now.toISOString(), text: serializeProject(project, { compact: true }), fileName: state.fileName, saved: state.saved }
 }
 
-/** Záznam z prohlížeče → ověřený projekt. Cokoli neplatného se nepoužije. */
+/**
+ * Záznam z prohlížeče → ověřený projekt. Cokoli neplatného se nepoužije.
+ * reason 'newerVersion' = zálohu uložila novější verze aplikace – tato ji nesmí přepsat (audit B4).
+ */
 export function fromBackup(
   raw: unknown,
-): { ok: true; project: Project; fileName: string | null; saved: boolean; savedAt: string } | { ok: false } {
-  if (typeof raw !== 'object' || raw === null) return { ok: false }
+): { ok: true; project: Project; fileName: string | null; saved: boolean; savedAt: string } | { ok: false; reason: 'invalid' | 'newerVersion' } {
+  if (typeof raw !== 'object' || raw === null) return { ok: false, reason: 'invalid' }
   const record = raw as Partial<Backup>
-  if (typeof record.text !== 'string' || typeof record.savedAt !== 'string') return { ok: false }
+  if (typeof record.text !== 'string' || typeof record.savedAt !== 'string') return { ok: false, reason: 'invalid' }
   const parsed = parseProjectFile(record.text)
-  if (!parsed.ok) return { ok: false }
+  if (!parsed.ok) return { ok: false, reason: parsed.error.code === 'newerVersion' ? 'newerVersion' : 'invalid' }
   return {
     ok: true,
     project: parsed.project,
@@ -66,8 +69,11 @@ function openDb(): Promise<IDBDatabase> {
   })
 }
 
-/** Uloží zálohu. Když prohlížeč úložiště nedovolí (anonymní okno…), tiše nic. */
-export async function writeBackup(backup: Backup): Promise<void> {
+/**
+ * Uloží zálohu; vrátí, jestli se to povedlo. Když prohlížeč úložiště nedovolí (anonymní okno,
+ * plné úložiště…), aplikace funguje dál – volající ale uživatele upozorní (audit B4).
+ */
+export async function writeBackup(backup: Backup): Promise<boolean> {
   try {
     const db = await openDb()
     await new Promise<void>((resolve, reject) => {
@@ -75,10 +81,12 @@ export async function writeBackup(backup: Backup): Promise<void> {
       tx.objectStore(STORE).put(backup, KEY)
       tx.oncomplete = () => resolve()
       tx.onerror = () => reject(tx.error)
+      tx.onabort = () => reject(tx.error) // např. překročená kvóta úložiště
     })
     db.close()
+    return true
   } catch {
-    // Záloha není k dispozici – aplikace funguje dál, jen bez ní.
+    return false
   }
 }
 
