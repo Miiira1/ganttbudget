@@ -36,6 +36,7 @@ import { activeBaseline } from '../../model/baseline'
 import { TimelineHeader } from './TimelineHeader'
 import { useSelectedIds, useVisibleRows } from '../viewState'
 import { useZoom } from './zoom'
+import { useVisibleRange } from '../virtualRows'
 
 /** Text bubliny pro pruh volných dnů. */
 function runTitle(run: NonWorkingRun, t: TFunction, lang: string): string {
@@ -209,6 +210,11 @@ export function GanttChart() {
   }, [showBaseline, baseline, rows, dates, tl])
   const gridLines = useMemo(() => headerRows(tl)[1].slice(1).map((s) => s.x), [tl])
   useZoomNavigation(wrapperRef, tl)
+  // Velký plán: kreslí se jen úsečky, čáry a šipky řádků v okně + rezerva (audit R3). Polohy
+  // úseček (bars) se počítají pro všechny řádky – tažení a vazby tak fungují beze změny.
+  const { first, last } = useVisibleRange(rows.length, wrapperRef)
+  const shownRows = useMemo(() => (first === 0 && last === rows.length ? rows : rows.slice(first, last)), [rows, first, last])
+  const shownY = useMemo(() => [first * ROW_HEIGHT, last * ROW_HEIGHT] as const, [first, last])
 
   const bodyHeight = rows.length * ROW_HEIGHT
   const today = todayIso()
@@ -277,13 +283,13 @@ export function GanttChart() {
         ))}
 
         {/* Vodorovné čáry mezi řádky – lícují s tabulkou vlevo. */}
-        {rows.map((task, i) => (
+        {shownRows.map((task, i) => (
           <line
             key={task.id}
             x1={0}
             x2={tl.width}
-            y1={(i + 1) * ROW_HEIGHT - 0.5}
-            y2={(i + 1) * ROW_HEIGHT - 0.5}
+            y1={(first + i + 1) * ROW_HEIGHT - 0.5}
+            y2={(first + i + 1) * ROW_HEIGHT - 0.5}
             className="stroke-slate-200 dark:stroke-slate-700/70"
           />
         ))}
@@ -307,8 +313,8 @@ export function GanttChart() {
         <CreateDragLayer tl={tl} calendar={calendar} rowIndex={rows.length} projectStart={project.startDate} />
 
         {/* Šipky vazeb pod úsečkami, úsečky nad čárou dneška, aby byly čitelné. */}
-        <DependencyArrows rows={rows} bars={bars} critical={critical} />
-        <TaskBars rows={rows} bars={bars} dates={dates} critical={critical} slackEnds={slackEnds} percents={percents} baseline={baselineBars} baselineName={baseline?.name ?? ''} selectedIds={selectedSet} labels={barLabels} />
+        <DependencyArrows rows={rows} bars={bars} critical={critical} yRange={shownY} />
+        <TaskBars rows={shownRows} bars={bars} dates={dates} critical={critical} slackEnds={slackEnds} percents={percents} baseline={baselineBars} baselineName={baseline?.name ?? ''} selectedIds={selectedSet} labels={barLabels} />
 
         {/* Náhled při tažení úsečky (G-02) – nad vším ostatním. */}
         <BarDragLayer svgRef={svgRef} tl={tl} calendar={calendar} rows={rows} dates={dates} />

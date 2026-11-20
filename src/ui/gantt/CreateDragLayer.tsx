@@ -16,6 +16,7 @@ import { dayToX, xToDay, type Timeline } from '../../gantt/timeline'
 import { formatIsoDate } from '../../i18n/format'
 import { projectStore } from '../../store/useProject'
 import { useViewState } from '../viewState'
+import { afterTaskShown } from '../revealTask'
 
 /** O kolik bodů se musí ukazatel pohnout, aby to bylo tažení, ne kliknutí. */
 const MIN_DRAG_PX = 6
@@ -92,12 +93,12 @@ export function CreateDragLayer({ tl, calendar, rowIndex, projectStart }: Create
       constraintStart: drag.result.constraintStart,
     })
     useViewState.getState().select(id)
-    // Kurzor do názvu nové činnosti v tabulce (po vykreslení řádku).
-    setTimeout(() => {
+    // Kurzor do názvu nové činnosti v tabulce (po vykreslení řádku; u velkého plánu po posunu k němu).
+    afterTaskShown(id, () => {
       const input = document.querySelector<HTMLInputElement>(`[data-task-id="${CSS.escape(id)}"] input[type="text"]`)
       input?.focus()
       input?.select()
-    }, 0)
+    })
   }
 
   const top = rowIndex * ROW_HEIGHT

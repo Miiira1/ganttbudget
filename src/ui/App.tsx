@@ -32,6 +32,7 @@ import { useWorkbookImportState } from '../io/workbookActions'
 import { useLibraryState } from '../io/libraryActions'
 import { startAutosave } from '../io/autosaveRunner'
 import { deleteSelected, duplicateSelected } from './structureCommands'
+import { afterTaskShown } from './revealTask'
 import { AnalysisIcon, CostsIcon, LoadIcon, PlanIcon, ResourcesIcon, TrackingIcon, AiIcon, MindMapIcon } from './icons'
 import { DetailDock } from './detail/DetailDock'
 import { TaskDetailBody, TaskDetailHeader } from './detail/TaskDetail'
@@ -244,8 +245,9 @@ export default function App() {
     // Nová činnost přijde pod vybraný řádek (na stejnou úroveň) a sama se vybere.
     const id = addTask(t('task.defaultName'), 'task', selectedId)
     selectRow(id)
-    // Kurzor rovnou do názvu nové činnosti, ať se dá hned psát.
-    requestAnimationFrame(() => {
+    // Kurzor rovnou do názvu nové činnosti, ať se dá hned psát. U velkého plánu se nejdřív
+    // posune k řádku – mimo okno by nebyl vykreslený (audit R3).
+    afterTaskShown(id, () => {
       const row = document.querySelector<HTMLInputElement>(`[data-task-id="${CSS.escape(id)}"] input[type="text"]`)
       row?.focus()
       row?.select()

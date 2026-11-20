@@ -15,9 +15,14 @@ interface DependencyArrowsProps {
   bars: Map<string, Bar>
   /** Kritické položky (null = zvýraznění vypnuté); vazba mezi dvěma kritickými je červená. */
   critical: ReadonlySet<string> | null
+  /**
+   * Svislý rozsah vykreslených řádků (px) u velkého plánu: kreslí se jen šipky, které do něj
+   * zasahují – i ty, které ho jen protínají z řádků mimo (audit R3). Bez něj všechny.
+   */
+  yRange?: readonly [number, number]
 }
 
-export const DependencyArrows = memo(function DependencyArrows({ rows, bars, critical }: DependencyArrowsProps) {
+export const DependencyArrows = memo(function DependencyArrows({ rows, bars, critical, yRange }: DependencyArrowsProps) {
   const { t: translate, i18n } = useTranslation()
   // Bubliny šipek se mezi změnami termínů nemění – texty z paměti (13c – výkon).
   const t = ((key: string, options?: Record<string, string | number>) => cachedT(translate, i18n.language, key, options)) as unknown as TFunction
@@ -31,6 +36,7 @@ export const DependencyArrows = memo(function DependencyArrows({ rows, bars, cri
     return task.dependencies.flatMap((dep) => {
       const from = bars.get(dep.predecessorId)
       if (!from || dep.predecessorId === task.id) return []
+      if (yRange && (Math.max(from.centerY, to.centerY) < yRange[0] || Math.min(from.centerY, to.centerY) > yRange[1])) return []
       const days = t('gantt.workingDays', { count: Math.abs(dep.lagDays) })
       const lag = dep.lagDays > 0 ? t('gantt.lag', { days }) : dep.lagDays < 0 ? t('gantt.lead', { days }) : ''
       const title = t('gantt.dependency', {

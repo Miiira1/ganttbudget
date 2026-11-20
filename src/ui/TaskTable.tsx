@@ -39,6 +39,7 @@ import { confirmAndDelete } from './structureCommands'
 import { TableColumns, TableHeader, useTableWidth } from './TableHeader'
 import { isTouchLike, recentLongPress, watchLongPress, type LongPressWatch } from './longPress'
 import { currentSelection, finishPlainClick, selectWithModifiers, useSelectedIds, useViewState, useVisibleRows } from './viewState'
+import { useVisibleRange } from './virtualRows'
 
 /** Hlídání dlouhého stisku prstem na řádku (13c) – najednou se drží jen jeden řádek. */
 let rowLongPress: LongPressWatch | null = null
@@ -587,6 +588,9 @@ export function TaskTable({
   const parents = useMemo(() => new Set(project.tasks.map((task) => task.parentId)), [project])
   const { drag, handlers } = useRowDrag()
   const tableWidth = useTableWidth()
+  // Velký plán: kreslí se jen řádky v okně + rezerva, zbytek výšky vyplní prázdné řádky (audit R3).
+  const tableRef = useRef<HTMLTableElement>(null)
+  const { first, last } = useVisibleRange(rows.length, tableRef)
 
   if (rows.length === 0) {
     return (
@@ -613,12 +617,13 @@ export function TaskTable({
 
   return (
     // Pevné rozvržení: šířky sloupců určuje <colgroup> podle nastavení uživatele (TableHeader.tsx).
-    <table className="table-fixed border-collapse text-sm" style={{ width: tableWidth }}>
+    <table ref={tableRef} data-plan-table className="table-fixed border-collapse text-sm" style={{ width: tableWidth }}>
       <caption className="sr-only">{t('table.caption')}</caption>
       <TableColumns />
       <TableHeader />
       <tbody>
-        {rows.map((task) => {
+        {first > 0 && <SpacerRow height={first * ROW_HEIGHT} />}
+        {rows.slice(first, last).map((task) => {
           const dates = result.tasks.get(task.id) ?? NO_DATES
           return (
             <TaskRow
@@ -651,6 +656,7 @@ export function TaskTable({
             />
           )
         })}
+        {last < rows.length && <SpacerRow height={(rows.length - last) * ROW_HEIGHT} />}
       </tbody>
       {/* Prázdný řádek navíc – v grafu je pod plánem pruh pro novou činnost tažením; výšky musí sedět. */}
       <tfoot aria-hidden="true">
@@ -659,6 +665,15 @@ export function TaskTable({
         </tr>
       </tfoot>
     </table>
+  )
+}
+
+/** Prázdné místo za nevykreslené řádky velkého plánu – stejná výška, aby posuvník seděl. */
+function SpacerRow({ height }: { height: number }) {
+  return (
+    <tr aria-hidden="true" style={{ height }}>
+      <td colSpan={99} className="border-0 p-0" />
+    </tr>
   )
 }
 
