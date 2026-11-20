@@ -10,6 +10,7 @@
   },
   "app": {
     "title": "MiRo project",
+    "loading": "Načítám…",
     "privacy": "Vaše data zůstávají jen v tomto počítači, nic se neposílá na server.",
     "notSavedYet": "Rozpracovaný projekt se průběžně zálohuje v tomto prohlížeči; pro jistotu ho ukládejte do souboru (Ctrl+S).",
     "privacyHide": "Skrýt",

@@ -1,17 +1,15 @@
 /** Hlavní okno aplikace: lišta s nástroji, tabulka činností a patička. */
 import logoOnLight from '../assets/brand/miro-horizontal-color-on-light.svg'
 import logoOnDark from '../assets/brand/miro-horizontal-color-on-dark.svg'
-import { useDeferredValue, useEffect, useRef, useState } from 'react'
+import { Suspense, useDeferredValue, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LANGUAGES } from '../i18n/languages'
 import { formatIsoDate } from '../i18n/format'
-import { addSampleTracking, createSampleProject } from '../samples/automatizace'
 import { dayToIso, isoToDay } from '../engine/calendar'
 import { todayIso } from '../model/dates'
 import { getBudgetStatus, getLoad, getPlanIssues, projectStore, useCosts, useProject, useSchedule } from '../store/useProject'
 import { formatMoney } from '../model/money'
 import { applyTheme, loadThemePreference, saveThemePreference, THEME_PREFERENCES, watchSystemTheme, type ThemePreference } from './theme'
-import { CalendarDialog } from './CalendarDialog'
 import { showNotice, useNotice } from './notice'
 import { TaskTable } from './TaskTable'
 import { SplitView } from './SplitView'
@@ -23,36 +21,48 @@ import { BarLabelsMenu } from './gantt/BarLabelsMenu'
 import { StructureToolbar } from './StructureToolbar'
 import { runStructureCommand, STRUCTURE_COMMANDS, STRUCTURE_SHORTCUTS } from './structureCommands'
 import { useSelectedId, useViewState } from './viewState'
-import { ShortcutsDialog } from './ShortcutsDialog'
-import { GlossaryDialog } from './help/GlossaryDialog'
-import { PlanCheckDialog } from './check/PlanCheckDialog'
-import { NewProjectDialog } from './NewProjectDialog'
-import { WizardDialog } from './WizardDialog'
-import { AiDialog, type AiTab } from './ai/AiDialog'
-import { PrintDialog } from './PrintDialog'
+import type { AiTab } from './ai/AiDialog'
 import { DisplaySettings, HelpMenu } from './HeaderMenus'
 import { FileMenu } from './FileMenu'
-import { ImportDialog } from './ImportDialog'
-import { BudgetImportDialog } from './costs/BudgetImportDialog'
-import { WorkbookImportDialog } from './WorkbookImportDialog'
-import { LibraryDialog } from './resources/LibraryDialog'
 import { ProjectName } from './ProjectName'
 import { isDirty, loadSampleProject, openProject, saveProject, useFileState } from '../io/fileActions'
+import { useImportState } from '../io/importActions'
+import { useBudgetImportState } from '../io/budgetImportActions'
+import { useWorkbookImportState } from '../io/workbookActions'
+import { useLibraryState } from '../io/libraryActions'
 import { startAutosave } from '../io/autosaveRunner'
 import { deleteSelected, duplicateSelected } from './structureCommands'
-import { ResourcesView } from './resources/ResourcesView'
 import { AnalysisIcon, CostsIcon, LoadIcon, PlanIcon, ResourcesIcon, TrackingIcon, AiIcon, MindMapIcon } from './icons'
-import { MindMapView } from './mindmap/MindMapView'
-import { LoadView } from './load/LoadView'
-import { CostsView } from './costs/CostsView'
-import { AnalysisView } from './analysis/AnalysisView'
-import { TrackingView } from './tracking/TrackingView'
 import { DetailDock } from './detail/DetailDock'
 import { TaskDetailBody, TaskDetailHeader } from './detail/TaskDetail'
 import { loadPreference, savePreference } from './preferences'
-import { MobileShell } from './mobile/MobileShell'
-import { MobilePlan } from './mobile/MobilePlan'
 import { mobileView } from './mobile/layout'
+// Pohledy, dialogy a mobilní verze se stahují až při prvním použití (audit R7).
+import {
+  AiDialog,
+  AnalysisView,
+  BudgetImportDialog,
+  CalendarDialog,
+  CostsView,
+  GlossaryDialog,
+  ImportDialog,
+  LazyView,
+  LibraryDialog,
+  LoadView,
+  MindMapView,
+  MobilePlan,
+  MobileShell,
+  MountWhenNeeded,
+  NewProjectDialog,
+  PlanCheckDialog,
+  PrintDialog,
+  ResourcesView,
+  ShortcutsDialog,
+  TrackingView,
+  ViewLoading,
+  WizardDialog,
+  WorkbookImportDialog,
+} from './lazyParts'
 import { useLayoutMode } from './mobile/useLayoutMode'
 
 /** Hlavní pohledy: Plán (tabulka + graf) a Zdroje (databáze, fáze 6a). */
@@ -101,6 +111,11 @@ export default function App() {
   const selectedId = useSelectedId(project)
   const selectRow = useViewState((s) => s.select)
   const layout = useLayoutMode()
+  // Čeká import na potvrzení v dialogu? (Teprve pak se dialog stáhne.)
+  const importPending = useImportState((s) => s.pending !== null)
+  const budgetImportPending = useBudgetImportState((s) => s.pending !== null)
+  const workbookImportPending = useWorkbookImportState((s) => s.pending !== null)
+  const libraryPending = useLibraryState((s) => s.pending !== null)
   // Patička s informací o datech: skrytí si pamatuje prohlížeč.
   const [privacyHidden, setPrivacyHiddenState] = useState(() => loadPreference('privacyHidden') === 'true')
   const setPrivacyHidden = (hidden: boolean) => {
@@ -238,9 +253,11 @@ export default function App() {
   }
   addTaskRef.current = handleAddTask
 
-  function handleLoadSample() {
+  async function handleLoadSample() {
     // Varování před nahrazením plánu (N-08). Prázdný projekt není co ztratit.
     if (project.tasks.length > 0 && !window.confirm(t('sample.confirmReplace'))) return
+    // Vzorový projekt se stáhne až teď (audit R7).
+    const { addSampleTracking, createSampleProject } = await import('../samples/automatizace')
     // Vzorový projekt „v běhu“ (fáze 9): začal před 8 týdny, má baseline, % hotovo a skutečné náklady.
     const today = todayIso()
     const sample = createSampleProject((key) => t(key), i18n.language, dayToIso(isoToDay(today) - SAMPLE_WEEKS_AGO * 7))
@@ -314,7 +331,7 @@ export default function App() {
   if (layout.mobile) {
     const shown = mobileView(view)
     return (
-      <>
+      <Suspense fallback={<ViewLoading />}>
         <MobileShell
           projectName={project.name}
           meta={projectMeta}
@@ -325,26 +342,30 @@ export default function App() {
           notice={noticeBar}
           menuItems={[
             { id: 'open', label: t('mobile.open'), icon: '📂', onSelect: () => void openProject(t) },
-            { id: 'sample', label: t('toolbar.loadSample'), icon: '🧪', onSelect: handleLoadSample },
+            { id: 'sample', label: t('toolbar.loadSample'), icon: '🧪', onSelect: () => void handleLoadSample() },
             { id: 'glossary', label: t('toolbar.glossary'), icon: '📖', onSelect: () => setGlossaryOpen(true) },
             { id: 'privacy', label: t('app.privacyMenu'), icon: '🔒', onSelect: () => showNotice(`${t('app.privacy')} ${t('app.notSavedYet')}`, 'info') },
             { id: 'full', label: t('mobile.fullVersion'), icon: '🖥', onSelect: () => layout.setPreference('full') },
           ]}
         >
-          {shown === 'costs' ? (
-            <CostsView />
-          ) : shown === 'tracking' ? (
-            <TrackingView />
-          ) : shown === 'analysis' ? (
-            <AnalysisView />
-          ) : shown === 'mindmap' ? (
-            <MindMapView onShowPlan={() => setView('plan')} />
-          ) : (
-            <MobilePlan />
-          )}
+          <LazyView>
+            {shown === 'costs' ? (
+              <CostsView />
+            ) : shown === 'tracking' ? (
+              <TrackingView />
+            ) : shown === 'analysis' ? (
+              <AnalysisView />
+            ) : shown === 'mindmap' ? (
+              <MindMapView onShowPlan={() => setView('plan')} />
+            ) : (
+              <MobilePlan />
+            )}
+          </LazyView>
         </MobileShell>
-        <GlossaryDialog open={glossaryOpen} onClose={() => setGlossaryOpen(false)} />
-      </>
+        <MountWhenNeeded active={glossaryOpen}>
+          <GlossaryDialog open={glossaryOpen} onClose={() => setGlossaryOpen(false)} />
+        </MountWhenNeeded>
+      </Suspense>
     )
   }
 
@@ -525,42 +546,61 @@ export default function App() {
       )}
 
       {noticeBar}
-      <CalendarDialog open={calendarOpen} onClose={() => setCalendarOpen(false)} />
-      <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
-      <GlossaryDialog open={glossaryOpen} onClose={() => setGlossaryOpen(false)} />
-      <NewProjectDialog open={newOpen} onClose={() => setNewOpen(false)} onWizard={() => setWizardOpen(true)} onAi={() => (setAiTab('plan'), setAiOpen(true))} />
-      <WizardDialog open={wizardOpen} onClose={() => setWizardOpen(false)} />
-      <PrintDialog open={printOpen} onClose={() => setPrintOpen(false)} />
-      <AiDialog open={aiOpen} onClose={() => setAiOpen(false)} initialTab={aiTab} />
-      <PlanCheckDialog open={checkOpen} onClose={() => setCheckOpen(false)} onShowView={setView} />
-      <ImportDialog />
-      <BudgetImportDialog />
-      <WorkbookImportDialog />
-      <LibraryDialog />
+      {/* Dialogy se stáhnou až při prvním otevření a pak zůstanou připravené (audit R7). */}
+      <MountWhenNeeded active={calendarOpen}>
+        <CalendarDialog open={calendarOpen} onClose={() => setCalendarOpen(false)} />
+      </MountWhenNeeded>
+      <MountWhenNeeded active={shortcutsOpen}>
+        <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      </MountWhenNeeded>
+      <MountWhenNeeded active={glossaryOpen}>
+        <GlossaryDialog open={glossaryOpen} onClose={() => setGlossaryOpen(false)} />
+      </MountWhenNeeded>
+      <MountWhenNeeded active={newOpen}>
+        <NewProjectDialog open={newOpen} onClose={() => setNewOpen(false)} onWizard={() => setWizardOpen(true)} onAi={() => (setAiTab('plan'), setAiOpen(true))} />
+      </MountWhenNeeded>
+      <MountWhenNeeded active={wizardOpen}>
+        <WizardDialog open={wizardOpen} onClose={() => setWizardOpen(false)} />
+      </MountWhenNeeded>
+      <MountWhenNeeded active={printOpen}>
+        <PrintDialog open={printOpen} onClose={() => setPrintOpen(false)} />
+      </MountWhenNeeded>
+      <MountWhenNeeded active={aiOpen}>
+        <AiDialog open={aiOpen} onClose={() => setAiOpen(false)} initialTab={aiTab} />
+      </MountWhenNeeded>
+      <MountWhenNeeded active={checkOpen}>
+        <PlanCheckDialog open={checkOpen} onClose={() => setCheckOpen(false)} onShowView={setView} />
+      </MountWhenNeeded>
+      <MountWhenNeeded active={importPending}>
+        <ImportDialog />
+      </MountWhenNeeded>
+      <MountWhenNeeded active={budgetImportPending}>
+        <BudgetImportDialog />
+      </MountWhenNeeded>
+      <MountWhenNeeded active={workbookImportPending}>
+        <WorkbookImportDialog />
+      </MountWhenNeeded>
+      <MountWhenNeeded active={libraryPending}>
+        <LibraryDialog />
+      </MountWhenNeeded>
 
-      {view === 'resources' ? (
+      {view !== 'plan' ? (
         <main id={MAIN_ID} tabIndex={-1} className="focus:outline-none min-h-0 flex-1">
-          <ResourcesView />
-        </main>
-      ) : view === 'load' ? (
-        <main id={MAIN_ID} tabIndex={-1} className="focus:outline-none min-h-0 flex-1">
-          <LoadView onShowPlan={() => setView('plan')} />
-        </main>
-      ) : view === 'costs' ? (
-        <main id={MAIN_ID} tabIndex={-1} className="focus:outline-none min-h-0 flex-1">
-          <CostsView />
-        </main>
-      ) : view === 'analysis' ? (
-        <main id={MAIN_ID} tabIndex={-1} className="focus:outline-none min-h-0 flex-1">
-          <AnalysisView />
-        </main>
-      ) : view === 'tracking' ? (
-        <main id={MAIN_ID} tabIndex={-1} className="focus:outline-none min-h-0 flex-1">
-          <TrackingView />
-        </main>
-      ) : view === 'mindmap' ? (
-        <main id={MAIN_ID} tabIndex={-1} className="focus:outline-none min-h-0 flex-1">
-          <MindMapView onShowPlan={() => setView('plan')} />
+          <LazyView>
+            {view === 'resources' ? (
+              <ResourcesView />
+            ) : view === 'load' ? (
+              <LoadView onShowPlan={() => setView('plan')} />
+            ) : view === 'costs' ? (
+              <CostsView />
+            ) : view === 'analysis' ? (
+              <AnalysisView />
+            ) : view === 'tracking' ? (
+              <TrackingView />
+            ) : (
+              <MindMapView onShowPlan={() => setView('plan')} />
+            )}
+          </LazyView>
         </main>
       ) : project.tasks.length === 0 ? (
         // Prázdný projekt: jen uvítání přes celou šířku, graf by byl prázdný.
